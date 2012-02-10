@@ -1,0 +1,14 @@
+ *.o
+ *.lo
+*.swp
+*.m4
+*.deps
+gtest/
+m4/
+build-aux/
+config.log
+config.status
+Makefile
+Makefile.in
+configure
+libtool
