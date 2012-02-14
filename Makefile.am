@@ -18,11 +18,15 @@ check-local:
 	@echo "Making lib/libgtest.a lib/libgtest_main.a in gtest"
 	@cd gtest && $(MAKE) $(AM_MAKEFLAGS) lib/libgtest.la lib/libgtest_main.la
 
-# We need to override the check Autoconf target because it does not reliably add
-# check-local before check-TESTS.
-check-am: all-am
-	$(MAKE) $(AM_MAKEFLAGS) check-local check-TESTS
-	$(MAKE) $(AM_MAKEFLAGS) $(check_PROGRAMS)
+# We need to create a new custom target to run the tests because Autoconf does
+# not reliably add check-local before the check target.
+test: check-local check
+
+bench: all
+	git rev-parse HEAD >> bench/LOG
+	time -p -o bench/LOG -a bench/loop
+
+.PHONY: bench
 
 # The following local target definition is copied from the Protobuf project:
 #   We would like to clean gtest when "make clean" is invoked. But we have to
@@ -72,3 +76,10 @@ test_hegel_SOURCES = \
 
 test_hegel_CPPFLAGS = -std=c++0x -I$(srcdir)/include -I$(top_srcdir)/gtest/include
 test_hegel_LDADD = $(top_builddir)/gtest/lib/libgtest_main.la lib/libhegel.la
+
+# Benchmarks
+
+bin_PROGRAMS = bench/loop
+bench_loop_SOURCES = bench/loop_bench.cpp
+bench_loop_CPPFLAGS = -std=c++0x -I$(srcdir)/include
+bench_loop_LDADD = lib/libhegel.la
