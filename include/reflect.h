@@ -173,6 +173,8 @@ public:
 // efficient implementation is possible with template meta-programming in which
 // arithmetic conversions are specified in form of templates which must have a
 // typedef member whose type is equal to the return type of a binary operation.
+// Since C++11 it is also possible to use a new function declaration syntax
+// with which we could declare trailing return types of binary operators.
 #define VINSTR_API(op) \
   virtual const Pointer operator op(const ReflectValue&) const = 0;\
   VINSTR_TYPE_API(bool, op)\
