@@ -1,5 +1,8 @@
- *.o
- *.lo
+*.o
+*.lo
+*.dirstamp
+*.tar.gz
+*.zip
 *.swp
 *.m4
 *.deps
