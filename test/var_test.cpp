@@ -1,5 +1,5 @@
 #include "gtest/gtest.h"
-#include "var.h"
+#include "overload.h"
 
 TEST(VarTest, BoolTrue) {
   Bool var = true;

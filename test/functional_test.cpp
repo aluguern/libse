@@ -1,6 +1,6 @@
 #include <sstream>
 #include "gtest/gtest.h"
-#include "var.h"
+#include "overload.h"
 
 Int foo(Int other) {
   if(other + 1 < 6) {

@@ -1,6 +1,5 @@
 #include "gtest/gtest.h"
-#include "reflect.h"
-#include "var.h"
+#include "overload.h"
 
 TEST(ReflectTest, TypeConversions) {
   Value<bool> a = Value<bool>(true);

@@ -56,6 +56,7 @@ pkginclude_HEADERS = \
   include/reflect.h \
   include/expr.h \
   include/var.h \
+  include/overload.h \
   include/symtracer.h
 
 # Bulid rules for functional and unit tests.
