@@ -25,10 +25,28 @@ TEST(VarTest, Int) {
   EXPECT_EQ(258, var);
 }
 
-TEST(VarTest, Const) {
+TEST(VarTest, ConstBoolTrue) {
+  const Bool var = true;
+  EXPECT_EQ(BOOL, var.get_type());
+  EXPECT_TRUE(var);
+}
+
+TEST(VarTest, ConstBoolFalse) {
+  const Bool var = false;
+  EXPECT_EQ(BOOL, var.get_type());
+  EXPECT_FALSE(var);
+}
+
+TEST(VarTest, ConstChar) {
   const Char var = 3;
   EXPECT_EQ(CHAR, var.get_type());
   EXPECT_EQ(3, var);
+}
+
+TEST(VarTest, ConstInt) {
+  const Int var = 258;
+  EXPECT_EQ(INT, var.get_type());
+  EXPECT_EQ(258, var);
 }
 
 TEST(VarTest, DowncastWithCopyConversionConstructor) {
@@ -304,7 +322,7 @@ TEST(VarTest, NotSymbolicAssignmentOperatorDeepWithCast) {
   EXPECT_EQ(CHAR, b.get_type());
 }
 
-TEST(VarTest, NotSymbolicPointerConstructorWithCast) {
+TEST(VarTest, NotSymbolicConstructorWithCast) {
   Int a = 3;
   Char b = a + 2;
 
@@ -315,22 +333,22 @@ TEST(VarTest, NotSymbolicPointerConstructorWithCast) {
   EXPECT_EQ(CHAR, b.get_type());
 }
 
-TEST(VarTest, SymbolicPointerConstructorWithCast) {
+TEST(VarTest, SymbolicConstructorWithCast) {
   Int a = 3;
   set_symbolic(a);
 
-  const ReflectValue::Pointer& value_ptr = a + 2;
-  Char b = value_ptr;
+  const Value<int>& value_ref = a + 2;
+  Char b = value_ref;
 
   EXPECT_EQ(3, a);
   EXPECT_EQ(5, b);
   EXPECT_TRUE(a.is_symbolic());
   EXPECT_TRUE(b.is_symbolic());
   EXPECT_EQ(CHAR, b.get_type());
-  EXPECT_NE(value_ptr->get_expr(), b.get_reflect_value().get_expr());
+  EXPECT_NE(value_ref.get_expr(), b.get_reflect_value().get_expr());
 }
 
-TEST(VarTest, NotSymbolicPointerConstructor) {
+TEST(VarTest, NotSymbolicConstructor) {
   Int a = 3;
   Int b = a + 2;
 
@@ -340,18 +358,18 @@ TEST(VarTest, NotSymbolicPointerConstructor) {
   EXPECT_FALSE(b.is_symbolic());
 }
 
-TEST(VarTest, SymbolicPointerConstructor) {
+TEST(VarTest, SymbolicConstructor) {
   Int a = 3;
   set_symbolic(a);
 
-  const ReflectValue::Pointer& value_ptr = a + 2;
-  Int b = value_ptr;
+  const Value<int>& value_ref = a + 2;
+  Int b = value_ref;
 
   EXPECT_EQ(3, a);
   EXPECT_EQ(5, b);
   EXPECT_TRUE(a.is_symbolic());
   EXPECT_TRUE(b.is_symbolic());
-  EXPECT_EQ(value_ptr->get_expr(), b.get_reflect_value().get_expr());
+  EXPECT_EQ(value_ref.get_expr(), b.get_reflect_value().get_expr());
 }
 
 TEST(VarTest, SymbolicAssignmentOperator) {
@@ -413,7 +431,7 @@ TEST(VarTest, SymbolicAssignmentOperatorDeepWithCast) {
   EXPECT_EQ(5, b);
 }
 
-TEST(VarTest, NotSymbolicConstructorAndAssignmentWithPointer) {
+TEST(VarTest, NotSymbolicConstructorAndAssignment) {
   Int a = 2;
   Char b = 120;
 
@@ -454,8 +472,8 @@ TEST(VarTest, AddCharAndInt) {
   Int b = 5;
 
   // C++ guarantees type promotion
-  EXPECT_EQ(INT, (a + b)->get_type());
-  EXPECT_EQ(INT, (b + a)->get_type());
+  EXPECT_EQ(INT, (a + b).get_type());
+  EXPECT_EQ(INT, (b + a).get_type());
 
   Int c = a + b;
   Int d = b + a;
@@ -468,11 +486,11 @@ TEST(VarTest, AddCharAndReflectValue) {
   Int a = 2;
   Int b = 3;
   Char c = 4;
-  ReflectValue::Pointer d = a + b;
+  const Value<int>& d = a + b;
 
   // C++ guarantees type promotion
-  EXPECT_EQ(INT, (c + d)->get_type());
-  EXPECT_EQ(INT, (d + c)->get_type());
+  EXPECT_EQ(INT, (c + d).get_type());
+  EXPECT_EQ(INT, (d + c).get_type());
 
   Int e = c + d;
   Int f = d + c;
@@ -485,8 +503,8 @@ TEST(VarTest, AddCharAndConstant) {
   Char a = 2;
 
   // C++ guarantees type promotion
-  EXPECT_EQ(INT, (a + 3)->get_type());
-  EXPECT_EQ(INT, (3 + a)->get_type());
+  EXPECT_EQ(INT, (a + 3).get_type());
+  EXPECT_EQ(INT, (3 + a).get_type());
 
   Int b = a + 3;
   Int c = 3 + a;
@@ -500,12 +518,12 @@ TEST(VarTest, AddReflectValueAndConstant) {
   Int b = 3;
 
   // C++ guarantees type promotion
-  EXPECT_EQ(INT, (a + b + 4)->get_type());
-  EXPECT_EQ(INT, (b + a + 4)->get_type());
-  EXPECT_EQ(INT, (a + 4 + b)->get_type());
-  EXPECT_EQ(INT, (b + 4 + a)->get_type());
-  EXPECT_EQ(INT, (4 + a + b)->get_type());
-  EXPECT_EQ(INT, (4 + b + a)->get_type());
+  EXPECT_EQ(INT, (a + b + 4).get_type());
+  EXPECT_EQ(INT, (b + a + 4).get_type());
+  EXPECT_EQ(INT, (a + 4 + b).get_type());
+  EXPECT_EQ(INT, (b + 4 + a).get_type());
+  EXPECT_EQ(INT, (4 + a + b).get_type());
+  EXPECT_EQ(INT, (4 + b + a).get_type());
 
   Int c = a + b + 4;
   Int d = b + a + 4;
@@ -527,15 +545,15 @@ TEST(VarTest, AddCharWithConstantAndReflectValue) {
   Char a = 2;
   Char b = 3;
   Char c = 4;
-  ReflectValue::Pointer d = a + b;
+  const Value<char>& d = a + b;
 
   // C++ guarantees type promotion
-  EXPECT_EQ(INT, (c + d + 5)->get_type());
-  EXPECT_EQ(INT, (d + c + 5)->get_type());
-  EXPECT_EQ(INT, (c + 5 + d)->get_type());
-  EXPECT_EQ(INT, (d + 5 + c)->get_type());
-  EXPECT_EQ(INT, (5 + c + d)->get_type());
-  EXPECT_EQ(INT, (5 + d + c)->get_type());
+  EXPECT_EQ(INT, (c + d + 5).get_type());
+  EXPECT_EQ(INT, (d + c + 5).get_type());
+  EXPECT_EQ(INT, (c + 5 + d).get_type());
+  EXPECT_EQ(INT, (d + 5 + c).get_type());
+  EXPECT_EQ(INT, (5 + c + d).get_type());
+  EXPECT_EQ(INT, (5 + d + c).get_type());
 
   Int e = c + d + 5;
   Int f = d + c + 5;
@@ -566,7 +584,7 @@ TEST(VarTest, LessChars) {
 TEST(VarTest, LessCharWithConstantAndReflectValue) {
   Int a = 2;
   Int b = 3;
-  ReflectValue::Pointer c = a + b;
+  const Value<int>& c = a + b;
 
   Bool d = a < 4;
   Bool e = 4 < a;
