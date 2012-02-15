@@ -11,7 +11,7 @@ To build and install the library execute the following commands:
   $ make test
   $ make install
 
-If "make check" fails, you can still install, but it is likely that some
+If "make test" fails, you can still install, but it is likely that some
 features of this library will not work correctly on your system.
 Proceed at your own risk.
 
