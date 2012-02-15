@@ -13,9 +13,10 @@
 // More formally, a Var<T> object corresponds to a C++ lvalue (locator value).
 // An lvalue must have an identifiable memory location (i.e. a memory address).
 // This memory location points to a concrete value of type T. In addition to
-// this, a Var<T> object can also refer to an algebraic expression which is the
-// result of performing operations on its concrete value. In that case, we say
-// that the variable is symbolic as indicated by the is_symbolic() function.
+// this, a Var<T> object, whose is_symbolic() member function returns true, can
+// refer to an algebraic expression which captures any operations performed on
+// the variable. For example, an operation that increments an integer variable
+// (i.e. Var<int>) by three yields the symbolic expression "x + 3".
 //
 // Similar to modifiable lvalues, a Var<T> object can always be changed unless
 // it is annotated with the const C++ keyword. Each Var<T> object can also be
@@ -31,25 +32,32 @@ private:
   Value<T> value;
 
   // cast flag is true if and only if the represented concrete value was
-  // obtained through an up or downcast. If the variable is symbolic, it is
-  // also going to have a CastExpr which indicates the required type cast.
+  // obtained through an up or downcast. If the variable is symbolic and cast
+  // is true, it is also going to have a CastExpr for the required type cast.
   bool cast;
 
 public:
 
   // Constructor creates an object that represents a program variable of a
-  // primitive type T with the given initial value. The instantiated variable
-  // is concrete (i.e. not symbolic).
+  // primitive type T with the given initial value. Initially, the new
+  // variable is concrete (i.e. not symbolic).
   Var(const T concrete_value) : value(concrete_value), cast(false) {}
 
   // Internal constructor that creates an object that represents a program
   // variable that has the same concrete value and (if any) symbolic value as
+  // the variable pointed to by the supplied argument. Since both reflection
+  // types match, no type casting is performed.
+  Var(const Value<T>& value) : value(value), cast(false) {}
+
+  // Internal constructor that creates an object that represents a program
+  // variable that has the same concrete value and (if any) symbolic value as
   // the variable pointed to by the supplied argument. Since the type of the
-  // pointed to value representation could differ from the template type T,
-  // the instantiated variable object could be subject to precision loss which
-  // is conservatively approximated by is_cast(). Moreover, if the variable is
-  // symbolic, the instantiated variable is going to have a new CastExpr.
-  Var(const ReflectValue::Pointer& value_ptr);
+  // pointed to value representation differ from the template type T, the
+  // instantiated variable object could be subject to precision loss which
+  // is conservatively approximated by is_cast(). Moreover, if the variable
+  // is symbolic, the instantiated variable is going to have a new CastExpr.
+  template<typename S>
+  Var(const Value<S>& value) : value(value), cast(true) {}
 
   // Copy constructor that instantiates a variable by creating a deep copy of
   // the supplied variable's concrete value. Any symbolic expressions are
@@ -64,17 +72,17 @@ public:
   // implicit type casting. In the case in which the other variable is also
   // symbolic, the instantiated variable is going to have a new CastExpr.
   template<typename S>
-  Var(const Var<S>& other);
+  Var(const Var<S>& other) : value(other.get_reflect_value()), cast(true) {}
 
   // get_reflect_value() returns a read-only reference to an object that
-  // contains runtime information about this variable. The caller must
-  // ensure that it does not dereference the return value after this
-  // Var<T> object has been destroyed.
+  // contains the concrete value and runtime information about this variable.
+  // The caller must ensure that it does not dereference the return value after
+  // this Var<T> object has been destroyed.
   const Value<T>& get_reflect_value() const { return value; }
 
-  // get_type() returns the primitive type of this variable. Any precision loss
-  // that might have resulted from type casting is conservatively approximated
-  // by is_cast().
+  // get_type() returns the primitive type of this variable. Note that any
+  // precision loss that might have occurred due to type casting is
+  // conservatively approximated by is_cast().
   Type get_type() const { return ReflectType<T>::type; }
 
   // is_cast() returns true if either an up or down cast is needed to get the
@@ -93,7 +101,7 @@ public:
        // TODO: log possibility of incomplete analysis
     }
 
-    return static_cast<T>(value);
+    return value.get_value();
   }
 
   // Assignment operator that copies both the concrete and symbolic bytes of
@@ -120,40 +128,6 @@ public:
   bool is_symbolic() const { return value.is_symbolic(); }
 
 };
-
-template<typename T>
-Var<T>::Var(const ReflectValue::Pointer& value_ptr) :
-  value(), cast(ReflectType<T>::type != value_ptr->get_type()) {
-
-  if(value_ptr->is_symbolic()) {
-    if(cast) {
-      const Type type = ReflectType<T>::type;
-      const SharedExpr& expr = value_ptr->get_expr();
-      const SharedExpr& cast_expr = SharedExpr(new CastExpr(expr, type));
-      value.set_expr(cast_expr);
-    } else {
-      value.set_expr(value_ptr->get_expr());
-    }
-  }
-
-  // implicit casting of the other concrete value
-  value_ptr->copy_value(value);
-}
-
-template<typename T>
-template<typename S>
-Var<T>::Var(const Var<S>& other) : value(), cast(true) {
-  if(other.is_symbolic()) {
-    const Type type = ReflectType<T>::type;
-    const SharedExpr& other_expr = other.get_reflect_value().get_expr();
-    const SharedExpr& cast_expr = SharedExpr(new CastExpr(other_expr, type));
-
-    value.set_expr(cast_expr);
-  }
-
-  // implicit casting of the other concrete value
-  value.set_value(other.get_reflect_value().get_value());
-}
 
 typedef Var<bool> Bool;
 typedef Var<char> Char;
@@ -203,43 +177,62 @@ void set_symbolic(Var<T>& var) {
 // Internal function to guide the type inference of template functions that
 // overload built-in operators such as addition, multiplication etc.
 template<typename T>
-static inline const ReflectValue& __filter(const Var<T>& var) {
+static inline const Value<T>& __filter(const Var<T>& var) {
   return var.get_reflect_value();
 }
 
 // Internal function to guide the type inference of template functions that
 // overload built-in operators such as addition, multiplication etc.
-// For comments about the pass-by-reference of the shared pointer, refer to
-// the OVERLOAD_OPERATION documentation.
-static inline const ReflectValue& __filter(const ReflectValue::Pointer& pointer) {
-  return *pointer;
+template<typename T>
+static inline const Value<T>& __filter(const Value<T>& value) {
+  return value;
 }
 
-// OVERLOAD_OPERATION(op) is a macro that uses templates and the statically
-// overloaded and inlined __filter function to implement a custom C++ operator.
-// Note that the template types can be shared pointers. However, since the
-// operator operands are passed by reference (to avoid copying Var<T> objects),
-// their reference counts are not going to be incremented. This is safe and no
-// dangling references can occur because none of these overload implementations
-// have any side-effects on their operands. To see this, inspect the Value<T>
-// operator overloads which are guaranteed to never reset any pointers.
-#define OVERLOAD_OPERATION(op) \
+// OVERLOAD_OPERATION(op, opname) is a macro that uses templates and the
+// statically overloaded and inlined __filter functions to implement a custom
+// C++ operator "op" whose reflection identifier is "opname".
+//
+// Note that none of the template types can ever be native or smart pointers.
+#define OVERLOAD_OPERATION(op, opname) \
   template<typename X, typename Y>\
-  const ReflectValue::Pointer operator op(const X& x, const Y& y) {\
-    return __filter(x) op __filter(y);\
+  const auto operator op(const X& x, const Y& y) ->\
+    decltype(reflect(__filter(x).get_value() op __filter(y).get_value())) {\
+    \
+    const auto __x = __filter(x);\
+    const auto __y = __filter(y);\
+    auto result = reflect(__x.get_value() op __y.get_value());\
+    if(__x.is_symbolic() || __y.is_symbolic()) {\
+      result.set_expr(SharedExpr(new BinaryExpr(\
+        __x.get_expr(), __y.get_expr(), opname)));\
+    }\
+    return result;\
   }\
   template<typename X>\
-  const ReflectValue::Pointer operator op(const X& x, const int y) {\
-    /* force double dispatch to preserve operand ordering */\
-    const ReflectValue& __y = Value<int>(y);\
-    return __filter(x) op __y;\
+  const auto operator op(const X& x, const int y) ->\
+    decltype(reflect(__filter(x).get_value() op y)) {\
+    \
+    const auto __x = __filter(x);\
+    auto result = reflect(__x.get_value() op y);\
+    if(__x.is_symbolic()) {\
+      result.set_expr(SharedExpr(new BinaryExpr(\
+        __x.get_expr(), Value<int>(y).get_expr(), opname)));\
+    }\
+    return result;\
   }\
   template<typename Y>\
-  const ReflectValue::Pointer operator op(const int x, const Y& y) {\
-    return Value<int>(x) op __filter(y);\
+  const auto operator op(const int x, const Y& y) ->\
+    decltype(reflect(x + __filter(y).get_value())) {\
+    \
+    const auto __y = __filter(y);\
+    auto result = reflect(x op __y.get_value());\
+    if(__y.is_symbolic()) {\
+      result.set_expr(SharedExpr(new BinaryExpr(\
+        Value<int>(x).get_expr(), __y.get_expr(), opname)));\
+    }\
+    return result;\
   }\
 
-OVERLOAD_OPERATION(+)
-OVERLOAD_OPERATION(<)
+OVERLOAD_OPERATION(+, ADD)
+OVERLOAD_OPERATION(<, LSS)
 
 #endif /* VAR_H_ */

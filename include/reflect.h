@@ -26,53 +26,25 @@ REFLECT_TYPE(BOOL, bool)
 REFLECT_TYPE(CHAR, char)
 REFLECT_TYPE(INT, int)
 
-// SmartPointer<T> is a helper class that wraps a C++11 std::shared_ptr<T> to
-// force the T() and bool() conversion operator to invoke the one of the object
-// pointed to by the shared pointer. Since either conversion would fail if the
-// wrapped shared pointer points to NULL, this class has no default constructor
-// and its only explicit constructor requires the given pointer to be not NULL.
-// See also std::shared_ptr<T>
-template<typename T>
-class SmartPointer {
-private:
-  std::shared_ptr<T> p;
-
-public:
-  // Constructor to manage the given pointer. This pointer must never be NULL.
-  explicit SmartPointer(T* ptr) : p(std::shared_ptr<T>(ptr)) {}
-
-  T* operator->() const { return p.operator->(); }
-  T& operator*() const { return *p; }
-  T* get() const { return p.get(); }
-
-#define CONVERSION(type) \
-  operator type() const { return *p; }\
-
-  CONVERSION(bool);
-  CONVERSION(char);
-  CONVERSION(int);
-
-};
-
-// Forward declaration of a subclass to enable its base class to declare
-// functions that the subclass needs to override. This creates strong coupling
-// between the subclass and base class but facilitates native type conversions.
-template<typename T>
-class Value;
-
 // ReflectValue is an abstract base class that represents the concrete and (if
-// applicable) symbolic bytes at a specific physical memory address. The type
-// information of these bytes is immutable. However, type casts are possible
-// and follow the C++ semantics as implemented by the C++ compiler with which
-// this library is compiled.
+// applicable) symbolic value at a specific physical memory address. Concrete
+// values are never shared and must be therefore copied by using memcpy or the
+// value's copy constructor. Symbolic expressions (if any) are shared until one
+// is modified. The type information of a ReflectValue object is immutable.
+// However, type casts are possible and follow the C++11 language semantics as
+// implemented by the C++ compiler with which this library is compiled. In the
+// case when type casts were needed and the ReflectValue object represents a
+// symbolic variable (i.e. is_symbolic() returns true), its current symbolic
+// expression is going to be wrapped inside a new CastExpr.
 class ReflectValue {
 private:
-  // type gives the primitive type information of the represented bytes.
+  // type is an immutable field that gives the primitive type information of
+  // the represented concrete and (if applicable) symbolic value.
   const Type type;
 
-  // expr is a pointer to a symbolic expression that resulted from modifying
-  // the symbolic bytes through the overloaded built-in operators. This member
-  // is a NULL pointer if and only if the represented bytes are concrete.
+  // expr is a shared pointer to a symbolic expression that captures changes to
+  // the symbolic value through the overloaded built-in operators. This field
+  // is a NULL pointer if and only if the represented value is concrete.
   SharedExpr expr;
 
 protected:
@@ -93,125 +65,64 @@ protected:
   ReflectValue(const ReflectValue& other) :
     type(other.type), expr(other.expr) {}
 
-public:
-
-  // Pointer is a shared pointer type that enables polymorphism on reflection
-  // values by allowing functions to return an implementation of the abstract
-  // ReflectValue class. This pointer supports shared ownership of the pointed
-  // to ReflectValue object.
-  typedef SmartPointer<ReflectValue> Pointer;
-
-  // Since ReflectValue is a base class, it needs a virtual destructor.
-  virtual ~ReflectValue() {}
-
-  // get_type() returns the type of the reflected bytes. The type never changes.
-  Type get_type() const { return type; }
-
-  // is_symbolic() returns true if and only if the reflected bytes are symbolic.
-  // The bytes are symbolic if and only if get_expr() returns a symbolic
-  // expression that is not NULL.
-  bool is_symbolic() const { return static_cast<bool>(expr); }
-
-  // set_expr(new_expr) sets the symbolic expression of the reflected bytes.
-  // Unless new_expr is a NULL pointer, is_symbolic() returns true afterwards.
-  void set_expr(const SharedExpr& new_expr) { expr = new_expr; }
-
-  // get_expr() returns the symbolic expression of the reflected bytes.
-  // The return value is a NULL pointer if and only if is_symbolic() is false.
-  virtual SharedExpr get_expr() const { return expr; }
-
-  // set_symbolic(const std::string&) marks these reflected bytes as symbolic.
-  virtual void set_symbolic(const std::string&) = 0;
-
-  // write(std::ostream&) writes the concrete value of the reflected bytes to
-  // the supplied output stream.
-  virtual std::ostream& write(std::ostream&) const = 0;
-
-  // TODO: Investigate how to handle type conversions of symbolic expressions.
-  virtual ReflectValue& operator=(const ReflectValue& other) {
+  // Assignment operator that assigns the symbolic expression (if any) of the
+  // supplied argument to this object. Since ReflectValue assignments usually
+  // involve one temporary object, no self-assignment check is performed.
+  ReflectValue& operator=(const ReflectValue& other) {
     expr = other.expr;
     return *this;
   }
 
-// VALUE_API(T) is a macro that defines function signatures which enable the
-// safe copying of concrete reflected values whose primitive type is T:
-//
-// * copy_value<Value<T>&) sets the value in the supplied reflection object
-//   to the value encapsulated by the method receiver. For this reason, the
-//   function argument is a non-const reference.
-// * operator T() const is a const conversion operator which extracts the
-//   reflected value as type T.
-//
-// Since C++ supports implicit primitive type conversions, these conversion
-// operators must not be explicit which is a new feature supported by C++11.
-//
-// In the case T == bool, the bool() conversion operator must add the
-// symbolic expression of the reflected bytes to the path constraint if
-// and only if is_symbolic() returns true.
-#define VALUE_API(type) \
-  virtual void copy_value(/* mutable */Value<type>&) const = 0;\
-  virtual operator type() const = 0;\
+public:
 
-  VALUE_API(bool)
-  VALUE_API(char)
-  VALUE_API(int)
+  // Since ReflectValue is a base class, it needs a virtual destructor.
+  virtual ~ReflectValue() {}
 
-// VINSTR_TYPE_API is a macro to define the function signature which returns a
-// pointer to a newly created reflection value that is the result of performing
-// the binary operation op on the receiver and the provided argument. This
-// method is supposed to be called in a double dispatch mode. For this reason,
-// the operands of the binary operation op arrive in the opposite order!
-// For example, b.operator<(a) where both a and b are of type Value<T> must
-// compute the strict inequality a < b instead of b < a.
-#define VINSTR_TYPE_API(type, op) \
-  virtual const Pointer operator op(const Value<type>&) const = 0;\
+  // get_type() returns the type of the reflected value. The type never changes.
+  Type get_type() const { return type; }
 
-// VINSTR_API is a macro that must be used to overload a built-in C++ binary
-// operator such as addition (+). Since C++ does not support multiple dispatch,
-// a double dispatching technique is used to force a separate vtable lookup for
-// both operands in the binary operation. This is inefficient but safe. A more
-// efficient implementation is possible with template meta-programming in which
-// arithmetic conversions are specified in form of templates which must have a
-// typedef member whose type is equal to the return type of a binary operation.
-// Since C++11 it is also possible to use a new function declaration syntax
-// with which we could declare trailing return types of binary operators.
-#define VINSTR_API(op) \
-  virtual const Pointer operator op(const ReflectValue&) const = 0;\
-  VINSTR_TYPE_API(bool, op)\
-  VINSTR_TYPE_API(char, op)\
-  VINSTR_TYPE_API(int, op)\
+  // is_symbolic() returns true if and only if the reflected value are symbolic.
+  // A value is symbolic if and only if get_expr() does not return NULL.
+  bool is_symbolic() const { return static_cast<bool>(expr); }
 
-  VINSTR_API(+)
-  VINSTR_API(<)
+  // set_expr(new_expr) sets the symbolic expression of the reflected value.
+  // Unless new_expr is a NULL pointer, is_symbolic() returns true afterwards.
+  void set_expr(const SharedExpr& new_expr) { expr = new_expr; }
+
+  // get_expr() returns the symbolic expression of the reflected value.
+  // The return value is a NULL pointer if and only if is_symbolic() is false.
+  virtual SharedExpr get_expr() const { return expr; }
+
+  // set_symbolic(const std::string&) marks this reflected value as symbolic.
+  virtual void set_symbolic(const std::string&) = 0;
+
+  // write(std::ostream&) writes the concrete value of the reflected value to
+  // the supplied output stream.
+  virtual std::ostream& write(std::ostream&) const = 0;
+
 };
 
-// reflect(T) creates a pointer to a new reflection value that represents the
-// concrete value given as the argument. Type T should be a primitive type.
-//
-// It is tempting to return directly a ReflectValue object. In fact, when such
-// an object is used as a temporary, the compiler is likely to use RVO (return
-// value optimization) to avoid the overhead of copying the return value. This
-// would be the case in evaluating the overloaded built-in operators. However,
-// ReflectValue is an abstract class and thus cannot be instantiated. Since the
-// returning of a const reference to a local variable is undefined, we must
-// return a pointer to a heap allocated ReflectValue implementation.
-template<typename T>
-const ReflectValue::Pointer reflect(const T value);
+// any and id are internal helper structures used for static compile-time
+// overloading of conversion operators. More specifically, it enables finding
+// the type of a template parameter. If its type does not matter, use any.
+struct any {};
+template <typename T> struct id : any { typedef T type; };
 
 // Value represents the reflection value whose type is of primitive type T.
-// Each Value<T> class implements implicit type conversion operators declared
-// in the base class. These implementations are standard except from bool()
-// which also must add the value's symbolic expression to the path constraints.
+// Each Value<T> class implements an implicit type conversion operator. This
+// conversion operator is standard except for bool() which also must add the
+// value's symbolic expression to the path constraints. Currently, the use of
+// non-bool types in control flow statements is unsupported (e.g. if(5) {...}).
 template<typename T>
 class Value : public ReflectValue {
 private:
-  // value represents the concrete value of the reflected bytes at a specific
+  // value represents the concrete value of the reflected value at a specific
   // physical memory location. The value is mutable unless the Value<T> object
   // has been annotated with the C++ const keyword.
   T value;
 
-  // create_shared_expr() returns a pointer to a value expression that matches
-  // the type and content of the private value field.
+  // create_shared_expr() returns a shared pointer to a value expression that
+  // matches the type and content of the private value field.
   SharedExpr create_shared_expr() const;
 
   // create_shared_expr(const std::string&) returns a pointer to a symbolic
@@ -219,13 +130,16 @@ private:
   // field. The symbolic variable is named according to the supplied string.
   SharedExpr create_shared_expr(const std::string&) const;
 
+  // conv(any) is a default conversion function that returns the primitive
+  // value of type T.
+  T conv(any) const { return value; }
+
+  // conv(id<bool>) overloads conv(any). It adds the symbolic expression to
+  // the path constraints if and only if is_symbolic() returns true.
+  T conv(id<bool>) const;
+
 public:
   typedef T type;
-
-  // Default constructor with which the initialization of the concrete and
-  // symbolic value (if any) can be deferred. Use with caution and do not
-  // publish the instantiated value object until all fields have been set.
-  explicit Value() : ReflectValue(ReflectType<T>::type) {}
 
   // Constructor to create a reflection value based on the supplied concrete
   // value. Initially, the instantiated reflection value is concrete.
@@ -239,60 +153,60 @@ public:
     ReflectValue(ReflectType<T>::type, expr), value(value) {}
 
   // Copy constructor that creates a reflection value based on another.
-  Value(const Value& other) :
-    ReflectValue(other), value(other.value) {}
+  Value(const Value& other) : ReflectValue(other), value(other.value) {}
+
+  // Copy conversion constructor that creates a reflection value based on
+  // another whose type is different from the template parameter T. Thus,
+  // a type conversion is required which could result in precision loss.
+  // If the supplied value is symbolic, the symbolic expression of the new
+  // value is going to be wrapped inside a CastExpr.
+  template<typename S>
+  Value(const Value<S>&);
 
   ~Value() {}
 
+  // set_value(new_value) sets the concrete value of this value representation.
   void set_value(const T new_value) { value = new_value; }
+
+  // get_value() returns the concrete value of this value representation.
   T get_value() const { return value; }
 
+  // Overrides ReflectValue::set_symbolic(const std::string&)
   virtual void set_symbolic(const std::string&);
+
+  // Overrides ReflectValue::write(std::outstream&)
   virtual std::ostream& write(std::ostream&) const;
+
+  // Overrides ReflectValue::get_expr()
   virtual SharedExpr get_expr() const;
 
-  virtual ReflectValue& operator=(const ReflectValue& other) {
+  // Assignment operator that copies the concrete value and shared symbolic
+  // expression of the supplied value representation. Since the assignment
+  // usually involves a temporary value, no self-assignment check is performed.
+  Value& operator=(const Value& other) {
     ReflectValue::operator=(other);
 
-    // use double dispatch
-    other.copy_value(*this);
+    value = other.value;
     return *this;
   }
 
-  // See VALUE_API(T) where T == bool
-  virtual void copy_value(Value<bool>& __v) const { __v.set_value(value); }
-  virtual operator bool() const;
+  // T() is a const conversion operator. Since C++ supports implicit primitive
+  // type conversions, these conversion operators must not be explicit.
+  //
+  // Note that the bool() conversion operator adds the symbolic expression to
+  // the path constraints if and only if is_symbolic() returns true.
+  operator T() const { return conv(id<T>()); }
 
-// See VALUE_API(T) where T != bool
-#define VALUE(type) \
-  virtual void copy_value(Value<type>& __v) const { __v.set_value(value); }\
-  virtual operator type() const { return static_cast<type>(value); }\
-
-  VALUE(char)
-  VALUE(int)
-
-// See VINSTR_TYPE_API
-#define VINSTR_TYPE(type, op, opname) \
-  virtual const Pointer operator op(const Value<type>& __v) const {\
-    const Pointer& result = reflect(__v.get_value() op value);\
-    if(is_symbolic() || __v.is_symbolic()) {\
-      result->set_expr(SharedExpr(new BinaryExpr(__v.get_expr(), get_expr(), opname)));\
-    }\
-    return result;\
-  }\
-
-// See VINSTR_API
-#define VINSTR(op, opname) \
-  virtual const Pointer operator op(const ReflectValue& other) const {\
-    return other op *this;\
-  }\
-  VINSTR_TYPE(bool, op, opname)\
-  VINSTR_TYPE(char, op, opname)\
-  VINSTR_TYPE(int, op, opname)\
-
-  VINSTR(+, ADD)
-  VINSTR(<, LSS)
 };
+
+template<typename T>
+template<typename S>
+Value<T>::Value(const Value<S>& other) :
+  ReflectValue(ReflectType<T>::type), value(other.get_value()) {
+  if(other.is_symbolic()) {
+    set_expr(SharedExpr(new CastExpr(other.get_expr(), get_type())));
+  }
+}
 
 template<typename T>
 SharedExpr Value<T>::create_shared_expr() const {
@@ -305,17 +219,16 @@ SharedExpr Value<T>::create_shared_expr(const std::string& name) const {
 }
 
 template<typename T>
-Value<T>::operator bool() const {
-  const bool cond = static_cast<bool>(value);
+T Value<T>::conv(id<bool>) const {
   if(is_symbolic()) {
-    if(cond) {
+    if(value) {
       tracer().add_path_constraint(get_expr());
     } else {
       tracer().add_path_constraint(SharedExpr(new UnaryExpr(get_expr(), NOT)));
     }
   }
 
-  return cond;
+  return value;
 }
 
 template<typename T>
@@ -340,9 +253,13 @@ SharedExpr Value<T>::get_expr() const {
   return create_shared_expr();
 }
 
+// reflect(T) creates reflection value that represents the concrete value given
+// as the argument. Type T should be a primitive type. When the returned object
+// is used as a temporary, the compiler is likely to use RVO (return value
+// optimization) to avoid the overhead of copying the return value.
 template<typename T>
-const ReflectValue::Pointer reflect(const T value) {
-  return ReflectValue::Pointer(new Value<T>(value));
+inline const Value<T> reflect(const T value) {
+  return Value<T>(value);
 }
 
 #endif /* REFLECT_H_ */
