@@ -275,6 +275,50 @@ TEST(ReflectTest, LessThanWithExpression) {
   EXPECT_EQ("(2<5)", out.str());
 }
 
+TEST(ReflectTest, NotTrueWithoutExpression) {
+  const Value<bool>& a = reflect<bool>(true);
+  const ReflectValue& b = !a;
+
+  EXPECT_EQ(BOOL, b.get_type());
+  EXPECT_FALSE(b.is_symbolic());
+  EXPECT_FALSE((!a).get_value());
+}
+
+TEST(ReflectTest, NotFalseWithoutExpression) {
+  const Value<bool>& a = reflect<bool>(false);
+  const ReflectValue& b = !a;
+
+  EXPECT_EQ(BOOL, b.get_type());
+  EXPECT_FALSE(b.is_symbolic());
+  EXPECT_TRUE((!a).get_value());
+}
+
+TEST(ReflectTest, NotTrueWithExpression) {
+  const Value<bool>& a = reflect_with_expr<bool>(true);
+  const ReflectValue& b = !a;
+
+  EXPECT_EQ(BOOL, b.get_type());
+  EXPECT_TRUE(b.is_symbolic());
+  EXPECT_FALSE((!a).get_value());
+
+  std::stringstream out;
+  b.get_expr()->write(out);
+  EXPECT_EQ("(!1)", out.str());
+}
+
+TEST(ReflectTest, NotFalseWithExpression) {
+  const Value<bool>& a = reflect_with_expr<bool>(false);
+  const ReflectValue& b = !a;
+
+  EXPECT_EQ(BOOL, b.get_type());
+  EXPECT_TRUE(b.is_symbolic());
+  EXPECT_TRUE((!a).get_value());
+
+  std::stringstream out;
+  b.get_expr()->write(out);
+  EXPECT_EQ("(!0)", out.str());
+}
+
 TEST(ReflectTest, SetSymbolic) {
   Value<int> a = reflect<int>(5);
 

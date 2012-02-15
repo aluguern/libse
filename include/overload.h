@@ -18,12 +18,12 @@ static inline const Value<T>& __filter(const Value<T>& value) {
   return value;
 }
 
-// OVERLOAD_OPERATION(op, opname) is a macro that uses templates and the
+// OVERLOAD_BINARY_OPERATOR(op, opname) is a macro that uses templates and the
 // statically overloaded and inlined __filter functions to implement a custom
-// C++ operator "op" whose reflection identifier is "opname".
+// C++ binary operator "op" whose reflection identifier is "opname".
 //
 // Note that none of the template types can ever be native or smart pointers.
-#define OVERLOAD_OPERATION(op, opname) \
+#define OVERLOAD_BINARY_OPERATOR(op, opname) \
   template<typename X, typename Y>\
   const auto operator op(const X& x, const Y& y) ->\
     decltype(reflect(__filter(x).get_value() op __filter(y).get_value())) {\
@@ -62,7 +62,27 @@ static inline const Value<T>& __filter(const Value<T>& value) {
     return result;\
   }\
 
-OVERLOAD_OPERATION(+, ADD)
-OVERLOAD_OPERATION(<, LSS)
+OVERLOAD_BINARY_OPERATOR(+, ADD)
+OVERLOAD_BINARY_OPERATOR(<, LSS)
+
+// OVERLOAD_UNARY_OPERATOR(op, opname) is a macro that uses templates and the
+// statically overloaded and inlined __filter functions to implement a custom
+// C++ unary operator "op" whose reflection identifier is "opname".
+//
+// Note that none of the template types can ever be native or smart pointers.
+#define OVERLOAD_UNARY_OPERATOR(op, opname) \
+  template<typename T>\
+  const auto operator op(const T& x) ->\
+    decltype(reflect(op __filter(x).get_value())) {\
+    \
+    const auto __x = __filter(x);\
+    auto result = reflect(op __x.get_value());\
+    if(__x.is_symbolic()) {\
+      result.set_expr(SharedExpr(new UnaryExpr(__x.get_expr(), opname)));\
+    }\
+    return result;\
+  }\
+
+OVERLOAD_UNARY_OPERATOR(!, NOT)
 
 #endif /* OVERLOAD_H_ */
