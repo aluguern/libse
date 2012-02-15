@@ -3,12 +3,14 @@
 
 int main(void) {
   Int k = 0;
-  for(Int n = 0; n < INT_MAX/8; n = n + 1) {
-    if(k == 5) {
+  for(Int n = 0; n < INT_MAX; n = n + 1) {
+    if(k == 7) {
       k = 0;
     }
     k = k + 1;
   }
-  return 0;
+
+  // force k to be live
+  return k != INT_MAX % 7;
 }
 
