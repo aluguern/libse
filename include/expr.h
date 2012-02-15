@@ -7,7 +7,7 @@
 
 // Type enumerates built-in primitive types. The order of these types
 // determines the order of elements in the internal types array.
-enum Type {
+enum Type : unsigned short {
   BOOL,
   CHAR,
   INT
@@ -19,7 +19,7 @@ static std::string types[] = { "bool", "char", "int" };
 
 // Operator enumerates the built-in C++ operations. The order of these
 // operations determines the order of elements in the operators array.
-enum Operator {
+enum Operator : unsigned short {
   ADD,
   LSS,
   NOT
