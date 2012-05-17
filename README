@@ -1,4 +1,4 @@
-libhegel is a library that uses operator overloading and reflection for the
+libsp is a library that uses operator overloading and reflection for the
 symbolic execution of C++ programs.
 
 == Installation == 

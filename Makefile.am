@@ -44,9 +44,9 @@ clean-local:
 dist_doc_DATA = README
 
 # Build rules for libraries.
-lib_LTLIBRARIES = lib/libhegel.la
+lib_LTLIBRARIES = lib/libsp.la
 
-lib_libhegel_la_SOURCES = \
+lib_libsp_la_SOURCES = \
   src/expr.cpp \
   src/reflect.cpp \
   src/var.cpp \
@@ -65,22 +65,22 @@ pkginclude_HEADERS = \
 # TESTS -- Programs run automatically by "make check"
 # check_PROGRAMS -- Programs built by "make check" but not necessarily run
 
-TESTS = test/hegel
-check_PROGRAMS = test/hegel
+TESTS = test/sp
+check_PROGRAMS = test/sp
 
-test_hegel_SOURCES = \
+test_sp_SOURCES = \
   test/reflect_test.cpp \
   test/expr_test.cpp \
   test/var_test.cpp \
   test/symtracer_test.cpp \
   test/functional_test.cpp
 
-test_hegel_CPPFLAGS = -std=c++0x -I$(srcdir)/include -I$(top_srcdir)/gtest/include
-test_hegel_LDADD = $(top_builddir)/gtest/lib/libgtest_main.la lib/libhegel.la
+test_sp_CPPFLAGS = -std=c++0x -I$(srcdir)/include -I$(top_srcdir)/gtest/include
+test_sp_LDADD = $(top_builddir)/gtest/lib/libgtest_main.la lib/libsp.la
 
 # Benchmarks
 
 bin_PROGRAMS = bench/loop
 bench_loop_SOURCES = bench/loop_bench.cpp
 bench_loop_CPPFLAGS = -std=c++0x -I$(srcdir)/include
-bench_loop_LDADD = lib/libhegel.la
+bench_loop_LDADD = lib/libsp.la
