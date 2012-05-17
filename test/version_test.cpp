@@ -2,7 +2,7 @@
 #include "gtest/gtest.h"
 #include "overload.h"
 
-TEST(VersionTest, Init) {
+TEST(VersionTest, InitWithConcrete) {
   Bool a = true;
   Bool b = true;
   Char c = 'a';
@@ -22,6 +22,38 @@ TEST(VersionTest, InitWithAny) {
   EXPECT_EQ(0, a.get_version());
   EXPECT_EQ(0, b.get_version());
   EXPECT_EQ(0, c.get_version());
+}
+
+TEST(VersionTest, InitWithVar) {
+  Int a = 3;
+  Int b = a;
+
+  EXPECT_EQ(0, a.get_version());
+  EXPECT_EQ(0, b.get_version());
+}
+
+TEST(VersionTest, InitWithVarRequiringCast) {
+  Bool a = any_bool();
+  Char b = any_char();
+  Int c = b;
+
+  EXPECT_EQ(0, a.get_version());
+  EXPECT_EQ(0, b.get_version());
+  EXPECT_EQ(0, c.get_version());
+}
+
+TEST(VersionTest, InitWithValue) {
+  Int a = 3;
+  Int b = a + 4;
+
+  EXPECT_EQ(0, a.get_version());
+  EXPECT_EQ(0, b.get_version());
+}
+
+TEST(VersionTest, InitWithValueRequiringCast) {
+  Int a = reflect<char>('a');
+
+  EXPECT_EQ(0, a.get_version());
 }
 
 TEST(VersionTest, GetVersion) {
