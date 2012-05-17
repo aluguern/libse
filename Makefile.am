@@ -75,6 +75,7 @@ test_sp_SOURCES = \
   test/any_test.cpp \
   test/expr_test.cpp \
   test/var_test.cpp \
+  test/version_test.cpp \
   test/symtracer_test.cpp \
   test/functional_test.cpp
 

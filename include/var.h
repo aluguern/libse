@@ -9,6 +9,12 @@
 
 #define SymbolicVarPrefix "Var_"
 
+// Built-in unsigned numerical type which can be initialized to VZERO.
+typedef unsigned long long Version;
+
+// Zero according to Version type.
+const Version VZERO = 0LL;
+
 // An object of type Var<T> represents a program variable of primitive type T.
 // More formally, a Var<T> object corresponds to a C++ lvalue (locator value).
 // An lvalue must have an identifiable memory location (i.e. a memory address).
@@ -23,6 +29,13 @@
 // implicitly converted to its underlying concrete value. However, if the
 // variable is symbolic such a conversion could indicate that the symbolic
 // execution of the program under test is incomplete.
+//
+// Unlike traditional assignments in imperative programming languages, an
+// assignment to a Var<T> object never irrevocably overwrites any information.
+// In particular, each variable object has a version number associated with it.
+// With each assignment of a new value, the variable's version is incremented.
+// This versioning information can be used to create dynamic single assignment
+// (DSA) forms.
 template<typename /* primitive type */T>
 class Var {
 private:
@@ -36,18 +49,24 @@ private:
   // is true, it is also going to have a CastExpr for the required type cast.
   bool cast;
 
+  // Version number that never decreases; initially, it is VZERO. With each
+  // assignment operation, the version number is incremented by one.
+  Version version;
+
 public:
 
   // Constructor creates an object that represents a program variable of a
   // primitive type T with the given initial value. Initially, the new
   // variable is concrete (i.e. not symbolic).
-  Var(const T concrete_value) : value(concrete_value), cast(false) {}
+  Var(const T concrete_value) : value(concrete_value), cast(false),
+                                version(VZERO) {}
 
   // Internal constructor that creates an object that represents a program
   // variable that has the same concrete value and (if any) symbolic value as
   // the variable pointed to by the supplied argument. Since both reflection
   // types match, no type casting is performed.
-  Var(const Value<T>& value) : value(value), cast(false) {}
+  Var(const Value<T>& value) : value(value), cast(false),
+                               version(VZERO) {}
 
   // Internal constructor that creates an object that represents a program
   // variable that has the same concrete value and (if any) symbolic value as
@@ -57,14 +76,15 @@ public:
   // is conservatively approximated by is_cast(). Moreover, if the variable
   // is symbolic, the instantiated variable is going to have a new CastExpr.
   template<typename S>
-  Var(const Value<S>& value) : value(value), cast(true) {}
+  Var(const Value<S>& value) : value(value), cast(true), version(VZERO) {}
 
   // Copy constructor that instantiates a variable by creating a deep copy of
   // the supplied variable's concrete value. Any symbolic expressions are
   // shared between both the original and copied variable object until either
   // one is modified. Note that casts are transitive: if other.is_cast() is
   // true, then the copy's is_cast() is true.
-  Var(const Var& other) : value(other.value), cast(other.cast) {}
+  Var(const Var& other) : value(other.value), cast(other.cast),
+                          version(VZERO) {}
 
   // Copy conversion constructor that creates a copy of another variable.
   // Incompatibilities between the type of the supplied variable's concrete
@@ -72,7 +92,8 @@ public:
   // implicit type casting. In the case in which the other variable is also
   // symbolic, the instantiated variable is going to have a new CastExpr.
   template<typename S>
-  Var(const Var<S>& other) : value(other.get_reflect_value()), cast(true) {}
+  Var(const Var<S>& other) : value(other.get_reflect_value()), cast(true),
+                             version(VZERO) {}
 
   // get_reflect_value() returns a read-only reference to an object that
   // contains the concrete value and runtime information about this variable.
@@ -108,11 +129,14 @@ public:
   // the supplied variable. Any required type conversions are first performed
   // by the copy conversion constructor. These conversions could result in
   // precision lost. In that case, is_cast() returns true after the assignment
-  // operator has completed the copying of the underlying bytes.
+  // operator has completed the copying of the underlying bytes. When the
+  // variable is assigned to itself, no data is copied. In that case, the
+  // variable's version number is not incremented.
   virtual Var& operator=(const Var& other) {
     if (this != &other) {
       value = other.value;
       cast = other.cast;
+      version++;
     }
 
     return *this;
@@ -126,6 +150,10 @@ public:
 
   // is_symbolic() returns true if and only if this variable is symbolic.
   bool is_symbolic() const { return value.is_symbolic(); }
+
+  // get_version() returns a non-negative unsigned number that counts how often
+  // the variable has been assigned a new value.
+  Version get_version() const { return version; }
 
 };
 
