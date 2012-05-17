@@ -3,6 +3,7 @@
 
 #include <string>
 #include <sstream>
+#include <cstdint>
 #include "expr.h"
 #include "reflect.h"
 #include "symtracer.h"
@@ -18,11 +19,16 @@ const Version VZERO = 0LL;
 // An object of type Var<T> represents a program variable of primitive type T.
 // More formally, a Var<T> object corresponds to a C++ lvalue (locator value).
 // An lvalue must have an identifiable memory location (i.e. a memory address).
-// This memory location points to a concrete value of type T. In addition to
-// this, a Var<T> object, whose is_symbolic() member function returns true, can
-// refer to an algebraic expression which captures any operations performed on
-// the variable. For example, an operation that increments an integer variable
-// (i.e. Var<int>) by three yields the symbolic expression "x + 3".
+// This memory location points to a sequence of bits which constitute the
+// variable's value of type T. This value is undefined if the variable has been
+// initialized with the appropriate any() function.
+//
+// Since the purpose of symbolic execution is the computation of the strongest
+// postcondition, a Var<T> object can also refer to a symbolic expression.
+// For example, an operation that increments an integer variable (i.e. Var<int>)
+// by three yields the symbolic expression "x + 3". Since the recording of these
+// symbolic expression causes extra overhead, the feature is disabled by default.
+// To enable it, call the set_symbolic() member function.
 //
 // Similar to modifiable lvalues, a Var<T> object can always be changed unless
 // it is annotated with the const C++ keyword. Each Var<T> object can also be
@@ -36,6 +42,11 @@ const Version VZERO = 0LL;
 // With each assignment of a new value, the variable's version is incremented.
 // This versioning information can be used to create dynamic single assignment
 // (DSA) forms.
+// 
+// Each variable has a unique identifier associated with it. This ID is returned
+// by the member function get_id(). It is particularly useful in conjunction
+// with the version information. For example, this data can be used to identify
+// the snapshot of a variable at a point in time.
 template<typename /* primitive type */T>
 class Var {
 private:
@@ -53,20 +64,25 @@ private:
   // assignment operation, the version number is incremented by one.
   Version version;
 
+  // Physical memory address of this object serves as its unique identifier.
+  const uintptr_t id;
+
 public:
 
   // Constructor creates an object that represents a program variable of a
   // primitive type T with the given initial value. Initially, the new
   // variable is concrete (i.e. not symbolic).
   Var(const T concrete_value) : value(concrete_value), cast(false),
-                                version(VZERO) {}
+                                version(VZERO),
+                                id(reinterpret_cast<uintptr_t>(this)) {}
 
   // Internal constructor that creates an object that represents a program
   // variable that has the same concrete value and (if any) symbolic value as
   // the variable pointed to by the supplied argument. Since both reflection
   // types match, no type casting is performed.
   Var(const Value<T>& value) : value(value), cast(false),
-                               version(VZERO) {}
+                               version(VZERO),
+                               id(reinterpret_cast<uintptr_t>(this)) {}
 
   // Internal constructor that creates an object that represents a program
   // variable that has the same concrete value and (if any) symbolic value as
@@ -76,7 +92,8 @@ public:
   // is conservatively approximated by is_cast(). Moreover, if the variable
   // is symbolic, the instantiated variable is going to have a new CastExpr.
   template<typename S>
-  Var(const Value<S>& value) : value(value), cast(true), version(VZERO) {}
+  Var(const Value<S>& value) : value(value), cast(true), version(VZERO),
+                               id(reinterpret_cast<uintptr_t>(this)) {}
 
   // Copy constructor that instantiates a variable by creating a deep copy of
   // the supplied variable's concrete value. Any symbolic expressions are
@@ -84,7 +101,8 @@ public:
   // one is modified. Note that casts are transitive: if other.is_cast() is
   // true, then the copy's is_cast() is true.
   Var(const Var& other) : value(other.value), cast(other.cast),
-                          version(VZERO) {}
+                          version(VZERO),
+                          id(reinterpret_cast<uintptr_t>(this)) {}
 
   // Copy conversion constructor that creates a copy of another variable.
   // Incompatibilities between the type of the supplied variable's concrete
@@ -93,7 +111,8 @@ public:
   // symbolic, the instantiated variable is going to have a new CastExpr.
   template<typename S>
   Var(const Var<S>& other) : value(other.get_reflect_value()), cast(true),
-                             version(VZERO) {}
+                             version(VZERO), 
+                             id(reinterpret_cast<uintptr_t>(this)) {}
 
   // get_reflect_value() returns a read-only reference to an object that
   // contains the concrete value and runtime information about this variable.
@@ -154,6 +173,9 @@ public:
   // get_version() returns a non-negative unsigned number that counts how often
   // the variable has been assigned a new value.
   Version get_version() const { return version; }
+
+  // get_id() returns the physical memory address of this variable.
+  uintptr_t get_id() const { return id; }
 
 };
 

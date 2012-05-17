@@ -597,3 +597,55 @@ TEST(VarTest, LessCharWithConstantAndReflectValue) {
   EXPECT_TRUE(g);
 }
 
+TEST(VarTest, InitIdWithConcrete) {
+  Bool a = true;
+  Char b = 'b';
+  Int c = 3;
+
+  EXPECT_TRUE(reinterpret_cast<uintptr_t>(&a) == a.get_id());
+  EXPECT_TRUE(reinterpret_cast<uintptr_t>(&b) == b.get_id());
+  EXPECT_TRUE(reinterpret_cast<uintptr_t>(&c) == c.get_id());
+}
+
+TEST(VarTest, InitIdWithAny) {
+  Bool a = any_bool();
+  Char b = any_char();
+  Int c = any_int();
+
+  EXPECT_TRUE(reinterpret_cast<uintptr_t>(&a) == a.get_id());
+  EXPECT_TRUE(reinterpret_cast<uintptr_t>(&b) == b.get_id());
+  EXPECT_TRUE(reinterpret_cast<uintptr_t>(&c) == c.get_id());
+}
+
+TEST(VarTest, InitIdWithVar) {
+  Int a = 3;
+  Int b = a;
+
+  EXPECT_TRUE(reinterpret_cast<uintptr_t>(&a) == a.get_id());
+  EXPECT_TRUE(reinterpret_cast<uintptr_t>(&b) == b.get_id());
+}
+
+TEST(VarTest, InitIdWithVarRequiringCast) {
+  Bool a = any_bool();
+  Char b = any_char();
+  Int c = b;
+
+  EXPECT_TRUE(reinterpret_cast<uintptr_t>(&a) == a.get_id());
+  EXPECT_TRUE(reinterpret_cast<uintptr_t>(&b) == b.get_id());
+  EXPECT_TRUE(reinterpret_cast<uintptr_t>(&c) == c.get_id());
+}
+
+TEST(VarTest, InitIdWithValue) {
+  Int a = 3;
+  Int b = a + 4;
+
+  EXPECT_TRUE(reinterpret_cast<uintptr_t>(&a) == a.get_id());
+  EXPECT_TRUE(reinterpret_cast<uintptr_t>(&b) == b.get_id());
+}
+
+TEST(VarTest, InitIdWithValueRequringCast) {
+  Int a = reflect<char>('a');
+
+  EXPECT_TRUE(reinterpret_cast<uintptr_t>(&a) == a.get_id());
+}
+
