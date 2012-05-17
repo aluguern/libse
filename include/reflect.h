@@ -102,11 +102,11 @@ public:
 
 };
 
-// any and id are internal helper structures used for static compile-time
+// __any and __id are internal helper structures used for static compile-time
 // overloading of conversion operators. More specifically, it enables finding
-// the type of a template parameter. If its type does not matter, use any.
-struct any {};
-template <typename T> struct id : any { typedef T type; };
+// the type of a template parameter. If its type does not matter, use __any.
+struct __any {};
+template <typename T> struct __id : __any { typedef T type; };
 
 // Value represents the reflection value whose type is of primitive type T.
 // Each Value<T> class implements an implicit type conversion operator. This
@@ -130,13 +130,13 @@ private:
   // field. The symbolic variable is named according to the supplied string.
   SharedExpr create_shared_expr(const std::string&) const;
 
-  // conv(any) is a default conversion function that returns the primitive
+  // conv(__any) is a default conversion function that returns the primitive
   // value of type T.
-  T conv(any) const { return value; }
+  T conv(__any) const { return value; }
 
-  // conv(id<bool>) overloads conv(any). It adds the symbolic expression to
+  // conv(__id<bool>) overloads conv(__any). It adds the symbolic expression to
   // the path constraints if and only if is_symbolic() returns true.
-  T conv(id<bool>) const;
+  T conv(__id<bool>) const;
 
 public:
   typedef T type;
@@ -195,7 +195,7 @@ public:
   //
   // Note that the bool() conversion operator adds the symbolic expression to
   // the path constraints if and only if is_symbolic() returns true.
-  operator T() const { return conv(id<T>()); }
+  operator T() const { return conv(__id<T>()); }
 
 };
 
@@ -219,7 +219,7 @@ SharedExpr Value<T>::create_shared_expr(const std::string& name) const {
 }
 
 template<typename T>
-T Value<T>::conv(id<bool>) const {
+T Value<T>::conv(__id<bool>) const {
   if(is_symbolic()) {
     if(value) {
       tracer().add_path_constraint(get_expr());
