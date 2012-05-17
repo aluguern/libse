@@ -49,11 +49,13 @@ lib_LTLIBRARIES = lib/libsp.la
 lib_libsp_la_SOURCES = \
   src/expr.cpp \
   src/reflect.cpp \
+  src/any.cpp \
   src/var.cpp \
   src/symtracer.cpp
 
 pkginclude_HEADERS = \
   include/reflect.h \
+  include/any.h \
   include/expr.h \
   include/var.h \
   include/overload.h \
@@ -70,6 +72,7 @@ check_PROGRAMS = test/sp
 
 test_sp_SOURCES = \
   test/reflect_test.cpp \
+  test/any_test.cpp \
   test/expr_test.cpp \
   test/var_test.cpp \
   test/symtracer_test.cpp \

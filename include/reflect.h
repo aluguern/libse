@@ -163,7 +163,7 @@ public:
   template<typename S>
   Value(const Value<S>&);
 
-  ~Value() {}
+  virtual ~Value() {}
 
   // set_value(new_value) sets the concrete value of this value representation.
   void set_value(const T new_value) { value = new_value; }
