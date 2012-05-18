@@ -2,6 +2,33 @@
 #include "gtest/gtest.h"
 #include "expr.h"
 
+TEST(ExprTest, ValueExprWithoutName) {
+  const SharedExpr a = SharedExpr(new ValueExpr<short>(7));
+
+  std::stringstream out;
+  a->write(out);
+
+  EXPECT_EQ("7", out.str());
+}
+
+TEST(ExprTest, ValueExprWithName) {
+  const SharedExpr a = SharedExpr(new ValueExpr<short>(7, "A"));
+
+  std::stringstream out;
+  a->write(out);
+
+  EXPECT_EQ("[A:7]", out.str());
+}
+
+TEST(ExprTest, AnyExpr) {
+  const SharedExpr a = SharedExpr(new AnyExpr<short>("A"));
+
+  std::stringstream out;
+  a->write(out);
+
+  EXPECT_EQ("[A]", out.str());
+}
+
 TEST(ExprTest, WriteTreeWithoutCast) {
   const SharedExpr a = SharedExpr(new ValueExpr<short>(7));
   const SharedExpr b = SharedExpr(new ValueExpr<int>(3, "Var_1"));

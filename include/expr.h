@@ -63,8 +63,25 @@ public:
 // SharedExpr is a C++11 shared pointer to a vertex in the DAG.
 typedef std::shared_ptr<Expr> SharedExpr;
 
+// AnyExpr<T> represents a symbolic variable with an arbitrary value of type T.
+// The specified template parameter should be a primitive type. Since there is
+// no concrete value, the symbolic variable name is mandatory.
+template<typename T>
+class AnyExpr : public Expr {
+private:
+  const std::string name;
+
+public:
+
+  AnyExpr(const std::string& name) : name(name) {};
+  ~AnyExpr() {};
+
+  std::ostream& write(std::ostream&) const;
+};
+
 // ValueExpr<T> represents a symbolic expression with a value whose type is T.
-// T should be a primitive type.
+// T should be a primitive type. ValueExpr<T> objects are useful for a
+// combination of concrete and symbolic (aka concolic) execution.
 template<typename T>
 class ValueExpr : public Expr {
 private:
@@ -131,6 +148,11 @@ public:
 
   std::ostream& write(std::ostream&) const;
 };
+
+template<typename T>
+std::ostream& AnyExpr<T>::write(std::ostream& out) const {
+  return out << "[" << name << "]";
+}
 
 template<typename T>
 std::ostream& ValueExpr<T>::write(std::ostream& out) const {

@@ -68,3 +68,18 @@ TEST(AnyTest, AnyIntWithAssignmentOperator) {
   EXPECT_EQ(a.get_expr(), b.get_expr());
 }
 
+TEST(AnyTest, AnyExpr) {
+  Value<bool> a = any_bool("A");
+  Value<char> b = any_char("B");
+  Value<int> c = any_int("C");
+
+  AnyExpr<bool>* a_ptr = dynamic_cast<AnyExpr<bool>*>(a.get_expr().get());
+  EXPECT_TRUE(a_ptr);
+
+  AnyExpr<char>* b_ptr = dynamic_cast<AnyExpr<char>*>(b.get_expr().get());
+  EXPECT_TRUE(b_ptr);
+
+  AnyExpr<int>* c_ptr = dynamic_cast<AnyExpr<int>*>(c.get_expr().get());
+  EXPECT_TRUE(c_ptr);
+}
+
