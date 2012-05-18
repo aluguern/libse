@@ -17,6 +17,17 @@ std::ostream& BinaryExpr::write(std::ostream& out) const {
   return out;
 }
 
+std::ostream& TernaryExpr::write(std::ostream& out) const {
+  out << LPAR;
+  x->write(out);
+  out << QUERY;
+  y->write(out);
+  out << COLON;
+  z->write(out);
+  out << RPAR;
+  return out;
+}
+
 std::ostream& CastExpr::write(std::ostream& out) const {
   out << LPAR << LPAR;
   out << types[type];

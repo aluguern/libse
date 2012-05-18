@@ -27,6 +27,8 @@ enum Operator : unsigned short {
 
 static std::string LPAR = "(";
 static std::string RPAR = ")";
+static std::string QUERY = "?";
+static std::string COLON = ":";
 
 // operators is an internal array that maps an Operator to its corresponding
 // string representation. Therefore, both data types need to be coordinated.
@@ -109,6 +111,23 @@ public:
   BinaryExpr(const SharedExpr& x, const SharedExpr& y,
     const Operator op) : x(x), y(y), op(op) {};
   ~BinaryExpr() {};
+
+  std::ostream& write(std::ostream&) const;
+};
+
+// TernaryExpr is a vertex in the DAG with three (ordered) children. It stores
+// a symbolic expression of the form "x ? y : z" where x, y and z are symbolic
+// expressions.
+class TernaryExpr : public Expr {
+private:
+  const SharedExpr x;
+  const SharedExpr y;
+  const SharedExpr z;
+
+public:
+  TernaryExpr(const SharedExpr& x, const SharedExpr& y,
+    const SharedExpr& z) : x(x), y(y), z(z) {};
+  ~TernaryExpr() {};
 
   std::ostream& write(std::ostream&) const;
 };

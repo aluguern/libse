@@ -28,3 +28,17 @@ TEST(ExprTest, WriteTreeWithCast) {
 
   EXPECT_EQ("((7+[Var_1:3])<(!((int)(7))))", out.str());
 }
+
+TEST(ExprTest, WriteTreeWithTernary) {
+  const SharedExpr a = SharedExpr(new ValueExpr<short>(7));
+  const SharedExpr b = SharedExpr(new ValueExpr<int>(3, "Var_1"));
+  const SharedExpr c = SharedExpr(new ValueExpr<int>(5, "Var_2"));
+  const SharedExpr d = SharedExpr(new BinaryExpr(b, c, ADD));
+  const SharedExpr lss = SharedExpr(new BinaryExpr(a, b, LSS));
+  const SharedExpr ifThenElse = SharedExpr(new TernaryExpr(lss, d, a));
+
+  std::stringstream out;
+  ifThenElse->write(out);
+
+  EXPECT_EQ("((7<[Var_1:3])?([Var_1:3]+[Var_2:5]):7)", out.str());
+}
