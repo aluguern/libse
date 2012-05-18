@@ -608,9 +608,9 @@ TEST(VarTest, InitIdWithConcrete) {
 }
 
 TEST(VarTest, InitIdWithAny) {
-  Bool a = any_bool();
-  Char b = any_char();
-  Int c = any_int();
+  Bool a = any_bool("A");
+  Char b = any_char("B");
+  Int c = any_int("C");
 
   EXPECT_TRUE(reinterpret_cast<uintptr_t>(&a) == a.get_id());
   EXPECT_TRUE(reinterpret_cast<uintptr_t>(&b) == b.get_id());
@@ -626,8 +626,8 @@ TEST(VarTest, InitIdWithVar) {
 }
 
 TEST(VarTest, InitIdWithVarRequiringCast) {
-  Bool a = any_bool();
-  Char b = any_char();
+  Bool a = any_bool("A");
+  Char b = any_char("B");
   Int c = b;
 
   EXPECT_TRUE(reinterpret_cast<uintptr_t>(&a) == a.get_id());

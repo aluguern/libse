@@ -16,9 +16,10 @@ public:
 };
 
 // Macro to declare a function that returns an arbitrary value of the specified
-// primitive type. An object must be guaranteed to be instantiated only once.
+// primitive type. A new object is guaranteed to be instantiated on each call.
+// The argument corresponds to the name of the newly created symbolic variable.
 #define ANY_DECL(type) \
-extern Value<type> any_##type();
+extern Value<type> any_##type(const std::string& name);
 
 ANY_DECL(bool)
 ANY_DECL(char)

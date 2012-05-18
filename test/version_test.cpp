@@ -15,9 +15,9 @@ TEST(VersionTest, InitWithConcrete) {
 }
 
 TEST(VersionTest, InitWithAny) {
-  Bool a = any_bool();
-  Char b = any_char();
-  Int c = any_int();
+  Bool a = any_bool("A");
+  Char b = any_char("B");
+  Int c = any_int("C");
 
   EXPECT_EQ(0, a.get_version());
   EXPECT_EQ(0, b.get_version());
@@ -33,8 +33,8 @@ TEST(VersionTest, InitWithVar) {
 }
 
 TEST(VersionTest, InitWithVarRequiringCast) {
-  Bool a = any_bool();
-  Char b = any_char();
+  Bool a = any_bool("A");
+  Char b = any_char("B");
   Int c = b;
 
   EXPECT_EQ(0, a.get_version());
@@ -58,7 +58,7 @@ TEST(VersionTest, InitWithValueRequiringCast) {
 
 TEST(VersionTest, GetVersion) {
   Int a = 3;
-  Int b = any_int();
+  Int b = any_int("B");
   Char c = 'c';
 
   EXPECT_EQ(0, a.get_version());
@@ -104,7 +104,7 @@ TEST(VersionTest, GetVersion) {
 
 TEST(VersionTest, SelfAssignmentAfterInit) {
   Int a = 3;
-  Int b = any_int();
+  Int b = any_int("B");
   Char c = 'c';
 
   EXPECT_EQ(0, a.get_version());
@@ -123,7 +123,7 @@ TEST(VersionTest, SelfAssignmentAfterInit) {
 
 TEST(VersionTest, SelfAssignmentAfterOperations) {
   Int a = 3;
-  Int b = any_int();
+  Int b = any_int("B");
   Char c = 'c';
 
   EXPECT_EQ(0, a.get_version());
