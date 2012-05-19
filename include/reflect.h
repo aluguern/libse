@@ -91,7 +91,7 @@ public:
 
   // get_expr() returns the symbolic expression of the reflected value.
   // The return value is a NULL pointer if and only if is_symbolic() is false.
-  virtual SharedExpr get_expr() const { return expr; }
+  virtual const SharedExpr get_expr() const { return expr; }
 
   // set_symbolic(const std::string&) marks this reflected value as symbolic.
   virtual void set_symbolic(const std::string&) = 0;
@@ -178,7 +178,7 @@ public:
   virtual std::ostream& write(std::ostream&) const;
 
   // Overrides ReflectValue::get_expr()
-  virtual SharedExpr get_expr() const;
+  virtual const SharedExpr get_expr() const;
 
   // Assignment operator that copies the concrete value and shared symbolic
   // expression of the supplied value representation. Since the assignment
@@ -245,7 +245,7 @@ std::ostream& Value<T>::write(std::ostream& out) const {
 }
 
 template<typename T>
-SharedExpr Value<T>::get_expr() const {
+const SharedExpr Value<T>::get_expr() const {
   if(is_symbolic()) {
     return ReflectValue::get_expr();
   }
