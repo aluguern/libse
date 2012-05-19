@@ -1,3 +1,4 @@
+#include <sstream>
 #include "gtest/gtest.h"
 #include "overload.h"
 
@@ -81,5 +82,14 @@ TEST(AnyTest, AnyExpr) {
 
   AnyExpr<int>* c_ptr = dynamic_cast<AnyExpr<int>*>(c.get_expr().get());
   EXPECT_TRUE(c_ptr);
+}
+
+TEST(AnyTest, OperationOnAnyExpr) {
+  Int a = any_int("A");
+  a = a + 2;
+
+  std::stringstream out;
+  a.get_reflect_value().get_expr()->write(out);
+  EXPECT_EQ("([A]+2)", out.str());
 }
 
