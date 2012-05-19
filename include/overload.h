@@ -4,6 +4,7 @@
 #include "reflect.h"
 #include "any.h"
 #include "var.h"
+#include "loop.h"
 
 // Internal function to guide the type inference of template functions that
 // overload built-in operators such as addition, multiplication etc.

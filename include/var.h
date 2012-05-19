@@ -4,6 +4,7 @@
 #include <string>
 #include <sstream>
 #include <cstdint>
+
 #include "expr.h"
 #include "reflect.h"
 #include "symtracer.h"
@@ -15,6 +16,10 @@ typedef unsigned long long Version;
 
 // Zero according to Version type.
 const Version VZERO = 0LL;
+
+// Forward declaration to enable the loop to change the private expr field of
+// the Var<T> class.
+class Loop;
 
 // An object of type Var<T> represents a program variable of primitive type T.
 // More formally, a Var<T> object corresponds to a C++ lvalue (locator value).
@@ -49,7 +54,12 @@ const Version VZERO = 0LL;
 // the snapshot of a variable at a point in time.
 template<typename /* primitive type */T>
 class Var {
+
 private:
+
+  // A loop must update the private expr field during join operations.
+  friend class Loop;
+
   // value represents the concrete value at a physical memory address. In
   // addition, there is a symbolic expression for this concrete value if
   // and only if this variable is symbolic (i.e. is_symbolic() returns true).
@@ -101,6 +111,7 @@ public:
   // one is modified. Note that casts are transitive: if other.is_cast() is
   // true, then the copy's is_cast() is true.
   Var(const Var& other) : value(other.value), cast(other.cast),
+                          /* TODO: Should version and ID fields be copied? */
                           version(VZERO),
                           id(reinterpret_cast<uintptr_t>(this)) {}
 
@@ -111,6 +122,7 @@ public:
   // symbolic, the instantiated variable is going to have a new CastExpr.
   template<typename S>
   Var(const Var<S>& other) : value(other.get_reflect_value()), cast(true),
+                             /* TODO: Should version and ID fields be copied? */
                              version(VZERO), 
                              id(reinterpret_cast<uintptr_t>(this)) {}
 
