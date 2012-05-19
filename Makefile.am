@@ -24,7 +24,8 @@ test: check-local check
 
 bench: all
 	git rev-parse HEAD >> bench/LOG
-	time -p -o bench/LOG -a bench/loop
+	time -p -o bench/LOG -a bench/explicit_loop
+	time -p -o bench/LOG -a bench/implicit_loop
 
 .PHONY: bench
 
@@ -86,7 +87,11 @@ test_sp_LDADD = $(top_builddir)/gtest/lib/libgtest_main.la lib/libsp.la
 
 # Benchmarks
 
-bin_PROGRAMS = bench/loop
-bench_loop_SOURCES = bench/loop_bench.cpp
-bench_loop_CPPFLAGS = -std=c++0x -I$(srcdir)/include
-bench_loop_LDADD = lib/libsp.la
+bin_PROGRAMS = bench/explicit_loop bench/implicit_loop
+bench_explicit_loop_SOURCES = bench/explicit_loop_bench.cpp
+bench_explicit_loop_CPPFLAGS = -std=c++0x -I$(srcdir)/include
+bench_explicit_loop_LDADD = lib/libsp.la
+
+bench_implicit_loop_SOURCES = bench/implicit_loop_bench.cpp
+bench_implicit_loop_CPPFLAGS = -std=c++0x -I$(srcdir)/include
+bench_implicit_loop_LDADD = lib/libsp.la
