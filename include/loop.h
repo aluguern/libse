@@ -57,6 +57,10 @@ public:
 
 };
 
+// LoopError indicates a programmer error. Static analysis should find these
+// errors before runtime because they are generally due to incorrect API usage.
+typedef std::logic_error LoopError;
+
 // A Loop object represents the unwinding of an iterative program structure
 // such as do { ... } while( ... ) repetitions. On each iteration, the loop
 // condition can be either true or false. However, since the condition can
@@ -159,9 +163,9 @@ public:
   // variable for which begin_loop(const Var<T>&) and end_loop(const Var<T>&)
   // has been called at the beginning and end of each loop iteration.
   //
-  // Throws std::logic_error if any loop API misuses have been detected.
+  // Throws LoopError if any loop API misuses have been detected.
   template<typename T>
-  void join(Var<T>&) throw(std::logic_error);
+  void join(Var<T>&) throw(LoopError);
 
 
   // Remark: It would be nice if we could simplify the API to begin_loop() and
@@ -179,7 +183,7 @@ template<typename T>
 void Loop::end_loop(const Var<T>& var) { /* for future use */}
 
 template<typename T>
-void Loop::join(Var<T>& var) throw(std::logic_error) {
+void Loop::join(Var<T>& var) throw(LoopError) {
   // TODO: for clarity we join only one variable at a time. If this turns out to
   // be too expensive, we can optimize by writing a single loop such that no
   // copy of the stack needs to be made.
@@ -191,11 +195,11 @@ void Loop::join(Var<T>& var) throw(std::logic_error) {
   }
 
   if(version_stack.size() > cond_expr_stack_copy.size()) {
-    throw std::logic_error("fewer unwind() calls than begin_loop() calls.");
+    throw LoopError("fewer unwind() calls than begin_loop() calls.");
   }
 
   if(version_stack.size() < cond_expr_stack_copy.size()) {
-    throw std::logic_error("more unwind() calls than begin_loop() calls.");
+    throw LoopError("more unwind() calls than begin_loop() calls.");
   }
 
   // Construct If-Then-Else expression in reverse order of loop unwindings.

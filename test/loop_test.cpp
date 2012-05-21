@@ -71,7 +71,7 @@ TEST(LoopTest, IgnoredTrueReturnOfUnwind) {
   // API misuse because we require that begin_loop() and
   // end_loop() are called before join() since the return
   // value of unwind() was true!
-  EXPECT_THROW(loop.join(i), std::logic_error);
+  EXPECT_THROW(loop.join(i), LoopError);
 }
 
 // Must detect this API misuse
@@ -89,7 +89,7 @@ TEST(LoopTest, BeginLoopWithoutUnwind) {
 
   // API misuse because we require that unwind() is called
   // before every begin_loop() call.
-  EXPECT_THROW(loop.join(i), std::logic_error);
+  EXPECT_THROW(loop.join(i), LoopError);
 }
 
 // Must detect this API misuse
@@ -104,7 +104,7 @@ TEST(LoopTest, BeginLoopWithFalseUnwind) {
 
   // API misuse because even though unwind() was called before
   // begin_loop() that unwind() call returned false.
-  EXPECT_THROW(loop.join(i), std::logic_error);
+  EXPECT_THROW(loop.join(i), LoopError);
 }
 
 // Must detect this API misuse
@@ -121,7 +121,7 @@ TEST(LoopTest, MultipleUnwindBeforeBeginLoop) {
 
   // API misuse because there are more unwind() calls whose
   // return value was true than begin_loop() calls.
-  EXPECT_THROW(loop.join(i), std::logic_error);
+  EXPECT_THROW(loop.join(i), LoopError);
 }
 
 TEST(LoopTest, Unwind1xWithSingleVar) {
