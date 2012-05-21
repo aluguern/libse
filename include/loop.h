@@ -163,6 +163,13 @@ public:
   template<typename T>
   void join(Var<T>&) throw(std::logic_error);
 
+
+  // Remark: It would be nice if we could simplify the API to begin_loop() and
+  // end_loop() without the need for the join() call after the loop programming
+  // statement. This would mean that the join operation would have to occur in
+  // end_loop(). Unfortunately, this implies that the symbolic expression for
+  // the loop condition would generally consist of a join expression such as
+  // "(([I]<5?([I]+1):[I])<5)" which is incorrect.
 };
 
 template<typename T>
