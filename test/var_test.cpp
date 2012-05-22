@@ -56,6 +56,9 @@ TEST(VarTest, DowncastWithCopyConversionConstructor) {
   EXPECT_EQ(2, b);
   EXPECT_EQ(CHAR, b.get_type());
   EXPECT_TRUE(b.is_cast());
+
+  EXPECT_EQ(VZERO, a.get_version());
+  EXPECT_EQ(VZERO, b.get_version());
 }
 
 TEST(VarTest, TransitiveDowncastWithCopyConversionConstructor) {
@@ -66,6 +69,10 @@ TEST(VarTest, TransitiveDowncastWithCopyConversionConstructor) {
   EXPECT_EQ(2, c);
   EXPECT_EQ(INT, c.get_type());
   EXPECT_TRUE(c.is_cast());
+
+  EXPECT_EQ(VZERO, a.get_version());
+  EXPECT_EQ(VZERO, b.get_version());
+  EXPECT_EQ(VZERO, c.get_version());
 }
 
 TEST(VarTest, TransitiveDowncastWithCopyConstructor) {
@@ -76,6 +83,10 @@ TEST(VarTest, TransitiveDowncastWithCopyConstructor) {
   EXPECT_EQ(2, c);
   EXPECT_EQ(CHAR, c.get_type());
   EXPECT_TRUE(c.is_cast());
+
+  EXPECT_EQ(VZERO, a.get_version());
+  EXPECT_EQ(VZERO, b.get_version());
+  EXPECT_EQ(VZERO, c.get_version());
 }
 
 TEST(VarTest, DowncastWithAssignmentOperator) {
@@ -88,6 +99,9 @@ TEST(VarTest, DowncastWithAssignmentOperator) {
   EXPECT_EQ(2, b);
   EXPECT_EQ(CHAR, b.get_type());
   EXPECT_TRUE(b.is_cast());
+
+  EXPECT_EQ(VZERO, a.get_version());
+  EXPECT_EQ(VZERO + 1, b.get_version());
 }
 
 TEST(VarTest, DowncastWithPointerAssignment) {
@@ -99,6 +113,7 @@ TEST(VarTest, DowncastWithPointerAssignment) {
   EXPECT_EQ(2, a);
   EXPECT_EQ(CHAR, a.get_type());
   EXPECT_TRUE(a.is_cast());
+  EXPECT_EQ(VZERO + 1, a.get_version());
 }
 
 TEST(VarTest, DowncastWithPointerConstructor) {
@@ -107,6 +122,7 @@ TEST(VarTest, DowncastWithPointerConstructor) {
   EXPECT_EQ(2, a);
   EXPECT_EQ(CHAR, a.get_type());
   EXPECT_TRUE(a.is_cast());
+  EXPECT_EQ(VZERO, a.get_version());
 }
 
 TEST(VarTest, TransitiveDowncastWithAssignmentOperatorAndCopyConversionConstructor) {
@@ -119,6 +135,10 @@ TEST(VarTest, TransitiveDowncastWithAssignmentOperatorAndCopyConversionConstruct
   EXPECT_EQ(2, c);
   EXPECT_EQ(INT, c.get_type());
   EXPECT_TRUE(c.is_cast());
+
+  EXPECT_EQ(VZERO, a.get_version());
+  EXPECT_EQ(VZERO, b.get_version());
+  EXPECT_EQ(VZERO + 1, c.get_version());
 }
 
 TEST(VarTest, TransitiveDowncastWithAssignmentOperator) {
@@ -131,6 +151,10 @@ TEST(VarTest, TransitiveDowncastWithAssignmentOperator) {
   EXPECT_EQ(2, c);
   EXPECT_EQ(CHAR, c.get_type());
   EXPECT_TRUE(c.is_cast());
+
+  EXPECT_EQ(VZERO, a.get_version());
+  EXPECT_EQ(VZERO, b.get_version());
+  EXPECT_EQ(VZERO + 1, c.get_version());
 }
 
 TEST(VarTest, UpcastWithCopyConversionConstructor) {
@@ -140,6 +164,9 @@ TEST(VarTest, UpcastWithCopyConversionConstructor) {
   EXPECT_EQ(2, b);
   EXPECT_EQ(INT, b.get_type());
   EXPECT_TRUE(b.is_cast());
+
+  EXPECT_EQ(VZERO, a.get_version());
+  EXPECT_EQ(VZERO, b.get_version());
 }
 
 TEST(VarTest, TransitiveUpcastWithCopyConversionConstructor) {
@@ -150,6 +177,10 @@ TEST(VarTest, TransitiveUpcastWithCopyConversionConstructor) {
   EXPECT_EQ(2, c);
   EXPECT_EQ(CHAR, c.get_type());
   EXPECT_TRUE(c.is_cast());
+
+  EXPECT_EQ(VZERO, a.get_version());
+  EXPECT_EQ(VZERO, b.get_version());
+  EXPECT_EQ(VZERO, c.get_version());
 }
 
 TEST(VarTest, TransitiveUpcastWithCopyConstructor) {
@@ -160,6 +191,10 @@ TEST(VarTest, TransitiveUpcastWithCopyConstructor) {
   EXPECT_EQ(2, c);
   EXPECT_EQ(INT, c.get_type());
   EXPECT_TRUE(c.is_cast());
+
+  EXPECT_EQ(VZERO, a.get_version());
+  EXPECT_EQ(VZERO, b.get_version());
+  EXPECT_EQ(VZERO, c.get_version());
 }
 
 TEST(VarTest, UpcastWithAssignmentOperator) {
@@ -172,6 +207,9 @@ TEST(VarTest, UpcastWithAssignmentOperator) {
   EXPECT_EQ(2, b);
   EXPECT_EQ(INT, b.get_type());
   EXPECT_TRUE(b.is_cast());
+
+  EXPECT_EQ(VZERO, a.get_version());
+  EXPECT_EQ(VZERO + 1, b.get_version());
 }
 
 TEST(VarTest, UpcastWithPointerAssignment) {
@@ -183,6 +221,7 @@ TEST(VarTest, UpcastWithPointerAssignment) {
   EXPECT_EQ(2, a);
   EXPECT_EQ(INT, a.get_type());
   EXPECT_TRUE(a.is_cast());
+  EXPECT_EQ(VZERO + 1, a.get_version());
 }
 
 TEST(VarTest, UpcastWithPointerConstructor) {
@@ -191,6 +230,7 @@ TEST(VarTest, UpcastWithPointerConstructor) {
   EXPECT_EQ(2, a);
   EXPECT_EQ(INT, a.get_type());
   EXPECT_TRUE(a.is_cast());
+  EXPECT_EQ(VZERO, a.get_version());
 }
 
 TEST(VarTest, TransitiveUpcastWithAssignmentOperatorAndCopyConversionConstructor) {
@@ -203,6 +243,10 @@ TEST(VarTest, TransitiveUpcastWithAssignmentOperatorAndCopyConversionConstructor
   EXPECT_EQ(2, c);
   EXPECT_EQ(CHAR, c.get_type());
   EXPECT_TRUE(c.is_cast());
+
+  EXPECT_EQ(VZERO, a.get_version());
+  EXPECT_EQ(VZERO, b.get_version());
+  EXPECT_EQ(VZERO + 1, c.get_version());
 }
 
 TEST(VarTest, TransitiveUpcastWithAssignmentOperator) {
@@ -215,11 +259,16 @@ TEST(VarTest, TransitiveUpcastWithAssignmentOperator) {
   EXPECT_EQ(2, c);
   EXPECT_EQ(INT, c.get_type());
   EXPECT_TRUE(c.is_cast());
+
+  EXPECT_EQ(VZERO, a.get_version());
+  EXPECT_EQ(VZERO, b.get_version());
+  EXPECT_EQ(VZERO + 1, c.get_version());
 }
 
 TEST(VarTest, NotSymbolicVar) {
   Char var = 3;
   EXPECT_FALSE(var.is_symbolic());
+  EXPECT_EQ(VZERO, var.get_version());
 }
 
 TEST(VarTest, SetSymbolic) {
@@ -227,6 +276,7 @@ TEST(VarTest, SetSymbolic) {
 
   set_symbolic(var);
   EXPECT_TRUE(var.is_symbolic());
+  EXPECT_EQ(VZERO, var.get_version());
 }
 
 TEST(VarTest, SetSymbolicName) {
@@ -266,6 +316,8 @@ TEST(VarTest, SelfAssignmentOperator) {
 
   EXPECT_EQ(INT, a.get_type());
   EXPECT_EQ(3, a);
+
+  EXPECT_EQ(VZERO, a.get_version());
 }
 
 TEST(VarTest, NotSymbolicAssignmentOperator) {
@@ -278,6 +330,9 @@ TEST(VarTest, NotSymbolicAssignmentOperator) {
   EXPECT_EQ(3, b);
   EXPECT_FALSE(a.is_symbolic());
   EXPECT_FALSE(b.is_symbolic());
+
+  EXPECT_EQ(VZERO, a.get_version());
+  EXPECT_EQ(VZERO + 1, b.get_version());
 }
 
 TEST(VarTest, NotSymbolicAssignmentOperatorDeep) {
@@ -291,6 +346,9 @@ TEST(VarTest, NotSymbolicAssignmentOperatorDeep) {
   EXPECT_EQ(5, b);
   EXPECT_FALSE(a.is_symbolic());
   EXPECT_FALSE(b.is_symbolic());
+
+  EXPECT_EQ(VZERO, a.get_version());
+  EXPECT_EQ(VZERO + 2, b.get_version());
 }
 
 TEST(VarTest, NotSymbolicAssignmentOperatorWithCast) {
@@ -306,6 +364,9 @@ TEST(VarTest, NotSymbolicAssignmentOperatorWithCast) {
   EXPECT_EQ(3, b);
   EXPECT_FALSE(a.is_symbolic());
   EXPECT_FALSE(b.is_symbolic());
+
+  EXPECT_EQ(VZERO, a.get_version());
+  EXPECT_EQ(VZERO + 1, b.get_version());
 }
 
 TEST(VarTest, NotSymbolicAssignmentOperatorDeepWithCast) {
@@ -320,6 +381,9 @@ TEST(VarTest, NotSymbolicAssignmentOperatorDeepWithCast) {
   EXPECT_FALSE(a.is_symbolic());
   EXPECT_FALSE(b.is_symbolic());
   EXPECT_EQ(CHAR, b.get_type());
+
+  EXPECT_EQ(VZERO, a.get_version());
+  EXPECT_EQ(VZERO + 2, b.get_version());
 }
 
 TEST(VarTest, NotSymbolicConstructorWithCast) {
@@ -331,6 +395,9 @@ TEST(VarTest, NotSymbolicConstructorWithCast) {
   EXPECT_FALSE(a.is_symbolic());
   EXPECT_FALSE(b.is_symbolic());
   EXPECT_EQ(CHAR, b.get_type());
+
+  EXPECT_EQ(VZERO, a.get_version());
+  EXPECT_EQ(VZERO, b.get_version());
 }
 
 TEST(VarTest, SymbolicConstructorWithCast) {
@@ -346,6 +413,9 @@ TEST(VarTest, SymbolicConstructorWithCast) {
   EXPECT_TRUE(b.is_symbolic());
   EXPECT_EQ(CHAR, b.get_type());
   EXPECT_NE(value_ref.get_expr(), b.get_reflect_value().get_expr());
+
+  EXPECT_EQ(VZERO, a.get_version());
+  EXPECT_EQ(VZERO, b.get_version());
 }
 
 TEST(VarTest, NotSymbolicConstructor) {
@@ -356,6 +426,9 @@ TEST(VarTest, NotSymbolicConstructor) {
   EXPECT_EQ(5, b);
   EXPECT_FALSE(a.is_symbolic());
   EXPECT_FALSE(b.is_symbolic());
+
+  EXPECT_EQ(VZERO, a.get_version());
+  EXPECT_EQ(VZERO, b.get_version());
 }
 
 TEST(VarTest, SymbolicConstructor) {
@@ -370,6 +443,9 @@ TEST(VarTest, SymbolicConstructor) {
   EXPECT_TRUE(a.is_symbolic());
   EXPECT_TRUE(b.is_symbolic());
   EXPECT_EQ(value_ref.get_expr(), b.get_reflect_value().get_expr());
+
+  EXPECT_EQ(VZERO, a.get_version());
+  EXPECT_EQ(VZERO, b.get_version());
 }
 
 TEST(VarTest, SymbolicAssignmentOperator) {
@@ -384,6 +460,9 @@ TEST(VarTest, SymbolicAssignmentOperator) {
 
   EXPECT_EQ(2, a);
   EXPECT_EQ(2, b);
+
+  EXPECT_EQ(VZERO, a.get_version());
+  EXPECT_EQ(VZERO + 1, b.get_version());
 }
 
 TEST(VarTest, SymbolicAssignmentOperatorDeep) {
@@ -398,6 +477,9 @@ TEST(VarTest, SymbolicAssignmentOperatorDeep) {
   EXPECT_TRUE(b.is_symbolic());
   EXPECT_EQ(2, a);
   EXPECT_EQ(5, b);
+
+  EXPECT_EQ(VZERO, a.get_version());
+  EXPECT_EQ(VZERO + 2, b.get_version());
 }
 
 TEST(VarTest, SymbolicAssignmentOperatorWithCast) {
@@ -415,6 +497,9 @@ TEST(VarTest, SymbolicAssignmentOperatorWithCast) {
 
   EXPECT_EQ(2, a);
   EXPECT_EQ(2, b);
+
+  EXPECT_EQ(VZERO, a.get_version());
+  EXPECT_EQ(VZERO + 1, b.get_version());
 }
 
 TEST(VarTest, SymbolicAssignmentOperatorDeepWithCast) {
@@ -429,6 +514,9 @@ TEST(VarTest, SymbolicAssignmentOperatorDeepWithCast) {
   EXPECT_TRUE(b.is_symbolic());
   EXPECT_EQ(2, a);
   EXPECT_EQ(5, b);
+
+  EXPECT_EQ(VZERO, a.get_version());
+  EXPECT_EQ(VZERO + 2, b.get_version());
 }
 
 TEST(VarTest, NotSymbolicConstructorAndAssignment) {
@@ -443,6 +531,9 @@ TEST(VarTest, NotSymbolicConstructorAndAssignment) {
   EXPECT_TRUE(b.is_symbolic());
   EXPECT_EQ(2, a);
   EXPECT_EQ(5, b);
+
+  EXPECT_EQ(VZERO, a.get_version());
+  EXPECT_EQ(VZERO + 2, b.get_version());
 }
 
 
@@ -455,6 +546,11 @@ TEST(VarTest, AddChars) {
 
   EXPECT_EQ(5, c);
   EXPECT_EQ(5, d);
+
+  EXPECT_EQ(VZERO, a.get_version());
+  EXPECT_EQ(VZERO, b.get_version());
+  EXPECT_EQ(VZERO, c.get_version());
+  EXPECT_EQ(VZERO, d.get_version());
 }
 
 TEST(VarTest, AddInts) {
@@ -465,6 +561,11 @@ TEST(VarTest, AddInts) {
 
   EXPECT_EQ(512, c);
   EXPECT_EQ(512, d);
+
+  EXPECT_EQ(VZERO, a.get_version());
+  EXPECT_EQ(VZERO, b.get_version());
+  EXPECT_EQ(VZERO, c.get_version());
+  EXPECT_EQ(VZERO, d.get_version());
 }
 
 TEST(VarTest, AddCharAndInt) {
@@ -480,6 +581,11 @@ TEST(VarTest, AddCharAndInt) {
 
   EXPECT_EQ(8, c);
   EXPECT_EQ(8, d);
+
+  EXPECT_EQ(VZERO, a.get_version());
+  EXPECT_EQ(VZERO, b.get_version());
+  EXPECT_EQ(VZERO, c.get_version());
+  EXPECT_EQ(VZERO, d.get_version());
 }
 
 TEST(VarTest, AddCharAndReflectValue) {
@@ -497,6 +603,13 @@ TEST(VarTest, AddCharAndReflectValue) {
 
   EXPECT_EQ(9, e);
   EXPECT_EQ(9, f);
+
+  EXPECT_EQ(VZERO, a.get_version());
+  EXPECT_EQ(VZERO, b.get_version());
+  EXPECT_EQ(VZERO, c.get_version());
+
+  EXPECT_EQ(VZERO, e.get_version());
+  EXPECT_EQ(VZERO, f.get_version());
 }
 
 TEST(VarTest, AddCharAndConstant) {
@@ -511,6 +624,10 @@ TEST(VarTest, AddCharAndConstant) {
 
   EXPECT_EQ(5, b);
   EXPECT_EQ(5, c);
+
+  EXPECT_EQ(VZERO, a.get_version());
+  EXPECT_EQ(VZERO, b.get_version());
+  EXPECT_EQ(VZERO, c.get_version());
 }
 
 TEST(VarTest, AddReflectValueAndConstant) {
@@ -538,6 +655,15 @@ TEST(VarTest, AddReflectValueAndConstant) {
   EXPECT_EQ(9, f);
   EXPECT_EQ(9, g);
   EXPECT_EQ(9, h);
+
+  EXPECT_EQ(VZERO, a.get_version());
+  EXPECT_EQ(VZERO, b.get_version());
+  EXPECT_EQ(VZERO, c.get_version());
+  EXPECT_EQ(VZERO, d.get_version());
+  EXPECT_EQ(VZERO, e.get_version());
+  EXPECT_EQ(VZERO, f.get_version());
+  EXPECT_EQ(VZERO, g.get_version());
+  EXPECT_EQ(VZERO, h.get_version());
 }
 
 
@@ -568,6 +694,17 @@ TEST(VarTest, AddCharWithConstantAndReflectValue) {
   EXPECT_EQ(14, h);
   EXPECT_EQ(14, i);
   EXPECT_EQ(14, j);
+
+  EXPECT_EQ(VZERO, a.get_version());
+  EXPECT_EQ(VZERO, b.get_version());
+  EXPECT_EQ(VZERO, c.get_version());
+
+  EXPECT_EQ(VZERO, e.get_version());
+  EXPECT_EQ(VZERO, f.get_version());
+  EXPECT_EQ(VZERO, g.get_version());
+  EXPECT_EQ(VZERO, h.get_version());
+  EXPECT_EQ(VZERO, i.get_version());
+  EXPECT_EQ(VZERO, j.get_version());
 }
 
 TEST(VarTest, LessChars) {
@@ -579,6 +716,11 @@ TEST(VarTest, LessChars) {
 
   EXPECT_TRUE(c);
   EXPECT_FALSE(d);
+
+  EXPECT_EQ(VZERO, a.get_version());
+  EXPECT_EQ(VZERO, b.get_version());
+  EXPECT_EQ(VZERO, c.get_version());
+  EXPECT_EQ(VZERO, d.get_version());
 }
 
 TEST(VarTest, LessCharWithConstantAndReflectValue) {
@@ -595,57 +737,53 @@ TEST(VarTest, LessCharWithConstantAndReflectValue) {
   EXPECT_FALSE(e);
   EXPECT_FALSE(f);
   EXPECT_TRUE(g);
+
+  EXPECT_EQ(VZERO, a.get_version());
+  EXPECT_EQ(VZERO, b.get_version());
+
+  EXPECT_EQ(VZERO, d.get_version());
+  EXPECT_EQ(VZERO, e.get_version());
+  EXPECT_EQ(VZERO, f.get_version());
+  EXPECT_EQ(VZERO, g.get_version());
 }
 
-TEST(VarTest, InitIdWithConcrete) {
-  Bool a = true;
-  Char b = 'b';
-  Int c = 3;
+TEST(VarTest, GetVersionAfterCopy) {
+  Int a = 2;
+  a = a + 1;
+  EXPECT_EQ(VZERO + 1, a.get_version());
 
-  EXPECT_TRUE(reinterpret_cast<uintptr_t>(&a) == a.get_id());
-  EXPECT_TRUE(reinterpret_cast<uintptr_t>(&b) == b.get_id());
-  EXPECT_TRUE(reinterpret_cast<uintptr_t>(&c) == c.get_id());
-}
-
-TEST(VarTest, InitIdWithAny) {
-  Bool a = any_bool("A");
-  Char b = any_char("B");
-  Int c = any_int("C");
-
-  EXPECT_TRUE(reinterpret_cast<uintptr_t>(&a) == a.get_id());
-  EXPECT_TRUE(reinterpret_cast<uintptr_t>(&b) == b.get_id());
-  EXPECT_TRUE(reinterpret_cast<uintptr_t>(&c) == c.get_id());
-}
-
-TEST(VarTest, InitIdWithVar) {
-  Int a = 3;
   Int b = a;
-
-  EXPECT_TRUE(reinterpret_cast<uintptr_t>(&a) == a.get_id());
-  EXPECT_TRUE(reinterpret_cast<uintptr_t>(&b) == b.get_id());
+  EXPECT_EQ(VZERO, b.get_version());
 }
 
-TEST(VarTest, InitIdWithVarRequiringCast) {
-  Bool a = any_bool("A");
-  Char b = any_char("B");
-  Int c = b;
+TEST(VarTest, GetVersionAfterAssignment) {
+  Int a = 2;
+  Int b = 1;
 
-  EXPECT_TRUE(reinterpret_cast<uintptr_t>(&a) == a.get_id());
-  EXPECT_TRUE(reinterpret_cast<uintptr_t>(&b) == b.get_id());
-  EXPECT_TRUE(reinterpret_cast<uintptr_t>(&c) == c.get_id());
+  a = a + 1;
+  a = a + 1;
+  EXPECT_EQ(VZERO + 2, a.get_version());
+
+  b = a;
+  EXPECT_EQ(VZERO + 1, b.get_version());
 }
 
-TEST(VarTest, InitIdWithValue) {
-  Int a = 3;
-  Int b = a + 4;
+TEST(VarTest, GetVersionAfterConversion) {
+  Char a = 2;
+  Int b = 1;
 
-  EXPECT_TRUE(reinterpret_cast<uintptr_t>(&a) == a.get_id());
-  EXPECT_TRUE(reinterpret_cast<uintptr_t>(&b) == b.get_id());
+  a = a + 1;
+  a = a + 1;
+  a = a + 1;
+  EXPECT_EQ(VZERO + 3, a.get_version());
+
+  b = a;
+  EXPECT_EQ(VZERO + 1, b.get_version());
 }
 
-TEST(VarTest, InitIdWithValueRequringCast) {
-  Int a = reflect<char>('a');
-
-  EXPECT_TRUE(reinterpret_cast<uintptr_t>(&a) == a.get_id());
+TEST(VarTest, GetVersionAfterSetExpr) {
+  Int a = 2;
+  a.set_expr(SharedExpr());
+  EXPECT_EQ(VZERO + 1, a.get_version());
 }
 

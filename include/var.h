@@ -17,48 +17,86 @@ typedef unsigned long long Version;
 // Zero according to Version type.
 const Version VZERO = 0LL;
 
-// Forward declaration to enable the loop to change the private expr field of
-// the Var<T> class.
-class Loop;
+// GenericVar is an interface which represents a symbolic program variable.
+// More formally, a GenericVar associates a C++ lvalue (locator value) with
+// an algebraic expression in a theory. For example, a program statement that
+// increments a variable by three could yield the symbolic expression "x + 3"
+// in the ring of integers. By choosing an appropriate theory, the GenericVar
+// API can be used to successively approximate the strongest postcondition of
+// a program. This is typically referred to as symbolic execution.
+//
+// Thus, if a GenericVar object has a symbolic expression, an assignment to it
+// never irrevocably overwrites any information. This contrasts traditional
+// assignments in imperative programming languages. For this reason, the API
+// can be also useful for debugging.
+//
+// Changes to the variable are tracked by a version number. The version number
+// is always initialized to zero. Subsequently, on each modifier operation, it
+// is incremented by one. These version numbers are never modified based on the
+// version information of another GenericVar object. This makes the version
+// information applicable for dynamic single assignment (DSA) forms.
+//
+// Finally, each implementation of the GenericVar interface must take type
+// casting into account. These type casts should be explicit in symbolic
+// expressions. The proper way of doing this is through the CastExpr API.
+class GenericVar {
 
-// An object of type Var<T> represents a program variable of primitive type T.
-// More formally, a Var<T> object corresponds to a C++ lvalue (locator value).
-// An lvalue must have an identifiable memory location (i.e. a memory address).
-// This memory location points to a sequence of bits which constitute the
-// variable's value of type T. This value is undefined if the variable has been
-// initialized with the appropriate any() function.
+public:
+
+  // get_type() returns the primitive type of this variable. Note that any
+  // precision loss that might have occurred due to type casting is
+  // conservatively approximated by is_cast().
+  virtual Type get_type() const = 0;
+
+  // is_cast() returns true if either an up or down cast is needed to get the
+  // concrete value of the represented variable. In other words, if an unsafe
+  // type conversion is needed, then is_cast() returns true. Note that the
+  // converse is false since is_cast() also returns true for up casts.
+  virtual bool is_cast() const = 0;
+
+  // set_symbolic(name) sets this variable as symbolic. The supplied name
+  // argument gives the symbolic variable name. This name should be unique.
+  // Changes to the string argument after the variable has been set symbolic
+  // do not effect the symbolic variable name.
+  virtual void set_symbolic(const std::string& name) = 0;
+
+  // is_symbolic() returns true if and only if this variable is symbolic.
+  virtual bool is_symbolic() const = 0;
+
+  // get_version() returns a non-negative unsigned number that counts how often
+  // the variable has been assigned a new value or symbolic expression.
+  virtual Version get_version() const = 0;
+
+  // set_expr(new_expr) sets the symbolic expression of the variable.
+  // Unless new_expr is a NULL pointer, is_symbolic() returns true afterwards.
+  // This setter increments the version number by one each time it is called.
+  virtual void set_expr(const SharedExpr& new_expr) = 0;
+
+  // get_expr() returns the symbolic expression of the variable.
+  // The return value is a NULL pointer if and only if is_symbolic() is false.
+  virtual const SharedExpr get_expr() const = 0;
+
+  // Every interface needs a public virtual destructor.
+  virtual ~GenericVar() {}
+};
+
+// A Var<T> object is a GenericVar object which can have also a concrete value
+// of primitive type T associated with it. However, this value is undefined if
+// the variable has been initialized to an object of type AnyValue<T>. This is
+// done when the variable should be purely symbolic.
 //
-// Since the purpose of symbolic execution is the computation of the strongest
-// postcondition, a Var<T> object can also refer to a symbolic expression.
-// For example, an operation that increments an integer variable (i.e. Var<int>)
-// by three yields the symbolic expression "x + 3". Since the recording of these
-// symbolic expression causes extra overhead, the feature is disabled by default.
-// To enable it, call the set_symbolic() member function.
+// Another possibility is that the Var<T> object has both a concrete value and
+// a symbolic expression. This is useful for symbolic execution augmented with
+// runtime information (also known as concolic execution). This feature can be
+// enabled by initializing the Var<T> object to a concrete value and calling
+// the set_symbolic(const std::string&) member function on it.
 //
-// Similar to modifiable lvalues, a Var<T> object can always be changed unless
-// it is annotated with the const C++ keyword. Each Var<T> object can also be
-// implicitly converted to its underlying concrete value. However, if the
-// variable is symbolic such a conversion could indicate that the symbolic
-// execution of the program under test is incomplete.
-//
-// Unlike traditional assignments in imperative programming languages, an
-// assignment to a Var<T> object never irrevocably overwrites any information.
-// In particular, each variable object has a version number associated with it.
-// With each assignment of a new value, the variable's version is incremented.
-// This versioning information can be used to create dynamic single assignment
-// (DSA) forms.
-// 
-// Each variable has a unique identifier associated with it. This ID is returned
-// by the member function get_id(). It is particularly useful in conjunction
-// with the version information. For example, this data can be used to identify
-// the snapshot of a variable at a point in time.
+// However, note that implicit conversions of a Var<T> object to its underlying
+// concrete value (if defined) could be indication of an incomplete analysis.
 template<typename /* primitive type */T>
-class Var {
-
+class Var : public GenericVar {
+ 
 private:
-
-  // A loop must update the private expr field during join operations.
-  friend class Loop;
 
   // value represents the concrete value at a physical memory address. In
   // addition, there is a symbolic expression for this concrete value if
@@ -74,25 +112,20 @@ private:
   // assignment operation, the version number is incremented by one.
   Version version;
 
-  // Physical memory address of this object serves as its unique identifier.
-  const uintptr_t id;
-
 public:
 
   // Constructor creates an object that represents a program variable of a
   // primitive type T with the given initial value. Initially, the new
   // variable is concrete (i.e. not symbolic).
   Var(const T concrete_value) : value(concrete_value), cast(false),
-                                version(VZERO),
-                                id(reinterpret_cast<uintptr_t>(this)) {}
+                                version(VZERO) {}
 
   // Internal constructor that creates an object that represents a program
   // variable that has the same concrete value and (if any) symbolic value as
   // the variable pointed to by the supplied argument. Since both reflection
   // types match, no type casting is performed.
   Var(const Value<T>& value) : value(value), cast(false),
-                               version(VZERO),
-                               id(reinterpret_cast<uintptr_t>(this)) {}
+                               version(VZERO) {}
 
   // Internal constructor that creates an object that represents a program
   // variable that has the same concrete value and (if any) symbolic value as
@@ -102,8 +135,7 @@ public:
   // is conservatively approximated by is_cast(). Moreover, if the variable
   // is symbolic, the instantiated variable is going to have a new CastExpr.
   template<typename S>
-  Var(const Value<S>& value) : value(value), cast(true), version(VZERO),
-                               id(reinterpret_cast<uintptr_t>(this)) {}
+  Var(const Value<S>& value) : value(value), cast(true), version(VZERO) {}
 
   // Copy constructor that instantiates a variable by creating a deep copy of
   // the supplied variable's concrete value. Any symbolic expressions are
@@ -111,9 +143,7 @@ public:
   // one is modified. Note that casts are transitive: if other.is_cast() is
   // true, then the copy's is_cast() is true.
   Var(const Var& other) : value(other.value), cast(other.cast),
-                          /* TODO: Should version and ID fields be copied? */
-                          version(VZERO),
-                          id(reinterpret_cast<uintptr_t>(this)) {}
+                          version(VZERO) {}
 
   // Copy conversion constructor that creates a copy of another variable.
   // Incompatibilities between the type of the supplied variable's concrete
@@ -122,26 +152,15 @@ public:
   // symbolic, the instantiated variable is going to have a new CastExpr.
   template<typename S>
   Var(const Var<S>& other) : value(other.get_reflect_value()), cast(true),
-                             /* TODO: Should version and ID fields be copied? */
-                             version(VZERO), 
-                             id(reinterpret_cast<uintptr_t>(this)) {}
+                             version(VZERO) {}
+
+  ~Var() {}
 
   // get_reflect_value() returns a read-only reference to an object that
   // contains the concrete value and runtime information about this variable.
   // The caller must ensure that it does not dereference the return value after
   // this Var<T> object has been destroyed.
   const Value<T>& get_reflect_value() const { return value; }
-
-  // get_type() returns the primitive type of this variable. Note that any
-  // precision loss that might have occurred due to type casting is
-  // conservatively approximated by is_cast().
-  Type get_type() const { return ReflectType<T>::type; }
-
-  // is_cast() returns true if either an up or down cast is needed to get the
-  // concrete value of the represented variable. In other words, if an unsafe
-  // type conversion is needed, then is_cast() returns true. Note that the
-  // converse is false since is_cast() also returns true for up casts.
-  bool is_cast() const { return cast; }
 
   // T() is a conversion operator that returns the concrete value of this
   // variable. This conversion abides to the C++ type casting rules which are
@@ -163,7 +182,7 @@ public:
   // operator has completed the copying of the underlying bytes. When the
   // variable is assigned to itself, no data is copied. In that case, the
   // variable's version number is not incremented.
-  virtual Var& operator=(const Var& other) {
+  Var& operator=(const Var& other) {
     if (this != &other) {
       value = other.value;
       cast = other.cast;
@@ -173,21 +192,13 @@ public:
     return *this;
   }
 
-  // set_symbolic(name) sets this variable as symbolic. The supplied name
-  // argument gives the symbolic variable name. This name should be unique.
-  // Changes to the string argument after the variable has been set symbolic
-  // do not effect the symbolic variable name.
+  Type get_type() const { return ReflectType<T>::type; }
+  bool is_cast() const { return cast; }
   void set_symbolic(const std::string& name) { value.set_symbolic(name); }
-
-  // is_symbolic() returns true if and only if this variable is symbolic.
   bool is_symbolic() const { return value.is_symbolic(); }
-
-  // get_version() returns a non-negative unsigned number that counts how often
-  // the variable has been assigned a new value.
   Version get_version() const { return version; }
-
-  // get_id() returns the physical memory address of this variable.
-  uintptr_t get_id() const { return id; }
+  const SharedExpr get_expr() const { return value.get_expr(); }
+  void set_expr(const SharedExpr& expr) { version++; value.set_expr(expr); }
 
 };
 
