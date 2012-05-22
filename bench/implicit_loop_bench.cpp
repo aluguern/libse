@@ -8,14 +8,10 @@ int main(void) {
   set_symbolic(k);
 
   Loop loop(N);
+  loop.track(k);
   while(loop.unwind(k < INT_MAX)) {
-    loop.begin_loop(k);
-
     k = k + 1;
-
-    loop.end_loop(k);
   }
-  loop.join(k);
 
   // force k to be live
   return k != N;

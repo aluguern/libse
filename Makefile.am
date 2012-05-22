@@ -52,6 +52,7 @@ lib_libsp_la_SOURCES = \
   src/reflect.cpp \
   src/any.cpp \
   src/var.cpp \
+  src/loop.cpp \
   src/symtracer.cpp
 
 pkginclude_HEADERS = \

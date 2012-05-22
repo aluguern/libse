@@ -47,96 +47,39 @@ TEST(LoopTest, LoopWithK) {
   // ...
 }
 
-// Must at least tolerate this API misuse
-TEST(LoopTest, NoUnwindButJoin) {
+TEST(LoopTest, VersionAfterUnwind1xWithSingleVar) {
   bool ok;
   Int i = any_int("I");
-  Loop loop(2);
-
-  // API misuse because we require that unwind() is called before join().
-  std::stringstream out;
-  i.get_reflect_value().get_expr()->write(out);
-  EXPECT_EQ("[I]", out.str());
-}
-
-// Must detect this API misuse
-TEST(LoopTest, IgnoredTrueReturnOfUnwind) {
-  bool ok;
-  Int i = any_int("I");
-  Loop loop(2);
+  Loop loop(1);
+  loop.track(i);
 
   ok = loop.unwind(i < 5);
   EXPECT_TRUE(ok);
 
-  // API misuse because we require that begin_loop() and
-  // end_loop() are called before join() since the return
-  // value of unwind() was true!
-  EXPECT_THROW(loop.join(i), LoopError);
-}
-
-// Must detect this API misuse
-TEST(LoopTest, BeginLoopWithoutUnwind) {
-  bool ok;
-  Int i = any_int("I");
-  Loop loop(2);
-
-  ok = loop.unwind(i < 5);
-  EXPECT_TRUE(ok);
-
-  loop.begin_loop(i);
   i = i + 1;
-  loop.begin_loop(i);
 
-  // API misuse because we require that unwind() is called
-  // before every begin_loop() call.
-  EXPECT_THROW(loop.join(i), LoopError);
-}
+  Version version = i.get_version();
 
-// Must detect this API misuse
-TEST(LoopTest, BeginLoopWithFalseUnwind) {
-  bool ok;
-  Int i = any_int("I");
-  Loop loop(0);
-
-  ok = loop.unwind(i < 5);
+  ok = loop.unwind(any_bool("ANY"));
   EXPECT_FALSE(ok);
-  loop.begin_loop(i);
 
-  // API misuse because even though unwind() was called before
-  // begin_loop() that unwind() call returned false.
-  EXPECT_THROW(loop.join(i), LoopError);
-}
-
-// Must detect this API misuse
-TEST(LoopTest, MultipleUnwindBeforeBeginLoop) {
-  bool ok;
-  Int i = any_int("I");
-  Loop loop(7);
-
-  ok = loop.unwind(i < 5);
-  EXPECT_TRUE(ok);
-
-  ok = loop.unwind(i < 5);
-  EXPECT_TRUE(ok);
-
-  // API misuse because there are more unwind() calls whose
-  // return value was true than begin_loop() calls.
-  EXPECT_THROW(loop.join(i), LoopError);
+  // version increase due to join operation
+  EXPECT_EQ(version + 1, i.get_version());
 }
 
 TEST(LoopTest, Unwind1xWithSingleVar) {
   bool ok;
   Int i = any_int("I");
-  Loop loop(2);
+  Loop loop(1);
+  loop.track(i);
 
   ok = loop.unwind(i < 5);
   EXPECT_TRUE(ok);
 
-  loop.begin_loop(i);
   i = i + 1;
 
-  loop.end_loop(i);
-  loop.join(i);
+  ok = loop.unwind(any_bool("ANY"));
+  EXPECT_FALSE(ok);
 
   std::stringstream out;
   i.get_reflect_value().get_expr()->write(out);
@@ -146,72 +89,93 @@ TEST(LoopTest, Unwind1xWithSingleVar) {
 TEST(LoopTest, Unwind2xWithSingleVar) {
   bool ok;
   Int i = any_int("I");
-  Loop loop(7);
+  Loop loop(2);
+  loop.track(i);
 
   // 1x
   ok = loop.unwind(i < 5);
   EXPECT_TRUE(ok);
 
-  loop.begin_loop(i);
   i = i + 1;
 
-  loop.end_loop(i);
+  std::stringstream out_1x;
+  i.get_reflect_value().get_expr()->write(out_1x);
+  EXPECT_EQ("([I]+1)", out_1x.str());
 
   // 2x
   ok = loop.unwind(i < 7);
   EXPECT_TRUE(ok);
 
-  loop.begin_loop(i);
   i = i + 2;
 
-  loop.end_loop(i);
+  std::stringstream out_2x;
+  i.get_reflect_value().get_expr()->write(out_2x);
+  EXPECT_EQ("(([I]+1)+2)", out_2x.str());
 
-  loop.join(i);
+  ok = loop.unwind(any_bool("ANY"));
+  EXPECT_FALSE(ok);
 
-  std::stringstream out;
-  i.get_reflect_value().get_expr()->write(out);
-  EXPECT_EQ("(([I]<5)?((([I]+1)<7)?(([I]+1)+2):([I]+1)):[I])", out.str());
+  std::stringstream join_out;
+  i.get_reflect_value().get_expr()->write(join_out);
+  EXPECT_EQ("(([I]<5)?((([I]+1)<7)?(([I]+1)+2):([I]+1)):[I])", join_out.str());
 }
 
 TEST(LoopTest, Unwind2xWithMultipleVars) {
   bool ok;
   Int i = any_int("I");
   Int j = any_int("J");
-  Loop loop(7);
+  Loop loop(2);
+  loop.track(i);
+  loop.track(j);
 
   // 1x
   ok = loop.unwind(i < 5);
   EXPECT_TRUE(ok);
 
-  loop.begin_loop(i);
-  loop.begin_loop(j);
   i = i + 1;
   j = j + 1;
 
-  loop.end_loop(i);
-  loop.end_loop(j);
+  std::stringstream out_i_1x;
+  i.get_reflect_value().get_expr()->write(out_i_1x);
+  EXPECT_EQ("([I]+1)", out_i_1x.str());
+
+  std::stringstream out_j_1x;
+  j.get_reflect_value().get_expr()->write(out_j_1x);
+  EXPECT_EQ("([J]+1)", out_j_1x.str());
 
   // 2x
   ok = loop.unwind(i < 7);
   EXPECT_TRUE(ok);
 
-  loop.begin_loop(i);
-  loop.begin_loop(j);
   i = i + 2;
   j = j + 2;
 
-  loop.end_loop(i);
-  loop.end_loop(j);
+  std::stringstream out_i_2x;
+  i.get_reflect_value().get_expr()->write(out_i_2x);
+  EXPECT_EQ("(([I]+1)+2)", out_i_2x.str());
 
-  loop.join(i);
-  loop.join(j);
+  std::stringstream out_j_2x;
+  j.get_reflect_value().get_expr()->write(out_j_2x);
+  EXPECT_EQ("(([J]+1)+2)", out_j_2x.str());
 
-  std::stringstream i_out;
-  i.get_reflect_value().get_expr()->write(i_out);
-  EXPECT_EQ("(([I]<5)?((([I]+1)<7)?(([I]+1)+2):([I]+1)):[I])", i_out.str());
+  ok = loop.unwind(any_bool("ANY"));
+  EXPECT_FALSE(ok);
 
-  std::stringstream j_out;
-  j.get_reflect_value().get_expr()->write(j_out);
-  EXPECT_EQ("(([I]<5)?((([I]+1)<7)?(([J]+1)+2):([J]+1)):[J])", j_out.str());
+  std::stringstream out_i_join;
+  i.get_reflect_value().get_expr()->write(out_i_join);
+  EXPECT_EQ("(([I]<5)?((([I]+1)<7)?(([I]+1)+2):([I]+1)):[I])", out_i_join.str());
+
+  std::stringstream out_j_join;
+  j.get_reflect_value().get_expr()->write(out_j_join);
+  EXPECT_EQ("(([I]<5)?((([I]+1)<7)?(([J]+1)+2):([J]+1)):[J])", out_j_join.str());
+}
+
+TEST(LoopTest, MultipleTrack) {
+  bool ok;
+  Int i = any_int("I");
+  Loop loop(2);
+
+  loop.track(i);
+  EXPECT_NO_THROW(loop.track(i));
 }
 

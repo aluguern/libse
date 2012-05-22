@@ -4,7 +4,7 @@
 #include <map>
 #include <stack>
 #include <memory>
-#include <stdexcept>
+#include <unordered_set>
 
 #include "var.h"
 #include "reflect.h"
@@ -57,10 +57,6 @@ public:
 
 };
 
-// LoopError indicates a programmer error. Static analysis should find these
-// errors before runtime because they are generally due to incorrect API usage.
-typedef std::logic_error LoopError;
-
 // A Loop object represents the unwinding of an iterative program structure
 // such as do { ... } while( ... ) repetitions. On each iteration, the loop
 // condition can be either true or false. However, since the condition can
@@ -92,22 +88,40 @@ private:
   // The key is the unique identifier of a symbolic variable. The value is
   // a stack of symbolic expressions where the top corresponds to the symbolic
   // expression that the variable had in the inner-most loop unwinding.
-  std::map<uintptr_t, std::stack<SharedExpr>> begin_expr_map;
+  std::map<const GenericVar* const, std::stack<SharedExpr>> begin_expr_map;
 
-  // get_version_stack() is an internal function to get the expressions of a
-  // variable. The top of the stack is the most recent expression that has
-  // been saved by begin_loop(const Var<T>&) for the same variable.
-  template<typename T>
-  std::stack<SharedExpr> get_version_stack(const Var<T>& var) {
-    return begin_expr_map[var.get_id()];
-  }
+  // var_ptrs is a set of pointers to tracked variables. These are symbolic
+  // variables whose symbolic expressions are going to be joined at the last
+  // loop unwinding.
+  std::unordered_set<GenericVar*> var_ptrs;
 
-  // put_version(const Var<T>&) pushes the current symbolic expression of
-  // the supplied variable on a stack. This stack is unique to the variable.
-  template<typename T>
-  void put_version(const Var<T>& var) {
-    begin_expr_map[var.get_id()].push(var.get_reflect_value().get_expr());
-  }
+  // unwind_flag is true if and only if unwind(const Value<bool>&) should
+  // delegate to the injected unwinding policy object. Initially, it is true.
+  bool unwind_flag;
+
+  // internal_stash(const GenericVar* const) pushes the current symbolic
+  // expression of the supplied variable pointer on a stack. This stack
+  // is unique to the variable pointer.
+  void internal_stash(const GenericVar* const var_ptr);
+
+  // internal_get_stack(const GenericVar* const var_ptr) gets all the stashed
+  // expressions of the supplied variable pointer. The top of the stack is the
+  // most recent expression that has been saved by internal_stash(var_ptr).
+  std::stack<SharedExpr> internal_get_stack(const GenericVar* const var_ptr);
+
+  // internal_unwind(const Value<bool>&) must be called if and only if the
+  // unwinding policy allows another unwinding for the given boolean condition
+  // and the previous loop unwindings.
+  void internal_unwind(const Value<bool>& cond);
+
+  // internal_join() must be called if and only if the unwinding policy forbids
+  // another unwinding and internal_unwind(const Value<bool>&) has been called
+  // at least once. internal_join() must call internal_join(GenericVar*) for
+  // every pointer of a tracked variable. It may perform other sanity checks.
+  void internal_join();
+
+  // Creates a ternary join expression for a tracked variable.
+  void internal_join(GenericVar* const var_ptr);
 
 public:
 
@@ -115,7 +129,7 @@ public:
   // maximum number of loop unwindings.
   Loop(const unsigned int k) :
     unwinding_policy_ptr(new BoundedUnwindingPolicy(k)),
-    cond_expr_stack(), begin_expr_map() {}
+    cond_expr_stack(), begin_expr_map(), var_ptrs(), unwind_flag(true) {}
 
   // Constructor using dependency injection to set the loop unwinding policy.
   // The ownership of the pointer to the policy object must transferred to the
@@ -132,107 +146,25 @@ public:
   // how to "pass a unique_ptr argument to a constructor or a function".
   Loop(std::unique_ptr<UnwindingPolicy> policy_ptr) :
     unwinding_policy_ptr(std::move(policy_ptr)),
-    cond_expr_stack(), begin_expr_map() {}
+    cond_expr_stack(), begin_expr_map(), var_ptrs(), unwind_flag(true) {}
 
   ~Loop() {}
 
   // unwind(const Value<bool>&) unwinds the loop once more if and only if
   // it returns true. The unwinding semantics is determined by the injected
   // unwinding policy implementation.
-  bool unwind(const Value<bool>& condition) {
-    bool continue_flag = unwinding_policy_ptr->unwind(condition);
-    if(continue_flag) {
-      cond_expr_stack.push(condition.get_expr());
-      return true;
-    }
+  bool unwind(const Value<bool>& cond);
 
-    return false;
-  }
-
-  // Must be called at the beginning of each loop iteration for each variable
-  // that might be modified in one loop iteration.
+  // track(Var<T>&) must be called before unwind(const Value<bool>&) is called
+  // on each loop iteration. The argument is a variable that might be modified
+  // in one loop iteration. It is safe to call track(Var<T>&) multiple times on
+  // the same variable object. The order of calls does not matter.
   template<typename T>
-  void begin_loop(const Var<T>&);
+  void track(Var<T>&);
 
-  // Must be called at the end of each loop iteration. Only arguments that were
-  // specified to the begin_loop(const Var<T>&) member function are allowed.
-  template<typename T>
-  void end_loop(const Var<T>&);
-
-  // Must be called after the loop has finished. The argument must be a symbolic
-  // variable for which begin_loop(const Var<T>&) and end_loop(const Var<T>&)
-  // has been called at the beginning and end of each loop iteration.
-  //
-  // Throws LoopError if any loop API misuses have been detected.
-  template<typename T>
-  void join(Var<T>&) throw(LoopError);
-
-
-  // Remark: It would be nice if we could simplify the API to begin_loop() and
-  // end_loop() without the need for the join() call after the loop programming
-  // statement. This would mean that the join operation would have to occur in
-  // end_loop(). Unfortunately, this implies that the symbolic expression for
-  // the loop condition would generally consist of a join expression such as
-  // "(([I]<5?([I]+1):[I])<5)" which is incorrect.
 };
 
 template<typename T>
-void Loop::begin_loop(const Var<T>& var) { put_version(var); }
-
-template<typename T>
-void Loop::end_loop(const Var<T>& var) { /* for future use */}
-
-template<typename T>
-void Loop::join(Var<T>& var) throw(LoopError) {
-  // TODO: for clarity we join only one variable at a time. If this turns out to
-  // be too expensive, we can optimize by writing a single loop such that no
-  // copy of the stack needs to be made.
-  std::stack<SharedExpr> cond_expr_stack_copy(cond_expr_stack);
-  std::stack<SharedExpr> version_stack = get_version_stack(var);
-  if(cond_expr_stack_copy.empty() && version_stack.empty()) {
-    // loop fell through so nothing needs to be done
-    return;
-  }
-
-  if(version_stack.size() > cond_expr_stack_copy.size()) {
-    throw LoopError("fewer unwind() calls than begin_loop() calls.");
-  }
-
-  if(version_stack.size() < cond_expr_stack_copy.size()) {
-    throw LoopError("more unwind() calls than begin_loop() calls.");
-  }
-
-  // Construct If-Then-Else expression in reverse order of loop unwindings.
-  // That is, the If-Then-Else expression of the last loop unwinding is
-  // constructed first etc. Thus, pop cond_expr_stack_copy to get the inner-most
-  // loop condition. Then, use the most recent version of the given symbolic
-  // variable before and after the loop unwinding with which the popped
-  // condition is associated. The "before" version corresponds to the "else"
-  // branch of the new ternary expression whereas the "after" version is
-  // assigned to its "then" branch.
-  SharedExpr join_expr = var.get_reflect_value().get_expr();
-
-  SharedExpr cond_expr;
-  SharedExpr before_expr;
-  do {
-
-    cond_expr = cond_expr_stack_copy.top();
-    before_expr = version_stack.top();
-
-    join_expr = SharedExpr(new TernaryExpr(cond_expr, join_expr, before_expr));
-
-    cond_expr_stack_copy.pop();
-    version_stack.pop();
-
-    // stop if either of both stacks is empty
-  } while(!(cond_expr_stack_copy.empty() || version_stack.empty()));
-
-  var.value.set_expr(join_expr);
-
-  // Once the above optimization is implemented this goes away.
-  if(begin_expr_map.empty()) {
-    cond_expr_stack = std::stack<SharedExpr>();
-  }
-}
+void Loop::track(Var<T>& var) { var_ptrs.insert(&var); }
 
 #endif /* LOOP_H_ */
