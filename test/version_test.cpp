@@ -1,6 +1,6 @@
 #include <sstream>
 #include "gtest/gtest.h"
-#include "overload.h"
+#include "sp.h"
 
 TEST(VersionTest, InitWithConcrete) {
   Bool a = true;

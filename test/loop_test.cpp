@@ -1,7 +1,6 @@
 #include <sstream>
 #include "gtest/gtest.h"
-#include "loop.h"
-#include "overload.h"
+#include "sp.h"
 
 TEST(LoopTest, BoundedUnwindingPolicy) {
   const Value<bool> anything = any_bool("ANY");
@@ -82,7 +81,7 @@ TEST(LoopTest, Unwind1xWithSingleVar) {
   EXPECT_FALSE(ok);
 
   std::stringstream out;
-  i.get_reflect_value().get_expr()->write(out);
+  i.get_value().get_expr()->write(out);
   EXPECT_EQ("(([I]<5)?([I]+1):[I])", out.str());
 }
 
@@ -99,7 +98,7 @@ TEST(LoopTest, Unwind2xWithSingleVar) {
   i = i + 1;
 
   std::stringstream out_1x;
-  i.get_reflect_value().get_expr()->write(out_1x);
+  i.get_value().get_expr()->write(out_1x);
   EXPECT_EQ("([I]+1)", out_1x.str());
 
   // 2x
@@ -109,14 +108,14 @@ TEST(LoopTest, Unwind2xWithSingleVar) {
   i = i + 2;
 
   std::stringstream out_2x;
-  i.get_reflect_value().get_expr()->write(out_2x);
+  i.get_value().get_expr()->write(out_2x);
   EXPECT_EQ("(([I]+1)+2)", out_2x.str());
 
   ok = loop.unwind(any_bool("ANY"));
   EXPECT_FALSE(ok);
 
   std::stringstream join_out;
-  i.get_reflect_value().get_expr()->write(join_out);
+  i.get_value().get_expr()->write(join_out);
   EXPECT_EQ("(([I]<5)?((([I]+1)<7)?(([I]+1)+2):([I]+1)):[I])", join_out.str());
 }
 
@@ -136,11 +135,11 @@ TEST(LoopTest, Unwind2xWithMultipleVars) {
   j = j + 1;
 
   std::stringstream out_i_1x;
-  i.get_reflect_value().get_expr()->write(out_i_1x);
+  i.get_value().get_expr()->write(out_i_1x);
   EXPECT_EQ("([I]+1)", out_i_1x.str());
 
   std::stringstream out_j_1x;
-  j.get_reflect_value().get_expr()->write(out_j_1x);
+  j.get_value().get_expr()->write(out_j_1x);
   EXPECT_EQ("([J]+1)", out_j_1x.str());
 
   // 2x
@@ -151,22 +150,22 @@ TEST(LoopTest, Unwind2xWithMultipleVars) {
   j = j + 2;
 
   std::stringstream out_i_2x;
-  i.get_reflect_value().get_expr()->write(out_i_2x);
+  i.get_value().get_expr()->write(out_i_2x);
   EXPECT_EQ("(([I]+1)+2)", out_i_2x.str());
 
   std::stringstream out_j_2x;
-  j.get_reflect_value().get_expr()->write(out_j_2x);
+  j.get_value().get_expr()->write(out_j_2x);
   EXPECT_EQ("(([J]+1)+2)", out_j_2x.str());
 
   ok = loop.unwind(any_bool("ANY"));
   EXPECT_FALSE(ok);
 
   std::stringstream out_i_join;
-  i.get_reflect_value().get_expr()->write(out_i_join);
+  i.get_value().get_expr()->write(out_i_join);
   EXPECT_EQ("(([I]<5)?((([I]+1)<7)?(([I]+1)+2):([I]+1)):[I])", out_i_join.str());
 
   std::stringstream out_j_join;
-  j.get_reflect_value().get_expr()->write(out_j_join);
+  j.get_value().get_expr()->write(out_j_join);
   EXPECT_EQ("(([I]<5)?((([I]+1)<7)?(([J]+1)+2):([J]+1)):[J])", out_j_join.str());
 }
 

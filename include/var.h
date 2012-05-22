@@ -6,8 +6,8 @@
 #include <cstdint>
 
 #include "expr.h"
-#include "reflect.h"
-#include "symtracer.h"
+#include "value.h"
+#include "tracer.h"
 
 #define SymbolicVarPrefix "Var_"
 
@@ -151,16 +151,16 @@ public:
   // implicit type casting. In the case in which the other variable is also
   // symbolic, the instantiated variable is going to have a new CastExpr.
   template<typename S>
-  Var(const Var<S>& other) : value(other.get_reflect_value()), cast(true),
+  Var(const Var<S>& other) : value(other.get_value()), cast(true),
                              version(VZERO) {}
 
   ~Var() {}
 
-  // get_reflect_value() returns a read-only reference to an object that
+  // get_value() returns a read-only reference to an object that
   // contains the concrete value and runtime information about this variable.
   // The caller must ensure that it does not dereference the return value after
   // this Var<T> object has been destroyed.
-  const Value<T>& get_reflect_value() const { return value; }
+  const Value<T>& get_value() const { return value; }
 
   // T() is a conversion operator that returns the concrete value of this
   // variable. This conversion abides to the C++ type casting rules which are

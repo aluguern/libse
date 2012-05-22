@@ -1,11 +1,11 @@
-#ifndef REFLECT_H_
-#define REFLECT_H_
+#ifndef VALUE_H_
+#define VALUE_H_
 
 #include <memory>
 #include <string>
 #include <ostream>
 #include "expr.h"
-#include "symtracer.h"
+#include "tracer.h"
 
 // tracer() returns a static object that can record path constraints.
 extern Tracer& tracer();
@@ -26,17 +26,17 @@ REFLECT_TYPE(BOOL, bool)
 REFLECT_TYPE(CHAR, char)
 REFLECT_TYPE(INT, int)
 
-// ReflectValue is an abstract base class that represents the concrete and (if
+// GenericValue is an abstract base class that represents the concrete and (if
 // applicable) symbolic value at a specific physical memory address. Concrete
 // values are never shared and must be therefore copied by using memcpy or the
 // value's copy constructor. Symbolic expressions (if any) are shared until one
-// is modified. The type information of a ReflectValue object is immutable.
+// is modified. The type information of a GenericValue object is immutable.
 // However, type casts are possible and follow the C++11 language semantics as
 // implemented by the C++ compiler with which this library is compiled. In the
-// case when type casts were needed and the ReflectValue object represents a
+// case when type casts were needed and the GenericValue object represents a
 // symbolic variable (i.e. is_symbolic() returns true), its current symbolic
 // expression is going to be wrapped inside a new CastExpr.
-class ReflectValue {
+class GenericValue {
 private:
   // type is an immutable field that gives the primitive type information of
   // the represented concrete and (if applicable) symbolic value.
@@ -51,32 +51,32 @@ protected:
 
   // Constructor that creates the representation of a value of the supplied
   // type. Initially, the represented value is concrete (i.e. not symbolic).
-  ReflectValue(const Type type) :
+  GenericValue(const Type type) :
     type(type), expr(SharedExpr()) {}
 
   // Constructor that creates the representation of a value of the supplied
   // type and shared symbolic expression. The latter forces the represented
   // value to be symbolic.
-  ReflectValue(const Type type, const SharedExpr expr) :
+  GenericValue(const Type type, const SharedExpr expr) :
     type(type), expr(expr) {}
 
   // Copy constructor that creates a deep copy of another value representation.
   // Symbolic expressions are shared since these are expected to be immutable.
-  ReflectValue(const ReflectValue& other) :
+  GenericValue(const GenericValue& other) :
     type(other.type), expr(other.expr) {}
 
   // Assignment operator that assigns the symbolic expression (if any) of the
-  // supplied argument to this object. Since ReflectValue assignments usually
+  // supplied argument to this object. Since GenericValue assignments usually
   // involve one temporary object, no self-assignment check is performed.
-  ReflectValue& operator=(const ReflectValue& other) {
+  GenericValue& operator=(const GenericValue& other) {
     expr = other.expr;
     return *this;
   }
 
 public:
 
-  // Since ReflectValue is a base class, it needs a virtual destructor.
-  virtual ~ReflectValue() {}
+  // Since GenericValue is a base class, it needs a virtual destructor.
+  virtual ~GenericValue() {}
 
   // get_type() returns the type of the reflected value. The type never changes.
   Type get_type() const { return type; }
@@ -114,7 +114,7 @@ template <typename T> struct __id : __any { typedef T type; };
 // value's symbolic expression to the path constraints. Currently, the use of
 // non-bool types in control flow statements is unsupported (e.g. if(5) {...}).
 template<typename T>
-class Value : public ReflectValue {
+class Value : public GenericValue {
 private:
   // value represents the concrete value of the reflected value at a specific
   // physical memory location. The value is mutable unless the Value<T> object
@@ -144,16 +144,16 @@ public:
   // Constructor to create a reflection value based on the supplied concrete
   // value. Initially, the instantiated reflection value is concrete.
   Value(const T value) :
-    ReflectValue(ReflectType<T>::type), value(value) {}
+    GenericValue(ReflectType<T>::type), value(value) {}
 
   // Constructor to create a reflection value based on the supplied concrete
   // value and symbolic expression. The later forces the instantiated value
   // representation to be also symbolic.
   Value(const T value, const SharedExpr& expr) :
-    ReflectValue(ReflectType<T>::type, expr), value(value) {}
+    GenericValue(ReflectType<T>::type, expr), value(value) {}
 
   // Copy constructor that creates a reflection value based on another.
-  Value(const Value& other) : ReflectValue(other), value(other.value) {}
+  Value(const Value& other) : GenericValue(other), value(other.value) {}
 
   // Copy conversion constructor that creates a reflection value based on
   // another whose type is different from the template parameter T. Thus,
@@ -171,20 +171,20 @@ public:
   // get_value() returns the concrete value of this value representation.
   T get_value() const { return value; }
 
-  // Overrides ReflectValue::set_symbolic(const std::string&)
+  // Overrides GenericValue::set_symbolic(const std::string&)
   virtual void set_symbolic(const std::string&);
 
-  // Overrides ReflectValue::write(std::outstream&)
+  // Overrides GenericValue::write(std::outstream&)
   virtual std::ostream& write(std::ostream&) const;
 
-  // Overrides ReflectValue::get_expr()
+  // Overrides GenericValue::get_expr()
   virtual const SharedExpr get_expr() const;
 
   // Assignment operator that copies the concrete value and shared symbolic
   // expression of the supplied value representation. Since the assignment
   // usually involves a temporary value, no self-assignment check is performed.
   Value& operator=(const Value& other) {
-    ReflectValue::operator=(other);
+    GenericValue::operator=(other);
 
     value = other.value;
     return *this;
@@ -202,7 +202,7 @@ public:
 template<typename T>
 template<typename S>
 Value<T>::Value(const Value<S>& other) :
-  ReflectValue(ReflectType<T>::type), value(other.get_value()) {
+  GenericValue(ReflectType<T>::type), value(other.get_value()) {
   if(other.is_symbolic()) {
     set_expr(SharedExpr(new CastExpr(other.get_expr(), get_type())));
   }
@@ -247,7 +247,7 @@ std::ostream& Value<T>::write(std::ostream& out) const {
 template<typename T>
 const SharedExpr Value<T>::get_expr() const {
   if(is_symbolic()) {
-    return ReflectValue::get_expr();
+    return GenericValue::get_expr();
   }
 
   return create_shared_expr();
@@ -262,4 +262,4 @@ inline const Value<T> reflect(const T value) {
   return Value<T>(value);
 }
 
-#endif /* REFLECT_H_ */
+#endif /* VALUE_H_ */

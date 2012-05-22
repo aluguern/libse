@@ -1,7 +1,7 @@
 #include "gtest/gtest.h"
-#include "overload.h"
+#include "sp.h"
 
-TEST(ReflectTest, TypeConversions) {
+TEST(ValueTest, TypeConversions) {
   Value<bool> a = Value<bool>(true);
   Value<bool> b = Value<bool>(false);
   Value<char> c = Value<char>('A');
@@ -24,7 +24,7 @@ TEST(ReflectTest, TypeConversions) {
   EXPECT_EQ(42, static_cast<int>(cd));
 }
 
-TEST(ReflectTest, BoolConversion) {
+TEST(ValueTest, BoolConversion) {
   EXPECT_TRUE(reflect<bool>(true));
   EXPECT_FALSE(reflect<bool>(false));
 }
@@ -37,7 +37,7 @@ public:
   operator bool() const { return flag; }
 };
 
-TEST(ReflectTest, Types) {
+TEST(ValueTest, Types) {
   const Value<bool> a = Value<bool>(true);
   const Value<char> b = Value<char>(3);
   const Value<int> c = Value<int>(5);
@@ -47,7 +47,7 @@ TEST(ReflectTest, Types) {
   EXPECT_EQ(INT, c.get_type());
 }
 
-TEST(ReflectTest, ValueConstructorWithExpression) {
+TEST(ValueTest, ValueConstructorWithExpression) {
   const SharedExpr expr = SharedExpr(new ValueExpr<char>(5));
   const Value<char> a = Value<char>(5, expr);
 
@@ -56,7 +56,7 @@ TEST(ReflectTest, ValueConstructorWithExpression) {
   EXPECT_TRUE(a.is_symbolic());
 }
 
-TEST(ReflectTest, ValueConstructorWithoutExpression) {
+TEST(ValueTest, ValueConstructorWithoutExpression) {
   const Value<char> a = Value<char>(5);
 
   EXPECT_EQ(CHAR, a.get_type());
@@ -64,7 +64,7 @@ TEST(ReflectTest, ValueConstructorWithoutExpression) {
   EXPECT_FALSE(a.is_symbolic());
 }
 
-TEST(ReflectTest, ValueConstructorWithNullExpression) {
+TEST(ValueTest, ValueConstructorWithNullExpression) {
   const Value<char> a = Value<char>(5, SharedExpr());
 
   EXPECT_EQ(CHAR, a.get_type());
@@ -72,7 +72,7 @@ TEST(ReflectTest, ValueConstructorWithNullExpression) {
   EXPECT_FALSE(a.is_symbolic());
 }
 
-TEST(ReflectTest, ValueCopyConstructorWithoutExpression) {
+TEST(ValueTest, ValueCopyConstructorWithoutExpression) {
   const Value<char> a = Value<char>(5);
   const Value<char> b = a;
 
@@ -81,7 +81,7 @@ TEST(ReflectTest, ValueCopyConstructorWithoutExpression) {
   EXPECT_FALSE(b.is_symbolic());
 }
 
-TEST(ReflectTest, ValueCopyConstructorWithoutExpressionButCast) {
+TEST(ValueTest, ValueCopyConstructorWithoutExpressionButCast) {
   const Value<char> a = Value<char>(5);
   const Value<int> b = a;
 
@@ -90,7 +90,7 @@ TEST(ReflectTest, ValueCopyConstructorWithoutExpressionButCast) {
   EXPECT_FALSE(b.is_symbolic());
 }
 
-TEST(ReflectTest, ValueCopyConstructorWithExpression) {
+TEST(ValueTest, ValueCopyConstructorWithExpression) {
   const SharedExpr expr = SharedExpr(new ValueExpr<char>(5));
   const Value<char> a = Value<char>(5, expr);
   const Value<char> b = a;
@@ -101,7 +101,7 @@ TEST(ReflectTest, ValueCopyConstructorWithExpression) {
   EXPECT_TRUE(b.is_symbolic());
 }
 
-TEST(ReflectTest, ValueCopyConstructorWithExpressionAndCast) {
+TEST(ValueTest, ValueCopyConstructorWithExpressionAndCast) {
   const SharedExpr expr = SharedExpr(new ValueExpr<char>(5));
   const Value<char> a = Value<char>(5, expr);
   const Value<int> b = a;
@@ -112,7 +112,7 @@ TEST(ReflectTest, ValueCopyConstructorWithExpressionAndCast) {
   EXPECT_TRUE(b.is_symbolic());
 }
 
-TEST(ReflectTest, ValueCopyConstructorWithNullExpression) {
+TEST(ValueTest, ValueCopyConstructorWithNullExpression) {
   const Value<char> a = Value<char>(5, SharedExpr());
   const Value<char> b = a;
 
@@ -121,7 +121,7 @@ TEST(ReflectTest, ValueCopyConstructorWithNullExpression) {
   EXPECT_FALSE(b.is_symbolic());
 }
 
-TEST(ReflectTest, ValueCopyConstructorWithNullExpressionAndCast) {
+TEST(ValueTest, ValueCopyConstructorWithNullExpressionAndCast) {
   const Value<char> a = Value<char>(5, SharedExpr());
   const Value<int> b = a;
 
@@ -130,7 +130,7 @@ TEST(ReflectTest, ValueCopyConstructorWithNullExpressionAndCast) {
   EXPECT_FALSE(b.is_symbolic());
 }
 
-TEST(ReflectTest, ValueAssignmentWithoutExpressionButCast) {
+TEST(ValueTest, ValueAssignmentWithoutExpressionButCast) {
   const Value<int> a = Value<int>(5);
   Value<char> b = Value<char>(3);
 
@@ -143,7 +143,7 @@ TEST(ReflectTest, ValueAssignmentWithoutExpressionButCast) {
   EXPECT_FALSE(b.is_symbolic());
 }
 
-TEST(ReflectTest, ValueAssignmentWithExpressionAndCast) {
+TEST(ValueTest, ValueAssignmentWithExpressionAndCast) {
   const SharedExpr expr = SharedExpr(new ValueExpr<int>(5));
   const Value<int> a = Value<int>(5, expr);
   Value<char> b = Value<char>(3);
@@ -158,7 +158,7 @@ TEST(ReflectTest, ValueAssignmentWithExpressionAndCast) {
   EXPECT_TRUE(b.is_symbolic());
 }
 
-TEST(ReflectTest, ValueAssignmentWithExpressionAndWithoutCast) {
+TEST(ValueTest, ValueAssignmentWithExpressionAndWithoutCast) {
   const SharedExpr expr = SharedExpr(new ValueExpr<int>(5));
   const Value<int> a = Value<int>(5, expr);
   Value<int> b = Value<int>(3);
@@ -172,7 +172,7 @@ TEST(ReflectTest, ValueAssignmentWithExpressionAndWithoutCast) {
   EXPECT_TRUE(b.is_symbolic());
 }
 
-TEST(ReflectTest, ValueAssignmentWithNullExpressionAndCast) {
+TEST(ValueTest, ValueAssignmentWithNullExpressionAndCast) {
   const Value<int> a = Value<int>(5, SharedExpr());
   Value<char> b = Value<char>(3);
 
@@ -185,7 +185,7 @@ TEST(ReflectTest, ValueAssignmentWithNullExpressionAndCast) {
   EXPECT_FALSE(b.is_symbolic());
 }
 
-TEST(ReflectTest, ValueAssignmentWithNullExpressionAndWithoutCast) {
+TEST(ValueTest, ValueAssignmentWithNullExpressionAndWithoutCast) {
   const Value<int> a = Value<int>(5, SharedExpr());
   Value<int> b = Value<int>(3);
 
@@ -203,11 +203,11 @@ const Value<T> reflect_with_expr(const T value) {
   return a;
 }
 
-TEST(ReflectTest, AddWithoutExpression) {
+TEST(ValueTest, AddWithoutExpression) {
   const Value<char>& a = reflect<char>(2);
   const Value<int>& b = reflect<int>(5);
-  const ReflectValue& c = a + b;
-  const ReflectValue& d = b + a;
+  const GenericValue& c = a + b;
+  const GenericValue& d = b + a;
 
   EXPECT_EQ(INT, c.get_type());
   EXPECT_EQ(INT, d.get_type());
@@ -219,11 +219,11 @@ TEST(ReflectTest, AddWithoutExpression) {
   EXPECT_EQ(7, (b + a).get_value());
 }
 
-TEST(ReflectTest, AddWithExpression) {
+TEST(ValueTest, AddWithExpression) {
   const Value<int>& a = reflect_with_expr<int>(2);
   const Value<int>& b = reflect<int>(5);
-  const ReflectValue& c = a + b;
-  const ReflectValue& d = b + a;
+  const GenericValue& c = a + b;
+  const GenericValue& d = b + a;
 
   EXPECT_EQ(INT, c.get_type());
   EXPECT_EQ(INT, d.get_type());
@@ -239,11 +239,11 @@ TEST(ReflectTest, AddWithExpression) {
   EXPECT_EQ("(2+5)", out.str());
 }
 
-TEST(ReflectTest, LessThanWithoutExpression) {
+TEST(ValueTest, LessThanWithoutExpression) {
   const Value<char>& a = reflect<char>(2);
   const Value<int>& b = reflect<int>(5);
-  const ReflectValue& c = a < b;
-  const ReflectValue& d = b < a;
+  const GenericValue& c = a < b;
+  const GenericValue& d = b < a;
 
   EXPECT_EQ(BOOL, c.get_type());
   EXPECT_EQ(BOOL, d.get_type());
@@ -255,11 +255,11 @@ TEST(ReflectTest, LessThanWithoutExpression) {
   EXPECT_FALSE((b < a).get_value());
 }
 
-TEST(ReflectTest, LessThanWithExpression) {
+TEST(ValueTest, LessThanWithExpression) {
   const Value<int>& a = reflect_with_expr<int>(2);
   const Value<int>& b = reflect<int>(5);
-  const ReflectValue& c = a < b;
-  const ReflectValue& d = b < a;
+  const GenericValue& c = a < b;
+  const GenericValue& d = b < a;
 
   EXPECT_EQ(BOOL, c.get_type());
   EXPECT_EQ(BOOL, d.get_type());
@@ -275,27 +275,27 @@ TEST(ReflectTest, LessThanWithExpression) {
   EXPECT_EQ("(2<5)", out.str());
 }
 
-TEST(ReflectTest, NotTrueWithoutExpression) {
+TEST(ValueTest, NotTrueWithoutExpression) {
   const Value<bool>& a = reflect<bool>(true);
-  const ReflectValue& b = !a;
+  const GenericValue& b = !a;
 
   EXPECT_EQ(BOOL, b.get_type());
   EXPECT_FALSE(b.is_symbolic());
   EXPECT_FALSE((!a).get_value());
 }
 
-TEST(ReflectTest, NotFalseWithoutExpression) {
+TEST(ValueTest, NotFalseWithoutExpression) {
   const Value<bool>& a = reflect<bool>(false);
-  const ReflectValue& b = !a;
+  const GenericValue& b = !a;
 
   EXPECT_EQ(BOOL, b.get_type());
   EXPECT_FALSE(b.is_symbolic());
   EXPECT_TRUE((!a).get_value());
 }
 
-TEST(ReflectTest, NotTrueWithExpression) {
+TEST(ValueTest, NotTrueWithExpression) {
   const Value<bool>& a = reflect_with_expr<bool>(true);
-  const ReflectValue& b = !a;
+  const GenericValue& b = !a;
 
   EXPECT_EQ(BOOL, b.get_type());
   EXPECT_TRUE(b.is_symbolic());
@@ -306,9 +306,9 @@ TEST(ReflectTest, NotTrueWithExpression) {
   EXPECT_EQ("(!1)", out.str());
 }
 
-TEST(ReflectTest, NotFalseWithExpression) {
+TEST(ValueTest, NotFalseWithExpression) {
   const Value<bool>& a = reflect_with_expr<bool>(false);
-  const ReflectValue& b = !a;
+  const GenericValue& b = !a;
 
   EXPECT_EQ(BOOL, b.get_type());
   EXPECT_TRUE(b.is_symbolic());
@@ -319,7 +319,7 @@ TEST(ReflectTest, NotFalseWithExpression) {
   EXPECT_EQ("(!0)", out.str());
 }
 
-TEST(ReflectTest, SetSymbolic) {
+TEST(ValueTest, SetSymbolic) {
   Value<int> a = reflect<int>(5);
 
   EXPECT_FALSE(a.is_symbolic());
@@ -327,7 +327,7 @@ TEST(ReflectTest, SetSymbolic) {
   EXPECT_TRUE(a.is_symbolic());
 }
 
-TEST(ReflectTest, SetSymbolicName) {
+TEST(ValueTest, SetSymbolicName) {
   Value<int> a = reflect<int>(5);
   std::string name = "Var_0";
 
@@ -343,7 +343,7 @@ TEST(ReflectTest, SetSymbolicName) {
   EXPECT_EQ("[Var_0:5]", after_clear.str());
 }
 
-TEST(ReflectTest, SetSymbolicTwice) {
+TEST(ValueTest, SetSymbolicTwice) {
   Value<int> a = reflect<int>(5);
   a.set_symbolic("a");
 
@@ -357,7 +357,7 @@ TEST(ReflectTest, SetSymbolicTwice) {
   EXPECT_EQ(expr, a.get_expr());
 }
 
-TEST(ReflectTest, NativeBitPrecision) {
+TEST(ValueTest, NativeBitPrecision) {
   // C++ standard does not specify if char is signed or unsigned
   char x = 254;
   int y = 5;
@@ -374,11 +374,11 @@ TEST(ReflectTest, NativeBitPrecision) {
   EXPECT_EQ(z, v);
 }
 
-TEST(ReflectTest, TypePromotion) {
+TEST(ValueTest, TypePromotion) {
   // C++ guarantees that a variable of type char is in the range [-128, 127].
   const Value<char>& a = reflect<char>(127);
   const Value<int>& b = reflect<int>(256);
-  const ReflectValue& c = a + b;
+  const GenericValue& c = a + b;
 
   // C++ guarantees type promotion
   EXPECT_EQ(INT, c.get_type());
@@ -389,7 +389,7 @@ TEST(ReflectTest, TypePromotion) {
   EXPECT_EQ(383, w);
 }
 
-TEST(ReflectTest, SymbolicBoolConversion) {
+TEST(ValueTest, SymbolicBoolConversion) {
   tracer().reset();
 
   Value<bool> a = reflect<bool>(true);
@@ -407,7 +407,7 @@ TEST(ReflectTest, SymbolicBoolConversion) {
   EXPECT_EQ("[A:1]\n(![B:0])\n", out.str());
 }
 
-TEST(ReflectTest, SymbolicBoolConversionWithIfStatement) {
+TEST(ValueTest, SymbolicBoolConversionWithIfStatement) {
   tracer().reset();
 
   Value<bool> a = reflect<bool>(true);

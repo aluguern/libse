@@ -8,7 +8,7 @@ GTEST="gtest-1.6.0"
 set -e
 
 # Check that we're being run from the right directory.
-if test ! -f src/reflect.cpp; then
+if test ! -f src/expr.cpp; then
   cat >&2 << __EOF__
 Could not find source code. Make sure you are running this script from the
 root of the distribution tree.

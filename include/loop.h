@@ -7,7 +7,7 @@
 #include <unordered_set>
 
 #include "var.h"
-#include "reflect.h"
+#include "value.h"
 
 // UnwindingPolicy is an interface that specifies the unwinding semantics of a
 // loop. Such a policy is said to be sound if and only if every found bug with

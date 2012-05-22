@@ -49,20 +49,20 @@ lib_LTLIBRARIES = lib/libsp.la
 
 lib_libsp_la_SOURCES = \
   src/expr.cpp \
-  src/reflect.cpp \
+  src/value.cpp \
   src/any.cpp \
   src/var.cpp \
   src/loop.cpp \
-  src/symtracer.cpp
+  src/tracer.cpp
 
 pkginclude_HEADERS = \
-  include/reflect.h \
+  include/value.h \
   include/any.h \
   include/expr.h \
   include/var.h \
   include/loop.h \
-  include/overload.h \
-  include/symtracer.h
+  include/sp.h \
+  include/tracer.h
 
 # Bulid rules for functional and unit tests.
 # Recall the Automake naming conventions:
@@ -74,13 +74,13 @@ TESTS = test/sp
 check_PROGRAMS = test/sp
 
 test_sp_SOURCES = \
-  test/reflect_test.cpp \
+  test/value_test.cpp \
   test/any_test.cpp \
   test/expr_test.cpp \
   test/var_test.cpp \
   test/loop_test.cpp \
   test/version_test.cpp \
-  test/symtracer_test.cpp \
+  test/tracer_test.cpp \
   test/functional_test.cpp
 
 test_sp_CPPFLAGS = -std=c++0x -I$(srcdir)/include -I$(top_srcdir)/gtest/include

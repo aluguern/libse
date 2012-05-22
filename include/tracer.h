@@ -1,5 +1,5 @@
-#ifndef SYMTRACER_H_
-#define SYMTRACER_H_
+#ifndef TRACER_H_
+#define TRACER_H_
 
 #include "expr.h"
 #include <list>
@@ -15,4 +15,4 @@ public:
   std::ostream& write_path_constraints(std::ostream& out) const;
 };
 
-#endif /* SYMTRACER_H_ */
+#endif /* TRACER_H_ */

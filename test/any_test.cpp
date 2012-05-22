@@ -1,6 +1,6 @@
 #include <sstream>
 #include "gtest/gtest.h"
-#include "overload.h"
+#include "sp.h"
 
 TEST(AnyTest, IsSymbolic) {
   EXPECT_TRUE(any_bool("A").is_symbolic());
@@ -89,7 +89,7 @@ TEST(AnyTest, OperationOnAnyExpr) {
   a = a + 2;
 
   std::stringstream out;
-  a.get_reflect_value().get_expr()->write(out);
+  a.get_value().get_expr()->write(out);
   EXPECT_EQ("([A]+2)", out.str());
 }
 

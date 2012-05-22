@@ -1,7 +1,7 @@
 #ifndef ANY_H_
 #define ANY_H_
 
-#include "reflect.h"
+#include "value.h"
 
 // Internal class that represents an arbitrary value of primitive type T.
 // It should be only instantiated as a singleton object.
@@ -31,8 +31,8 @@ SharedExpr AnyValue<T>::create_shared_expr(const std::string& name) const {
 
 template<typename T>
 void AnyValue<T>::set_symbolic(const std::string& name) {
-  if(!ReflectValue::is_symbolic()) {
-    ReflectValue::set_expr(create_shared_expr(name));
+  if(!GenericValue::is_symbolic()) {
+    GenericValue::set_expr(create_shared_expr(name));
   }
 }
 

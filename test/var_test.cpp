@@ -1,5 +1,5 @@
 #include "gtest/gtest.h"
-#include "overload.h"
+#include "sp.h"
 
 TEST(VarTest, BoolTrue) {
   Bool var = true;
@@ -288,12 +288,12 @@ TEST(VarTest, SetSymbolicName) {
   EXPECT_TRUE(var.is_symbolic());
 
   std::stringstream out;
-  var.get_reflect_value().get_expr()->write(out);
+  var.get_value().get_expr()->write(out);
   EXPECT_EQ("[Var_0:A]", out.str());
 
   name.clear();
   std::stringstream after_clear;
-  var.get_reflect_value().get_expr()->write(after_clear);
+  var.get_value().get_expr()->write(after_clear);
   EXPECT_EQ("[Var_0:A]", after_clear.str());
 }
 
@@ -412,7 +412,7 @@ TEST(VarTest, SymbolicConstructorWithCast) {
   EXPECT_TRUE(a.is_symbolic());
   EXPECT_TRUE(b.is_symbolic());
   EXPECT_EQ(CHAR, b.get_type());
-  EXPECT_NE(value_ref.get_expr(), b.get_reflect_value().get_expr());
+  EXPECT_NE(value_ref.get_expr(), b.get_value().get_expr());
 
   EXPECT_EQ(VZERO, a.get_version());
   EXPECT_EQ(VZERO, b.get_version());
@@ -442,7 +442,7 @@ TEST(VarTest, SymbolicConstructor) {
   EXPECT_EQ(5, b);
   EXPECT_TRUE(a.is_symbolic());
   EXPECT_TRUE(b.is_symbolic());
-  EXPECT_EQ(value_ref.get_expr(), b.get_reflect_value().get_expr());
+  EXPECT_EQ(value_ref.get_expr(), b.get_value().get_expr());
 
   EXPECT_EQ(VZERO, a.get_version());
   EXPECT_EQ(VZERO, b.get_version());

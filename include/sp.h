@@ -1,7 +1,7 @@
-#ifndef OVERLOAD_H_
-#define OVERLOAD_H_
+#ifndef SP_H_
+#define SP_H_
 
-#include "reflect.h"
+#include "value.h"
 #include "any.h"
 #include "var.h"
 #include "loop.h"
@@ -10,7 +10,7 @@
 // overload built-in operators such as addition, multiplication etc.
 template<typename T>
 static inline const Value<T>& __filter(const Var<T>& var) {
-  return var.get_reflect_value();
+  return var.get_value();
 }
 
 // Internal function to guide the type inference of template functions that
@@ -87,4 +87,4 @@ OVERLOAD_BINARY_OPERATOR(<, LSS)
 
 OVERLOAD_UNARY_OPERATOR(!, NOT)
 
-#endif /* OVERLOAD_H_ */
+#endif /* SP_H_ */

@@ -1,8 +1,8 @@
 #include <sstream>
 #include "gtest/gtest.h"
-#include "symtracer.h"
+#include "tracer.h"
 
-TEST(SymtracerTest, WritePathConstraints) {
+TEST(TracerTest, WritePathConstraints) {
   const SharedExpr a = SharedExpr(new ValueExpr<short>(7));
   const SharedExpr b = SharedExpr(new ValueExpr<int>(3, "Var_1"));
   const SharedExpr lss1 = SharedExpr(new BinaryExpr(a, b, LSS));
@@ -20,7 +20,7 @@ TEST(SymtracerTest, WritePathConstraints) {
   EXPECT_EQ("(7<[Var_1:3])\n((7+[Var_1:3])<[Var_1:3])\n", out.str());
 }
 
-TEST(SymtracerTest, Reset) {
+TEST(TracerTest, Reset) {
   const SharedExpr a = SharedExpr(new ValueExpr<short>(7));
 
   Tracer tracer = Tracer();

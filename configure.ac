@@ -3,7 +3,7 @@ AC_PREREQ([2.59])
 
 AC_INIT([libsp], [1.0], [alex.horn@cs.ox.ac.uk])
 
-AC_CONFIG_SRCDIR([src/reflect.cpp])
+AC_CONFIG_SRCDIR([src/expr.cpp])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_HEADERS([build-aux/config.h])
 AC_CONFIG_MACRO_DIR([m4])

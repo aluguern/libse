@@ -1,4 +1,4 @@
-#include "symtracer.h"
+#include "tracer.h"
 
 void Tracer::reset() {
   path_constraints.clear();
