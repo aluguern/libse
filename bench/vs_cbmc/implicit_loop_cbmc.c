@@ -1,7 +1,5 @@
 #include <limits.h>
 
-const int N = 65536;
-
 int main(void) {
   int k = nondet_int();
 

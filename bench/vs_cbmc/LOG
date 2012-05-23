@@ -12,7 +12,15 @@ sys 0.20
 
 Time: 15 sec
 
-implicit_loop_sp.cpp:
+implicit_loop_sp.cpp (8192 = 2^13):
+
+real	0m2.696s
+user	0m0.028s
+sys	0m0.030s
+
+Time: 3 sec
+
+implicit_loop_sp.cpp (65536 = 2^16):
 
 real 20.61
 user 0.14
@@ -31,6 +39,22 @@ user	31m57.098s
 sys	0m2.594s
 
 Time: 1900 sec
+
+-------------------------
+
+Command: time ./cbmc --unwind 8192 --no-unwinding-assertions implicit_loop_bench.c
+
+...
+size of program expression: 40974 assignments
+simple slicing removed 0 assignments
+Generated 0 VCC(s), 0 remaining after simplification
+VERIFICATION SUCCESSFUL
+
+real	46m52.988s
+user	1m13.520s
+sys	2m27.527s
+
+Time: 2800 sec
 
 -------------------------
 
