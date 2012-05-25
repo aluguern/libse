@@ -5,6 +5,8 @@
 #include <string>
 #include <ostream>
 
+namespace sp {
+
 // Type enumerates built-in primitive types. The order of these types
 // determines the order of elements in the internal types array.
 enum Type : unsigned short {
@@ -219,5 +221,7 @@ public:
 
   std::ostream& write(std::ostream&) const;
 };
+
+}
 
 #endif /* EXPR_H_ */

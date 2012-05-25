@@ -1,6 +1,8 @@
 #include "gtest/gtest.h"
 #include "sp.h"
 
+using namespace sp;
+
 TEST(ValueTest, TypeConversions) {
   Value<bool> a = Value<bool>(true);
   Value<bool> b = Value<bool>(false);

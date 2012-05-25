@@ -1,5 +1,7 @@
 #include "any.h"
 
+namespace sp {
+
 // Macro to define a function which has been declared with ANY_DECL.
 #define ANY_DEF(type) \
 Value<type> any_##type(const std::string& name) {\
@@ -11,4 +13,6 @@ Value<type> any_##type(const std::string& name) {\
 ANY_DEF(bool)
 ANY_DEF(char)
 ANY_DEF(int)
+
+}
 

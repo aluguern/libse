@@ -1,6 +1,8 @@
 #include "gtest/gtest.h"
 #include "sp.h"
 
+using namespace sp;
+
 TEST(VarTest, BoolTrue) {
   Bool var = true;
   EXPECT_EQ(BOOL, var.get_type());

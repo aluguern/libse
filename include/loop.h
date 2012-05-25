@@ -9,6 +9,8 @@
 #include "var.h"
 #include "value.h"
 
+namespace sp {
+
 // UnwindingPolicy is an interface that specifies the unwinding semantics of a
 // loop. Such a policy is said to be sound if and only if every found bug with
 // it is in fact real. If a policy is not sound, we call it unsound. A policy
@@ -202,5 +204,7 @@ public:
 
 template<typename T>
 void Loop::track(Var<T>& var) { var_ptrs.insert(&var); }
+
+}
 
 #endif /* LOOP_H_ */

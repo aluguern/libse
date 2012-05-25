@@ -2,6 +2,8 @@
 #include "gtest/gtest.h"
 #include "sp.h"
 
+using namespace sp;
+
 TEST(LoopTest, BoundedUnwindingPolicy) {
   const Value<bool> anything = any_bool("ANY");
   BoundedUnwindingPolicy policy(2);

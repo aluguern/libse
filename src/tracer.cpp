@@ -1,5 +1,7 @@
 #include "tracer.h"
 
+namespace sp {
+
 void Tracer::reset() {
   path_constraints.clear();
 }
@@ -15,5 +17,7 @@ std::ostream& Tracer::write_path_constraints(std::ostream& out) const {
   }
 
   return out;
+}
+
 }
 

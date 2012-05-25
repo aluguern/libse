@@ -2,6 +2,8 @@
 #include "gtest/gtest.h"
 #include "expr.h"
 
+using namespace sp;
+
 TEST(ExprTest, ValueExprWithoutName) {
   const SharedExpr a = SharedExpr(new ValueExpr<short>(7));
 

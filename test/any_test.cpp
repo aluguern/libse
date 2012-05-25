@@ -2,6 +2,8 @@
 #include "gtest/gtest.h"
 #include "sp.h"
 
+using namespace sp;
+
 TEST(AnyTest, IsSymbolic) {
   EXPECT_TRUE(any_bool("A").is_symbolic());
   EXPECT_TRUE(any_char("A").is_symbolic());

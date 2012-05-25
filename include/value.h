@@ -7,6 +7,8 @@
 #include "expr.h"
 #include "tracer.h"
 
+namespace sp {
+
 // tracer() returns a static object that can record path constraints.
 extern Tracer& tracer();
 
@@ -260,6 +262,8 @@ const SharedExpr Value<T>::get_expr() const {
 template<typename T>
 inline const Value<T> reflect(const T value) {
   return Value<T>(value);
+}
+
 }
 
 #endif /* VALUE_H_ */

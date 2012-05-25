@@ -1,6 +1,8 @@
 #include <iostream>
 #include "sp.h"
 
+using namespace sp;
+
 /* 2^16 */
 const int N = 65536;
 

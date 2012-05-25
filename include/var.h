@@ -9,7 +9,9 @@
 #include "value.h"
 #include "tracer.h"
 
-#define SymbolicVarPrefix "Var_"
+namespace sp {
+
+static const std::string SymbolicVarPrefix = "Var_";
 
 // Built-in unsigned numerical type which can be initialized to VZERO.
 typedef unsigned long long Version;
@@ -245,6 +247,8 @@ void set_symbolic(Var<T>& var) {
 
   set_symbolic(var, sstream.str());
   sstream.clear();
+}
+
 }
 
 #endif /* VAR_H_ */

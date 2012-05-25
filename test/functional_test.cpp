@@ -2,7 +2,7 @@
 #include "gtest/gtest.h"
 #include "sp.h"
 
-Int foo(Int other) {
+sp::Int foo(sp::Int other) {
   if(other + 1 < 6) {
     other = other + 42;
   } else {
@@ -13,12 +13,12 @@ Int foo(Int other) {
 }
 
 TEST(FunctionalTest, IfStatementAndFunctionCall) {
-  reset_tracer();
+  sp::reset_tracer();
 
-  Int var = 3;
-  set_symbolic(var);
+  sp::Int var = 3;
+  sp::set_symbolic(var);
 
-  Int i = 0;
+  sp::Int i = 0;
   if(i < 9) {
     if(var < 8) {}
     var = var + 2;
@@ -27,7 +27,7 @@ TEST(FunctionalTest, IfStatementAndFunctionCall) {
   if(var < 5) {}
 
   std::stringstream out;
-  tracer().write_path_constraints(out);
+  sp::tracer().write_path_constraints(out);
 
   EXPECT_EQ("([Var_0:3]<8)\n"
             "(([Var_0:3]+2)<7)\n"

@@ -2,6 +2,8 @@
 #include <iostream>
 #include "sp.h"
 
+using namespace sp;
+
 const int N = 65536;
 
 int main(void) {

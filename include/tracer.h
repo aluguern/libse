@@ -4,6 +4,8 @@
 #include "expr.h"
 #include <list>
 
+namespace sp {
+
 class Tracer {
 private:
   std::list<SharedExpr> path_constraints;
@@ -14,5 +16,7 @@ public:
 
   std::ostream& write_path_constraints(std::ostream& out) const;
 };
+
+}
 
 #endif /* TRACER_H_ */

@@ -1,5 +1,7 @@
 #include "loop.h"
 
+namespace sp {
+
 const SharedExpr Loop::NIL_EXPR = SharedExpr(0);
 
 bool Loop::unwind(const Value<bool>& cond) {
@@ -63,5 +65,7 @@ void Loop::internal_join(GenericVar* var_ptr, TernaryExpr* join_expr) {
 
 inline TernaryExpr* Loop::to_ternary_expr_ptr(const JoinExprMap::iterator& iter) {
   return (*iter).second;
+}
+
 }
 

@@ -2,6 +2,8 @@
 #include "gtest/gtest.h"
 #include "sp.h"
 
+using namespace sp;
+
 TEST(VersionTest, InitWithConcrete) {
   Bool a = true;
   Bool b = true;

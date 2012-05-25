@@ -1,5 +1,7 @@
 #include "expr.h"
 
+namespace sp {
+
 std::ostream& UnaryExpr::write(std::ostream& out) const {
   out << LPAR;
   out << operators[op];
@@ -35,5 +37,7 @@ std::ostream& CastExpr::write(std::ostream& out) const {
   expr->write(out);
   out << RPAR << RPAR;
   return out;
+}
+
 }
 

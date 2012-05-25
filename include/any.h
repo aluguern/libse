@@ -3,6 +3,8 @@
 
 #include "value.h"
 
+namespace sp {
+
 // Internal class that represents an arbitrary value of primitive type T.
 // It should be only instantiated as a singleton object.
 template<typename T>
@@ -45,5 +47,7 @@ extern Value<type> any_##type(const std::string& name);
 ANY_DECL(bool)
 ANY_DECL(char)
 ANY_DECL(int)
+
+}
 
 #endif /* ANY_H_ */
