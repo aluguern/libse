@@ -1,9 +1,9 @@
 #ifndef LOOP_H_
 #define LOOP_H_
 
-#include <map>
-#include <stack>
 #include <memory>
+#include <functional>
+#include <unordered_map>
 #include <unordered_set>
 
 #include "var.h"
@@ -75,53 +75,89 @@ class Loop {
 
 private:
 
+  // JoinExprMap is an abstract data type for a hashtable whose search and
+  // insertion operations must have at least average constant-time complexity.
+  // Unfortunately, constness must be dropped because the <functional> header
+  // only defines template<class T> struct hash<T*>. For this reason, the
+  // constness of function arguments is only documented with comments for now.
+  typedef std::unordered_map<GenericVar*, TernaryExpr*> JoinExprMap;
+
+  // NIL_EXPR is a strictly internal constant for an unknown expression.
+  static const SharedExpr NIL_EXPR;
+
   // Interface to injected loop unwinding policy implementation. Since this
   // policy could have state that is uniquely tied to the loop, this object
   // has the sole ownership of the pointer.
   std::unique_ptr<UnwindingPolicy> unwinding_policy_ptr;
 
-  // cond_expr_stack is a stack of loop conditions. The top of the stack is the
-  // loop condition of the inner-most loop unwinding.
-  std::stack<SharedExpr> cond_expr_stack;
-
-  // begin_expr_map is used to build the "else" branch of join expressions.
-  // The key is the unique identifier of a symbolic variable. The value is
-  // a stack of symbolic expressions where the top corresponds to the symbolic
-  // expression that the variable had in the inner-most loop unwinding.
-  std::map<const GenericVar* const, std::stack<SharedExpr>> begin_expr_map;
-
-  // var_ptrs is a set of pointers to tracked variables. These are symbolic
-  // variables whose symbolic expressions are going to be joined at the last
-  // loop unwinding.
+  // var_ptrs is a set of pointers of tracked variables whose symbolic
+  // expressions must be joined at the last loop unwinding.
   std::unordered_set<GenericVar*> var_ptrs;
 
-  // unwind_flag is true if and only if unwind(const Value<bool>&) should
-  // delegate to the injected unwinding policy object. Initially, it is true.
+  // join_expr_map maps each GenericVar pointer to the root of a DAG that
+  // represents the join expression of the variable once the loop has been
+  // fully unwound. The map is initialized during the first loop unwinding.
+  // After this initialization, it can be read but never be written again.
+  JoinExprMap join_expr_map;
+
+  // current_join_expr_map maps the physical address of a GenericVar to a
+  // pointer of a TernaryExpr object. It represents a join expression of the
+  // form "x ? y : z" where x, y and z are symbolic expressions. When such a
+  // new join expression is inserted into the map, x corresponds to the loop
+  // condition of the current loop unwinding. Initially, y is NULL whereas z
+  // is the current symbolic expression of the symbolic variable whose physical
+  // memory address serves as key. With the next loop unwinding, y is updated
+  // to the join expression for this new loop unwinding.
+  //
+  // Note that when an expression is inserted into the map for the first time,
+  // it must be associated with the "then" expression of the join expression
+  // in join_expr_map for the same key.
+  JoinExprMap current_join_expr_map;
+
+  // unwind_flag is true if and only if the unwinding policy allows another
+  // loop unwinding given the most recent loop condition.
   bool unwind_flag;
-
-  // internal_stash(const GenericVar* const) pushes the current symbolic
-  // expression of the supplied variable pointer on a stack. This stack
-  // is unique to the variable pointer.
-  void internal_stash(const GenericVar* const var_ptr);
-
-  // internal_get_stack(const GenericVar* const var_ptr) gets all the stashed
-  // expressions of the supplied variable pointer. The top of the stack is the
-  // most recent expression that has been saved by internal_stash(var_ptr).
-  std::stack<SharedExpr> internal_get_stack(const GenericVar* const var_ptr);
 
   // internal_unwind(const Value<bool>&) must be called if and only if the
   // unwinding policy allows another unwinding for the given boolean condition
-  // and the previous loop unwindings.
+  // and join_expr_map has been initialized. If this precondition is satisfied,
+  // internal_current_join(const Value<bool>&, const GenericVar* const) is
+  // called for the supplied loop condition and each pointer in var_ptrs.
   void internal_unwind(const Value<bool>& cond);
 
+  // internal_current_join(const Value<bool>&, const GenericVar* const) must
+  // only read and write the current_join_expr_map field whose class invariants
+  // are documented as part of its declaration.
+  void internal_current_join(const Value<bool>& cond, GenericVar* var_ptr);
+
   // internal_join() must be called if and only if the unwinding policy forbids
-  // another unwinding and internal_unwind(const Value<bool>&) has been called
-  // at least once. internal_join() must call internal_join(GenericVar*) for
-  // every pointer of a tracked variable. It may perform other sanity checks.
+  // another unwinding and unwind(const Value<bool>&) has been called at least
+  // once. If this precondition has been satisfied, internal_join() calls the
+  // function internal_join(GenericVar* const, TernaryExpr*) for every pointer
+  // of a tracked variable and the pointer of the join expression with which it
+  // should be associated.
   void internal_join();
 
-  // Creates a ternary join expression for a tracked variable.
-  void internal_join(GenericVar* const var_ptr);
+  // internal_join(GenericVar* const, TernaryExpr*) must create the strongest
+  // postcondition for the given variable after the loop has been fully unwound.
+  // Note: the function assumes that at least one loop unwinding has occurred.
+  //
+  // For the computation of the strongest postcondition, two cases must be
+  // considered:
+  //
+  // 1) The loop has been unwound exactly once
+  // 2) The loop has been unwound more than once
+  //
+  // The required behaviour in each case is determined by the postcondition
+  // of internal_current_join(const Value<bool>&, const GenericVar* const).
+  //
+  // Finally, the symbolic expression of the pointed to variable must be set
+  // to the computed strongest postcondition.
+  void internal_join(GenericVar* var_ptr, TernaryExpr* join_expr);
+
+  // to_ternary_expr_ptr(const JoinExprMap::iterator&) is an internal helper
+  // function that extracts the join expression from an JoinExprMap iterator.
+  static TernaryExpr* to_ternary_expr_ptr(const Loop::JoinExprMap::iterator& iter);
 
 public:
 
@@ -129,7 +165,7 @@ public:
   // maximum number of loop unwindings.
   Loop(const unsigned int k) :
     unwinding_policy_ptr(new BoundedUnwindingPolicy(k)),
-    cond_expr_stack(), begin_expr_map(), var_ptrs(), unwind_flag(true) {}
+    join_expr_map(), current_join_expr_map(), var_ptrs(), unwind_flag(true) {}
 
   // Constructor using dependency injection to set the loop unwinding policy.
   // The ownership of the pointer to the policy object must transferred to the
@@ -146,7 +182,7 @@ public:
   // how to "pass a unique_ptr argument to a constructor or a function".
   Loop(std::unique_ptr<UnwindingPolicy> policy_ptr) :
     unwinding_policy_ptr(std::move(policy_ptr)),
-    cond_expr_stack(), begin_expr_map(), var_ptrs(), unwind_flag(true) {}
+    join_expr_map(), current_join_expr_map(), var_ptrs(), unwind_flag(true) {}
 
   ~Loop() {}
 
