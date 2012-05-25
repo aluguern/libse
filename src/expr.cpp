@@ -10,20 +10,20 @@ std::ostream& UnaryExpr::write(std::ostream& out) const {
 
 std::ostream& BinaryExpr::write(std::ostream& out) const {
   out << LPAR;
-  x->write(out);
+  x_expr->write(out);
   out << operators[op];
-  y->write(out);
+  y_expr->write(out);
   out << RPAR;
   return out;
 }
 
 std::ostream& TernaryExpr::write(std::ostream& out) const {
   out << LPAR;
-  x->write(out);
+  cond_expr->write(out);
   out << QUERY;
-  y->write(out);
+  then_expr->write(out);
   out << COLON;
-  z->write(out);
+  else_expr->write(out);
   out << RPAR;
   return out;
 }

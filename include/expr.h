@@ -79,6 +79,14 @@ public:
   std::ostream& write(std::ostream&) const;
 };
 
+// Macro to inline a member function that gets a shared expression in the field.
+#define GET_SHARED_EXPR(field) \
+  const SharedExpr& get_##field() const { return field; }
+
+// Macro to inline a member function that sets a shared expression in the field.
+#define SET_SHARED_EXPR(field) \
+  void set_##field(const SharedExpr& field) { this->field = field; };
+
 // ValueExpr<T> represents a symbolic expression with a value whose type is T.
 // T should be a primitive type. ValueExpr<T> objects are useful for a
 // combination of concrete and symbolic (aka concolic) execution.
@@ -105,7 +113,7 @@ public:
 // symbolic expression.
 class UnaryExpr : public Expr {
 private:
-  const SharedExpr expr;
+  SharedExpr expr;
   const Operator op;
 
 public:
@@ -113,6 +121,13 @@ public:
   ~UnaryExpr() {};
 
   std::ostream& write(std::ostream&) const;
+
+  GET_SHARED_EXPR(expr)
+  SET_SHARED_EXPR(expr)
+
+  // Returns an enum value for the unary operator of this expression.
+  Operator get_op() const { return op; }
+
 };
 
 // BinaryExpr is a vertex in the DAG with two (ordered) children. It stores a
@@ -120,16 +135,29 @@ public:
 // and y are both symbolic expressions.
 class BinaryExpr : public Expr {
 private:
-  const SharedExpr x;
-  const SharedExpr y;
+  // left operand
+  SharedExpr x_expr;
+
+  // right operand
+  SharedExpr y_expr;
   const Operator op;
 
 public:
-  BinaryExpr(const SharedExpr& x, const SharedExpr& y,
-    const Operator op) : x(x), y(y), op(op) {};
+  BinaryExpr(const SharedExpr& x_expr, const SharedExpr& y_expr,
+    const Operator op) : x_expr(x_expr), y_expr(y_expr), op(op) {};
   ~BinaryExpr() {};
 
+  GET_SHARED_EXPR(x_expr)
+  GET_SHARED_EXPR(y_expr)
+
+  SET_SHARED_EXPR(x_expr)
+  SET_SHARED_EXPR(y_expr)
+
+  // Returns an enum value for the binary operator of this expression.
+  Operator get_op() const { return op; }
+
   std::ostream& write(std::ostream&) const;
+
 };
 
 // TernaryExpr is a vertex in the DAG with three (ordered) children. It stores
@@ -137,14 +165,23 @@ public:
 // expressions.
 class TernaryExpr : public Expr {
 private:
-  const SharedExpr x;
-  const SharedExpr y;
-  const SharedExpr z;
+  SharedExpr cond_expr;
+  SharedExpr then_expr;
+  SharedExpr else_expr;
 
 public:
-  TernaryExpr(const SharedExpr& x, const SharedExpr& y,
-    const SharedExpr& z) : x(x), y(y), z(z) {};
+  TernaryExpr(const SharedExpr& cond_expr, const SharedExpr& then_expr,
+    const SharedExpr& else_expr) : cond_expr(cond_expr), then_expr(then_expr),
+                                   else_expr(else_expr) {};
   ~TernaryExpr() {};
+
+  GET_SHARED_EXPR(cond_expr)
+  GET_SHARED_EXPR(then_expr)
+  GET_SHARED_EXPR(else_expr)
+
+  SET_SHARED_EXPR(cond_expr)
+  SET_SHARED_EXPR(then_expr)
+  SET_SHARED_EXPR(else_expr)
 
   std::ostream& write(std::ostream&) const;
 };
@@ -167,12 +204,18 @@ std::ostream& ValueExpr<T>::write(std::ostream& out) const {
 // casts give bit precision semantics of a symbolic expression.
 class CastExpr : public Expr {
 private:
-  const SharedExpr expr;
+  SharedExpr expr;
   const Type type;
 
 public:
   CastExpr(const SharedExpr& expr, const Type type) :
     expr(expr), type(type) {}
+
+  GET_SHARED_EXPR(expr)
+  SET_SHARED_EXPR(expr)
+
+  // Returns an enum value for the type of the cast expression.
+  Type get_type() const { return type; }
 
   std::ostream& write(std::ostream&) const;
 };
