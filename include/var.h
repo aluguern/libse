@@ -230,7 +230,7 @@ void set_symbolic(Var<T>& var, const std::string& name) {
 extern unsigned int var_seq;
 
 // sstream is an internally reusable string builder.
-static std::stringstream sstream; 
+static std::stringstream sstream;
 
 // reset_tracer() clears the path constraints of the global Tracer object.
 // See also symtracer.h
@@ -246,7 +246,10 @@ void set_symbolic(Var<T>& var) {
   var_seq++;
 
   set_symbolic(var, sstream.str());
+
+  // reset buffer
   sstream.clear();
+  sstream.str("");
 }
 
 }
