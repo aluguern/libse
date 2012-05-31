@@ -10,6 +10,12 @@ AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_FILES([Makefile])
 AC_CONFIG_SUBDIRS([gtest])
 
+# Search for SMT and SAT solver libraries
+CXXFLAGS="$CXXFLAGS -Isolvers/z3/include"
+LDFLAGS="$LDFLAGS -Lsolvers/z3/lib"
+
+AC_SEARCH_LIBS([Z3_mk_config], [z3], , AC_MSG_ERROR([Unable to find Z3 theorem prover]))
+
 AM_INIT_AUTOMAKE([-Wall -Werror dist-zip foreign subdir-objects])
 
 AC_PROG_CXX

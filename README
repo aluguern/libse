@@ -1,6 +1,14 @@
 libsp is a library that uses operator overloading and reflection for the
 symbolic execution of C++ programs.
 
+== Requirements ==
+
+You need to install the Z3 4.0 theorem prover. It can be downloaded from:
+
+  http://research.microsoft.com/en-us/um/redmond/projects/z3/download.html
+
+Extract the download to the solvers/ directory or install it globally.
+
 == Installation == 
 
 To build and install the library execute the following commands:

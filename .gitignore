@@ -7,7 +7,9 @@
 *.m4
 *.deps
 gtest/
+solvers/
 m4/
+autom4te.cache/
 build-aux/
 config.log
 config.status
