@@ -59,6 +59,7 @@ pkginclude_HEADERS = \
   include/value.h \
   include/any.h \
   include/expr.h \
+  include/interpreter.h \
   include/var.h \
   include/loop.h \
   include/sp.h \
@@ -77,6 +78,7 @@ test_sp_SOURCES = \
   test/value_test.cpp \
   test/any_test.cpp \
   test/expr_test.cpp \
+  test/interpreter_test.cpp \
   test/var_test.cpp \
   test/loop_test.cpp \
   test/version_test.cpp \
