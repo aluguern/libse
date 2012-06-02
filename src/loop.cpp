@@ -1,6 +1,6 @@
 #include "loop.h"
 
-namespace sp {
+namespace se {
 
 const SharedExpr Loop::NIL_EXPR = SharedExpr(0);
 

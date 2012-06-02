@@ -1,9 +1,9 @@
 #include <climits>
-#include "sp.h"
+#include "se.h"
 
 int main(void) {
-  sp::Int k = 0;
-  for(sp::Int n = 0; n < INT_MAX; n = n + 1) {
+  se::Int k = 0;
+  for(se::Int n = 0; n < INT_MAX; n = n + 1) {
     if(k == 7) {
       k = 0;
     }

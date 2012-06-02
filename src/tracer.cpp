@@ -1,6 +1,6 @@
 #include "tracer.h"
 
-namespace sp {
+namespace se {
 
 void Tracer::reset() {
   path_constraints.clear();

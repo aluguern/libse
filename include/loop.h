@@ -9,7 +9,7 @@
 #include "var.h"
 #include "value.h"
 
-namespace sp {
+namespace se {
 
 // UnwindingPolicy is an interface that specifies the unwinding semantics of a
 // loop. Such a policy is said to be sound if and only if every found bug with

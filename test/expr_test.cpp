@@ -2,7 +2,7 @@
 #include "gtest/gtest.h"
 #include "expr.h"
 
-using namespace sp;
+using namespace se;
 
 TEST(ExprTest, GetNameOnAnyExpr) {
   AnyExpr<char> a("That rabbit's dynamite!");

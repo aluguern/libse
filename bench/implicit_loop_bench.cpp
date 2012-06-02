@@ -1,13 +1,13 @@
 #include <climits>
-#include "sp.h"
+#include "se.h"
 
 const int N = 65536;
 
 int main(void) {
-  sp::Int k = 0;
-  sp::set_symbolic(k);
+  se::Int k = 0;
+  se::set_symbolic(k);
 
-  sp::Loop loop(N);
+  se::Loop loop(N);
   loop.track(k);
   while(loop.unwind(k < INT_MAX)) {
     k = k + 1;

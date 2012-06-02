@@ -3,7 +3,7 @@
 
 #include "value.h"
 
-namespace sp {
+namespace se {
 
 // Internal class that represents an arbitrary value of primitive type T.
 // It should be only instantiated as a singleton object.

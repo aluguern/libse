@@ -2,7 +2,7 @@
 #include "gtest/gtest.h"
 #include "tracer.h"
 
-using namespace sp;
+using namespace se;
 
 TEST(TracerTest, WritePathConstraints) {
   const SharedExpr a = SharedExpr(new ValueExpr<short>(7));

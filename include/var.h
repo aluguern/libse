@@ -9,7 +9,7 @@
 #include "value.h"
 #include "tracer.h"
 
-namespace sp {
+namespace se {
 
 static const std::string SymbolicVarPrefix = "Var_";
 

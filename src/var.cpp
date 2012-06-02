@@ -1,6 +1,6 @@
 #include "var.h"
 
-namespace sp {
+namespace se {
 
 unsigned int var_seq = 0;
 

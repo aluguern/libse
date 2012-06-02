@@ -1,6 +1,6 @@
 #include "any.h"
 
-namespace sp {
+namespace se {
 
 // Macro to define a function which has been declared with ANY_DECL.
 #define ANY_DEF(type) \

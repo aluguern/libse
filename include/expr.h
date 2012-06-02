@@ -6,7 +6,7 @@
 #include <ostream>
 #include <z3++.h>
 
-namespace sp {
+namespace se {
 
 // Type enumerates built-in primitive types. The order of these types
 // determines the order of elements in the internal types array.

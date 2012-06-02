@@ -1,0 +1,2 @@
+// top-level namespace-based include file for libse
+#include "se.h"

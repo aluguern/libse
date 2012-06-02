@@ -1,8 +1,8 @@
 #include <sstream>
 #include "gtest/gtest.h"
-#include "sp.h"
+#include "se.h"
 
-using namespace sp;
+using namespace se;
 
 TEST(AnyTest, IsSymbolic) {
   EXPECT_TRUE(any_bool("A").is_symbolic());

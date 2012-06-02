@@ -1,6 +1,6 @@
 #include "expr.h"
 
-namespace sp {
+namespace se {
 
 const Operator UNARY_BEGIN = NOT;
 const Operator UNARY_END = ADD;

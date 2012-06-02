@@ -1,7 +1,7 @@
 #include "gtest/gtest.h"
 #include "interpreter.h"
 
-using namespace sp;
+using namespace se;
 
 TEST(InterpreterTest, UnsupportedCharVar) {
   SpInterpreter sp_interpreter;

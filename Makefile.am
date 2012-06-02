@@ -45,9 +45,9 @@ clean-local:
 dist_doc_DATA = README
 
 # Build rules for libraries.
-lib_LTLIBRARIES = lib/libsp.la
+lib_LTLIBRARIES = lib/libse.la
 
-lib_libsp_la_SOURCES = \
+lib_libse_la_SOURCES = \
   src/expr.cpp \
   src/value.cpp \
   src/any.cpp \
@@ -62,7 +62,7 @@ pkginclude_HEADERS = \
   include/interpreter.h \
   include/var.h \
   include/loop.h \
-  include/sp.h \
+  include/se.h \
   include/tracer.h
 
 # Bulid rules for functional and unit tests.
@@ -71,10 +71,10 @@ pkginclude_HEADERS = \
 # TESTS -- Programs run automatically by "make check"
 # check_PROGRAMS -- Programs built by "make check" but not necessarily run
 
-TESTS = test/sp
-check_PROGRAMS = test/sp
+TESTS = test/se
+check_PROGRAMS = test/se
 
-test_sp_SOURCES = \
+test_se_SOURCES = \
   test/value_test.cpp \
   test/any_test.cpp \
   test/expr_test.cpp \
@@ -85,16 +85,16 @@ test_sp_SOURCES = \
   test/tracer_test.cpp \
   test/functional_test.cpp
 
-test_sp_CPPFLAGS = -std=c++0x -I$(srcdir)/include -I$(top_srcdir)/gtest/include
-test_sp_LDADD = $(top_builddir)/gtest/lib/libgtest_main.la lib/libsp.la
+test_se_CPPFLAGS = -std=c++0x -I$(srcdir)/include -I$(top_srcdir)/gtest/include
+test_se_LDADD = $(top_builddir)/gtest/lib/libgtest_main.la lib/libse.la
 
 # Benchmarks
 
 bin_PROGRAMS = bench/explicit_loop bench/implicit_loop
 bench_explicit_loop_SOURCES = bench/explicit_loop_bench.cpp
 bench_explicit_loop_CPPFLAGS = -std=c++0x -I$(srcdir)/include
-bench_explicit_loop_LDADD = lib/libsp.la
+bench_explicit_loop_LDADD = lib/libse.la
 
 bench_implicit_loop_SOURCES = bench/implicit_loop_bench.cpp
 bench_implicit_loop_CPPFLAGS = -std=c++0x -I$(srcdir)/include
-bench_implicit_loop_LDADD = lib/libsp.la
+bench_implicit_loop_LDADD = lib/libse.la

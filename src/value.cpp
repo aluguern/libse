@@ -1,6 +1,6 @@
 #include "value.h"
 
-namespace sp {
+namespace se {
 
 Tracer& tracer() {
   static Tracer tracer;

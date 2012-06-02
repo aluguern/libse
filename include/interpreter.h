@@ -4,7 +4,7 @@
 #include <stdexcept>
 #include "expr.h"
 
-namespace sp {
+namespace se {
 
 // Example: CALL_MEMBER_FN(this, foo)(7) calls this->foo(7).
 #define CALL_MEMBER_FN(object_ptr,member_fn_ptr) ((object_ptr)->*(member_fn_ptr))

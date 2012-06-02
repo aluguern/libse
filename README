@@ -1,5 +1,5 @@
-libsp is a library that uses operator overloading and reflection for the
-symbolic execution of C++ programs.
+libse is a library that uses operator overloading and new C++11 language
+features to create a extensible symbolic execution framework.
 
 == Requirements ==
 

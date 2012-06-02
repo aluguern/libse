@@ -4,7 +4,7 @@
 #include "expr.h"
 #include <list>
 
-namespace sp {
+namespace se {
 
 class Tracer {
 private:

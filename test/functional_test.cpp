@@ -1,8 +1,8 @@
 #include <sstream>
 #include "gtest/gtest.h"
-#include "sp.h"
+#include "se.h"
 
-sp::Int foo(sp::Int other) {
+se::Int foo(se::Int other) {
   if(other + 1 < 6) {
     other = other + 42;
   } else {
@@ -13,12 +13,12 @@ sp::Int foo(sp::Int other) {
 }
 
 TEST(FunctionalTest, IfStatementAndFunctionCall) {
-  sp::reset_tracer();
+  se::reset_tracer();
 
-  sp::Int var = 3;
-  sp::set_symbolic(var);
+  se::Int var = 3;
+  se::set_symbolic(var);
 
-  sp::Int i = 0;
+  se::Int i = 0;
   if(i < 9) {
     if(var < 8) {}
     var = var + 2;
@@ -27,7 +27,7 @@ TEST(FunctionalTest, IfStatementAndFunctionCall) {
   if(var < 5) {}
 
   std::stringstream out;
-  sp::tracer().write_path_constraints(out);
+  se::tracer().write_path_constraints(out);
 
   EXPECT_EQ("([Var_0:3]<8)\n"
             "(([Var_0:3]+2)<7)\n"

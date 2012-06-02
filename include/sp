@@ -1,2 +1,0 @@
-// top-level namespace-based include file for libsp
-#include "sp.h"

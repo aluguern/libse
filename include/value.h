@@ -7,7 +7,7 @@
 #include "expr.h"
 #include "tracer.h"
 
-namespace sp {
+namespace se {
 
 // tracer() returns a static object that can record path constraints.
 extern Tracer& tracer();
