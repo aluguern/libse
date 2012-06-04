@@ -65,11 +65,13 @@ pkginclude_HEADERS = \
   include/se.h \
   include/tracer.h
 
-# Bulid rules for functional and unit tests.
+# Build rules for functional and unit tests.
 # Recall the Automake naming conventions:
 #
 # TESTS -- Programs run automatically by "make check"
 # check_PROGRAMS -- Programs built by "make check" but not necessarily run
+
+TESTS_ENVIRONMENT = LD_LIBRARY_PATH=$(srcdir)/solvers/z3/lib:$$LD_LIBRARY_PATH
 
 TESTS = test/se
 check_PROGRAMS = test/se
