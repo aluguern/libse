@@ -44,6 +44,102 @@ TEST(ExprTest, AnyExpr) {
   EXPECT_EQ("[A]", out.str());
 }
 
+TEST(ExprTest, NaryExprAppendAndPrepend) {
+  NaryExpr a = NaryExpr(ADD, ReflectOperator<ADD>::attr);
+  a.append_expr(SharedExpr(new AnyExpr<short>("A")));
+  a.append_expr(SharedExpr(new AnyExpr<short>("B")));
+
+  std::stringstream append_out;
+  a.write(append_out);
+
+  EXPECT_EQ("([A]+[B])", append_out.str());
+
+  a.prepend_expr(SharedExpr(new AnyExpr<short>("C")));
+
+  std::stringstream prepend_out;
+  a.write(prepend_out);
+
+  EXPECT_EQ("([C]+[A]+[B])", prepend_out.str());
+}
+
+TEST(ExprTest, NaryExprPrependAndAppend) {
+  NaryExpr a = NaryExpr(ADD, ReflectOperator<ADD>::attr);
+  a.prepend_expr(SharedExpr(new ValueExpr<int>(3, "C")));
+  a.append_expr(SharedExpr(new AnyExpr<short>("A")));
+  a.prepend_expr(SharedExpr(new CastExpr(SharedExpr(new ValueExpr<short>(7)), INT)));
+  a.append_expr(SharedExpr(new AnyExpr<short>("B")));
+
+  std::stringstream out;
+  a.write(out);
+
+  EXPECT_EQ("(((int)(7))+[C:3]+[A]+[B])", out.str());
+}
+
+TEST(ExprTest, AddAttr) {
+  OperatorAttr expected_attr = LASSOC_ATTR | RASSOC_ATTR | COMM_ATTR;
+  OperatorAttr actual_attr = ReflectOperator<ADD>::attr;
+  EXPECT_EQ(expected_attr, actual_attr);
+}
+
+TEST(ExprTest, LssAttr) {
+  OperatorAttr expected_attr = CLEAR_ATTR;
+  OperatorAttr actual_attr = ReflectOperator<LSS>::attr;
+  EXPECT_EQ(expected_attr, actual_attr);
+}
+
+TEST(ExprTest, GetAttr) {
+  NaryExpr a(ADD, ReflectOperator<ADD>::attr);
+  EXPECT_TRUE(a.is_commutative());
+  EXPECT_TRUE(a.is_associative());
+
+  NaryExpr b(LSS, ReflectOperator<LSS>::attr);
+  EXPECT_FALSE(b.is_commutative());
+  EXPECT_FALSE(b.is_associative());
+
+  NaryExpr c(ADD, COMM_ATTR);
+  EXPECT_TRUE(c.is_commutative());
+  EXPECT_FALSE(c.is_associative());
+
+  NaryExpr d(ADD, LASSOC_ATTR);
+  EXPECT_FALSE(d.is_commutative());
+  EXPECT_FALSE(d.is_associative());
+
+  NaryExpr e(ADD, RASSOC_ATTR);
+  EXPECT_FALSE(e.is_commutative());
+  EXPECT_FALSE(e.is_associative());
+
+  NaryExpr f(ADD, LASSOC_ATTR | RASSOC_ATTR);
+  EXPECT_FALSE(f.is_commutative());
+  EXPECT_TRUE(f.is_associative());
+
+  NaryExpr g(LSS, CLEAR_ATTR);
+  EXPECT_FALSE(g.is_commutative());
+  EXPECT_FALSE(g.is_associative());
+}
+
+TEST(ExprTest, AttrFunctions) {
+  EXPECT_TRUE(get_commutative_attr(ReflectOperator<ADD>::attr));
+  EXPECT_TRUE(get_associative_attr(ReflectOperator<ADD>::attr));
+
+  EXPECT_FALSE(get_commutative_attr(ReflectOperator<LSS>::attr));
+  EXPECT_FALSE(get_associative_attr(ReflectOperator<LSS>::attr));
+
+  EXPECT_TRUE(get_commutative_attr(COMM_ATTR));
+  EXPECT_FALSE(get_associative_attr(COMM_ATTR));
+
+  EXPECT_FALSE(get_commutative_attr(LASSOC_ATTR));
+  EXPECT_FALSE(get_associative_attr(LASSOC_ATTR));
+
+  EXPECT_FALSE(get_commutative_attr(RASSOC_ATTR));
+  EXPECT_FALSE(get_associative_attr(RASSOC_ATTR));
+
+  EXPECT_FALSE(get_commutative_attr(LASSOC_ATTR | RASSOC_ATTR));
+  EXPECT_TRUE(get_associative_attr(LASSOC_ATTR | RASSOC_ATTR));
+
+  EXPECT_FALSE(get_commutative_attr(CLEAR_ATTR));
+  EXPECT_FALSE(get_associative_attr(CLEAR_ATTR));
+}
+
 TEST(ExprTest, GetAndSetOnUnaryExpr) {
   const SharedExpr a = SharedExpr(new AnyExpr<short>("A"));
   const SharedExpr b = SharedExpr(new AnyExpr<short>("B"));
@@ -54,19 +150,53 @@ TEST(ExprTest, GetAndSetOnUnaryExpr) {
   EXPECT_EQ(b, c.get_expr());
 }
 
-TEST(ExprTest, GetAndSetOnBinaryExpr) {
+TEST(ExprTest, NaryExprAsBinaryExpr) {
   const SharedExpr a = SharedExpr(new AnyExpr<short>("A"));
   const SharedExpr b = SharedExpr(new AnyExpr<short>("B"));
-  BinaryExpr c(a, b, ADD);
+  const SharedExpr c = SharedExpr(new AnyExpr<short>("C"));
+  NaryExpr d(ADD, ReflectOperator<ADD>::attr, a, b);
   
-  EXPECT_EQ(a, c.get_x_expr());
-  EXPECT_EQ(b, c.get_y_expr());
+  EXPECT_EQ(2, d.get_exprs().size());
 
-  c.set_x_expr(b);
-  c.set_y_expr(a);
+  std::stringstream binary_out;
+  d.write(binary_out);
 
-  EXPECT_EQ(b, c.get_x_expr());
-  EXPECT_EQ(a, c.get_y_expr());
+  EXPECT_EQ("([A]+[B])", binary_out.str());
+
+  d.append_expr(c);
+
+  EXPECT_EQ(3, d.get_exprs().size());
+
+  std::stringstream nary_out;
+  d.write(nary_out);
+
+  EXPECT_EQ("([A]+[B]+[C])", nary_out.str());
+}
+
+TEST(ExprTest, NaryExpr) {
+  const SharedExpr a = SharedExpr(new AnyExpr<short>("A"));
+  const SharedExpr b = SharedExpr(new AnyExpr<short>("B"));
+  const SharedExpr c = SharedExpr(new AnyExpr<short>("C"));
+  NaryExpr d(ADD, ReflectOperator<ADD>::attr);
+
+  d.append_expr(a);
+  d.append_expr(b);
+  
+  EXPECT_EQ(2, d.get_exprs().size());
+
+  std::stringstream binary_out;
+  d.write(binary_out);
+
+  EXPECT_EQ("([A]+[B])", binary_out.str());
+
+  d.append_expr(c);
+
+  EXPECT_EQ(3, d.get_exprs().size());
+
+  std::stringstream nary_out;
+  d.write(nary_out);
+
+  EXPECT_EQ("([A]+[B]+[C])", nary_out.str());
 }
 
 TEST(ExprTest, GetAndSetOnTernaryExpr) {
@@ -92,8 +222,8 @@ TEST(ExprTest, WriteTreeWithoutCast) {
   const SharedExpr a = SharedExpr(new ValueExpr<short>(7));
   const SharedExpr b = SharedExpr(new ValueExpr<int>(3, "Var_1"));
   const SharedExpr neg = SharedExpr(new UnaryExpr(a, NOT));
-  const SharedExpr add = SharedExpr(new BinaryExpr(a, b, ADD));
-  const SharedExpr lss = SharedExpr(new BinaryExpr(add, neg, LSS));
+  const SharedExpr add = SharedExpr(new NaryExpr(ADD, ReflectOperator<ADD>::attr, a, b));
+  const SharedExpr lss = SharedExpr(new NaryExpr(LSS, ReflectOperator<LSS>::attr, add, neg));
 
   std::stringstream out;
   lss->write(out);
@@ -106,8 +236,8 @@ TEST(ExprTest, WriteTreeWithCast) {
   const SharedExpr cast = SharedExpr(new CastExpr(a, INT));
   const SharedExpr b = SharedExpr(new ValueExpr<int>(3, "Var_1"));
   const SharedExpr neg = SharedExpr(new UnaryExpr(cast, NOT));
-  const SharedExpr add = SharedExpr(new BinaryExpr(a, b, ADD));
-  const SharedExpr lss = SharedExpr(new BinaryExpr(add, neg, LSS));
+  const SharedExpr add = SharedExpr(new NaryExpr(ADD, ReflectOperator<ADD>::attr, a, b));
+  const SharedExpr lss = SharedExpr(new NaryExpr(LSS, ReflectOperator<LSS>::attr, add, neg));
 
   std::stringstream out;
   lss->write(out);
@@ -119,8 +249,8 @@ TEST(ExprTest, WriteTreeWithTernary) {
   const SharedExpr a = SharedExpr(new ValueExpr<short>(7));
   const SharedExpr b = SharedExpr(new ValueExpr<int>(3, "Var_1"));
   const SharedExpr c = SharedExpr(new ValueExpr<int>(5, "Var_2"));
-  const SharedExpr d = SharedExpr(new BinaryExpr(b, c, ADD));
-  const SharedExpr lss = SharedExpr(new BinaryExpr(a, b, LSS));
+  const SharedExpr d = SharedExpr(new NaryExpr(ADD, ReflectOperator<ADD>::attr, b, c));
+  const SharedExpr lss = SharedExpr(new NaryExpr(LSS, ReflectOperator<LSS>::attr, a, b));
   const SharedExpr ifThenElse = SharedExpr(new TernaryExpr(lss, d, a));
 
   std::stringstream out;
@@ -132,7 +262,7 @@ TEST(ExprTest, WriteTreeWithTernary) {
 TEST(ExprTest, WriteTreeWithEveryTypeOfExpr) {
   const SharedExpr a = SharedExpr(new AnyExpr<int>("A"));
   const SharedExpr b = SharedExpr(new ValueExpr<short>(5));
-  const SharedExpr lss = SharedExpr(new BinaryExpr(a, b, LSS));
+  const SharedExpr lss = SharedExpr(new NaryExpr(LSS, ReflectOperator<LSS>::attr, a, b));
   const SharedExpr neg = SharedExpr(new UnaryExpr(lss, NOT));
   const SharedExpr c = SharedExpr(new AnyExpr<int>("C"));
   const SharedExpr cast = SharedExpr(new CastExpr(c, CHAR));
@@ -149,8 +279,8 @@ TEST(ExprTest, WriteTreeWithEveryTypeOfExpr) {
 TEST(ExprTest, OperatorEnumLayout) {
   EXPECT_EQ(NOT, UNARY_BEGIN);
   EXPECT_EQ(ADD, UNARY_END);
-  EXPECT_EQ(ADD, BINARY_BEGIN);
-  EXPECT_EQ(LSS, BINARY_END);
+  EXPECT_EQ(ADD, NARY_BEGIN);
+  EXPECT_EQ(LSS, NARY_END);
 }
 
 // Simple tree postorder traversal to compile-time check Visitor API.
@@ -171,14 +301,13 @@ public:
   void visit(const AnyExpr<int>& expr) { expr.write(out); }
   void visit(const ValueExpr<int>& expr) { expr.write(out); }
 
-  void visit(const UnaryExpr& expr) {
+  void visit(const CastExpr& expr) {
     expr.get_expr()->walk(this);
-    out << operators[expr.get_op()];
+    out << types[expr.get_type()];
   }
 
-  void visit(const BinaryExpr& expr) {
-    expr.get_x_expr()->walk(this);
-    expr.get_y_expr()->walk(this);
+  void visit(const UnaryExpr& expr) {
+    expr.get_expr()->walk(this);
     out << operators[expr.get_op()];
   }
 
@@ -188,9 +317,11 @@ public:
     expr.get_else_expr()->walk(this);
   }
 
-  void visit(const CastExpr& expr) {
-    expr.get_expr()->walk(this);
-    out << types[expr.get_type()];
+  void visit(const NaryExpr& expr) {
+    for(SharedExpr operand_expr : expr.get_exprs()) {
+      operand_expr->walk(this);
+    }
+    out << operators[expr.get_op()];
   }
 
 };
@@ -198,16 +329,21 @@ public:
 TEST(ExprTest, PostorderVisit) {
   const SharedExpr a = SharedExpr(new AnyExpr<int>("A"));
   const SharedExpr b = SharedExpr(new ValueExpr<short>(5));
-  const SharedExpr lss = SharedExpr(new BinaryExpr(a, b, LSS));
+  const SharedExpr lss = SharedExpr(new NaryExpr(LSS, ReflectOperator<LSS>::attr, a, b));
   const SharedExpr neg = SharedExpr(new UnaryExpr(lss, NOT));
   const SharedExpr c = SharedExpr(new AnyExpr<int>("C"));
   const SharedExpr cast = SharedExpr(new CastExpr(c, CHAR));
-  const SharedExpr d = SharedExpr(new AnyExpr<int>("D"));
-  const SharedExpr ternary = SharedExpr(new TernaryExpr(neg, cast, d));
+
+  NaryExpr* const nary = new NaryExpr(ADD, ReflectOperator<ADD>::attr);
+  nary->append_expr(SharedExpr(new AnyExpr<int>("D")));
+  nary->append_expr(SharedExpr(new AnyExpr<int>("E")));
+  nary->append_expr(SharedExpr(new AnyExpr<int>("F")));
+
+  const SharedExpr ternary = SharedExpr(new TernaryExpr(neg, cast, SharedExpr(nary)));
 
   PostorderVisitor postorder_visitor;
   postorder_visitor.walk(ternary);
 
-  EXPECT_EQ("[A]5<![C]char[D]", postorder_visitor.out.str());
+  EXPECT_EQ("[A]5<![C]char[D][E][F]+", postorder_visitor.out.str());
 }
 

@@ -4,9 +4,44 @@
 #include <memory>
 #include <string>
 #include <ostream>
+#include <list>
 #include <z3++.h>
 
 namespace se {
+
+// OperatorAttr is an unsigned bit vector whose value is a bitwise combination
+// of the enum OperatorAttrBit values. These values describe the mathematical
+// properties of an operator. Whenever possible, inspect a variable of this
+// type with the appropriate getter functions (e.g. get_associative_attr)
+typedef unsigned char OperatorAttr;
+
+// OperatorAttrBit is an enumeration type that defines the bit mask semantics
+// of an OperatorAttr variable. Use bitwise operators judiciously to combine
+// enum values. Of course, unusual combinations should be avoided. For instance,
+// it uncommon to define a non-associative but commutative operator (also known
+// as magmas). If both LASSOC_ATTR and RASSOC_ATTR are set, then the operator
+// must be associative: ((x ~ y) ~ z) = (x ~ (y ~ z)).
+enum OperatorAttrBit : OperatorAttr {
+  // Clear all other attributes via bitwise AND.
+  CLEAR_ATTR = 0u,
+
+  // Operator is left associative.
+  LASSOC_ATTR = (1u << 2),
+
+  // Operator is right associative.
+  RASSOC_ATTR = (1u << 1),
+
+  // Operator is commutative, i.e. (x ~ y) = (y ~ x).
+  COMM_ATTR = (1u << 3)
+};
+
+// get_commutative_attr(const OperatorAttr) returns true if and only if
+// the commutative bit in the given attribute bit vector is set.
+extern bool get_commutative_attr(const OperatorAttr);
+
+// get_associative_attr(const OperatorAttr) returns true if and only if
+// the associative bit in the given attribute bit vector is set.
+extern bool get_associative_attr(const OperatorAttr);
 
 // Type enumerates built-in primitive types. The order of these types
 // determines the order of elements in the internal types array.
@@ -24,26 +59,32 @@ static std::string types[] = { "bool", "char", "int" };
 // according to their arity. This can be used to create fast lookup tables that
 // are indexed by the enum value. To facilitate this, there are extern constants
 // that mark the first and last n-arity operator in the enum ordering for each
-// positive number n. Since some operators are both unary and binary (e.g. ADD),
-// the enum value of these identifiers overlap. The following schematic diagram
-// illustrates this:
+// positive number n. Since some nary operators are also unary (e.g. ADD), the
+// enum value of these identifiers overlap. The last unary operator marks the
+// beginning of operators that never accept less than two operands (e.g. LSS).
+// The following schematic diagram illustrates this:
 //
-//    +---------------------------+ <-- 0 (unsigned short)
-//    |                           |
-//    |         Future Use        |
-//    |                           |
-//    +---------------------------+ <-- UNARY_BEGIN
-//    |                           |
-//    |      Unary Operations     |
-//    |                           |
-//    +---------------------------| <-- BINARY_BEGIN
-//    | Unary & Binary Operations |
-//    +---------------------------+ <-- UNARY_END
-//    |                           |  
-//    |     Binary Operations     |
-//    |                           |
-//    +---------------------------+ <-- BINARY_END
-//    |            ...            |
+//    +--------------------------------------+ <-- 0 (unsigned short)
+//    |               Future Use             |
+//    +--------------------------------------+ <-- UNARY_BEGIN
+//    |                                      |
+//    |      Unary Operations (e.g. ADD)     |
+//    |                                      |
+//    +--------------------------------------+ <-- NARY_BEGIN
+//    |                                      |
+//    |  Unary & Nary Operations (e.g. ADD)  |
+//    |                                      |
+//    +--------------------------------------+ <-- UNARY_END
+//    |                                      |  
+//    |       Binary & Nary Operations       |
+//    |           (e.g. LSS, ADD)            |
+//    |                                      |
+//    +--------------------------------------+ <- NARY_END
+//    |                 ...                  |
+//
+// Note that all operators whose enum value is greater than NARY_BEGIN and
+// less than UNARY_END should be associative unless otherwise specified through
+// the operator's attributes.
 //
 // Maintainer notice: The order of all these operators determines the order of
 // the elements in the internal operators string array.
@@ -54,16 +95,40 @@ enum Operator : unsigned short {
 };
 
 // UNARY_BEGIN marks the first unary operator. See also Operator enum.
+// UNARY_BEGIN is always less than or equal to UNARY_END.
 extern const Operator UNARY_BEGIN;
 
 // UNARY_END marks the last unary operator. See also Operator enum.
+// UNARY_END is always less than or equal NARY_END.
 extern const Operator UNARY_END;
 
-// BINARY_BEGIN marks the first binary operator. See also Operator enum.
-extern const Operator BINARY_BEGIN;
+// NARY_BEGIN marks the first nary operator. See also Operator enum.
+// NARY_BEGIN is always less than or equal to NARY_END.
+extern const Operator NARY_BEGIN;
 
-// BINARY_END marks the last binary operator. See also Operator enum.
-extern const Operator BINARY_END;
+// NARY_END marks the last binary operator. See also Operator enum.
+// The range UNARY_END ... NARY_END gives all the operators that
+// require at least two operands.
+extern const Operator NARY_END;
+
+// ReflectOperator is a lookup function that maps operators to their attributes.
+// Since template specializations are used, this lookup occurs at compile-time.
+template<Operator op>
+class ReflectOperator {};
+
+// REFLECT_OPERATOR is a macro whose second argument defines the mathematical
+// properties of the operator given as the first argument.
+#define REFLECT_OPERATOR(op, attribute_bv)\
+template<>\
+class ReflectOperator<op> {\
+  public:\
+    static const OperatorAttr attr = (attribute_bv);\
+};\
+
+// TODO: Consider using another bit mask for floats etc.
+REFLECT_OPERATOR(NOT, CLEAR_ATTR)
+REFLECT_OPERATOR(ADD, LASSOC_ATTR | RASSOC_ATTR | COMM_ATTR)
+REFLECT_OPERATOR(LSS, CLEAR_ATTR)
 
 static std::string LPAR = "(";
 static std::string RPAR = ")";
@@ -81,10 +146,10 @@ class AnyExpr;
 template<typename T>
 class ValueExpr;
 
-class UnaryExpr;
-class BinaryExpr;
-class TernaryExpr;
 class CastExpr;
+class UnaryExpr;
+class TernaryExpr;
+class NaryExpr;
 
 // Since virtual template functions are not allowed (because there is no bound
 // on the number of possibilities for which the vtable would need to account),
@@ -129,10 +194,10 @@ public:
   TYPED_VISIT_DECL(short int)
   TYPED_VISIT_DECL(int)
 
-  virtual ReturnType visit(const UnaryExpr&) = 0;
-  virtual ReturnType visit(const BinaryExpr&) = 0;
-  virtual ReturnType visit(const TernaryExpr&) = 0;
   virtual ReturnType visit(const CastExpr&) = 0;
+  virtual ReturnType visit(const UnaryExpr&) = 0;
+  virtual ReturnType visit(const TernaryExpr&) = 0;
+  virtual ReturnType visit(const NaryExpr&) = 0;
 
   virtual ~Visitor() {}
 };
@@ -147,9 +212,9 @@ public:
 // expression in the program under test.
 //
 // The syntactic structure of a symbolic expression can be captured by
-// one of the following three classes: ValueExpr, UnaryExpr and BinaryExpr.
+// one of the following three classes: ValueExpr, UnaryExpr and NaryExpr.
 // By construction, ValueExpr is always a leaf in the DAG. In contrast,
-// both UnaryExpr and BinaryExpr are always interior vertices in the DAG.
+// both UnaryExpr and NaryExpr are always interior vertices in the DAG.
 // This DAG could be traversed in preorder or postorder. Since each vertex
 // in the DAG can have multiple children, there is no well-defined inorder.
 class Expr {
@@ -292,40 +357,6 @@ public:
   WALK_DEF(z3::expr)
 };
 
-// BinaryExpr is a vertex in the DAG with two (ordered) children. It stores a
-// symbolic expression of the form "x op y" where op is an operation and x
-// and y are both symbolic expressions.
-class BinaryExpr : public Expr {
-private:
-  // left operand
-  SharedExpr x_expr;
-
-  // right operand
-  SharedExpr y_expr;
-  const Operator op;
-
-public:
-  BinaryExpr(const SharedExpr& x_expr, const SharedExpr& y_expr,
-    const Operator op) : x_expr(x_expr), y_expr(y_expr), op(op) {};
-
-  BinaryExpr(const BinaryExpr& other) : x_expr(other.x_expr),
-    y_expr(other.y_expr), op(other.op) {}
-
-  GET_SHARED_EXPR(x_expr)
-  GET_SHARED_EXPR(y_expr)
-
-  SET_SHARED_EXPR(x_expr)
-  SET_SHARED_EXPR(y_expr)
-
-  // Returns an enum value for the binary operator of this expression.
-  Operator get_op() const { return op; }
-
-  std::ostream& write(std::ostream&) const;
-
-  WALK_DEF(void)
-  WALK_DEF(z3::expr)
-};
-
 // TernaryExpr is a vertex in the DAG with three (ordered) children. It stores
 // a symbolic expression of the form "x ? y : z" where x, y and z are symbolic
 // expressions.
@@ -350,6 +381,71 @@ public:
   SET_SHARED_EXPR(cond_expr)
   SET_SHARED_EXPR(then_expr)
   SET_SHARED_EXPR(else_expr)
+
+  std::ostream& write(std::ostream&) const;
+
+  WALK_DEF(void)
+  WALK_DEF(z3::expr)
+};
+
+// NaryExpr is a vertex in the DAG with at least two or more (ordered) children.
+// If NaryExpr::is_associative() returns true, these children correspond to
+// operands of an associative operator such as integer addition. Note that not
+// every kind of ADD operator is necessarily associative. For example, IEEE 754
+// floating-point addition is not associative. However, all forms of machine
+// addition tend to be commutative. An example of a non-commutative operator is
+// subtraction. A non-associative but commutative operator is called a magma.
+// Even though the operator might be commutative, its operands are ordered
+// according to the order in which they have been prepended or appended.
+class NaryExpr : public Expr {
+private:
+  std::list<SharedExpr> exprs;
+  const Operator op;
+  const OperatorAttr attr;
+
+public:
+
+  // Constructor for an nary expression with the specified operator attributes.
+  // After this object has been instantiated, either one of the modifiers has
+  // to be called at least twice.
+  NaryExpr(const Operator op, const OperatorAttr attr) : exprs(), op(op),
+      attr(attr) {}
+
+  // Constructor for a binary expression with the specified associativity.
+  NaryExpr(const Operator op, const OperatorAttr attr, const SharedExpr& x_expr,
+      const SharedExpr& y_expr) : exprs(), op(op), attr(attr) {
+    append_expr(x_expr);
+    append_expr(y_expr);
+  }
+
+  NaryExpr(const NaryExpr& other) : exprs(other.exprs), op(other.op),
+      attr(other.attr) {}
+
+  // get_exprs() returns the operands of this nary associative operator.
+  // The order of these is according to the order in which the operands
+  // have been prepended or appended to this nary expression.
+  const std::list<SharedExpr> get_exprs() const { return exprs; }
+
+  // append_expr(const SharedExpr&) adds the supplied expression as the
+  // rightmost operand in this nary expression.
+  void append_expr(const SharedExpr& expr) { exprs.push_back(expr); }
+
+  // prepend_expr(const SharedExpr&) adds the supplied expression as the
+  // leftmost operand in this nary expression.
+  void prepend_expr(const SharedExpr& expr) { exprs.push_front(expr); }
+
+  // Returns an enum value for the nary associative operator of this expression.
+  Operator get_op() const { return op; }
+
+  // Returns a bit vector that describes the mathematical properties of the
+  // operator which is applied to the operands of this nary expression.
+  OperatorAttr get_attr() { return attr; }
+
+  // is_commutative() returns true iff (x op y) = (y op x).
+  bool is_commutative() const { return get_commutative_attr(attr); }
+
+  // is_associative() returns true iff ((x op y) op z) = (x op (y op z)).
+  bool is_associative() const { return get_associative_attr(attr); }
 
   std::ostream& write(std::ostream&) const;
 

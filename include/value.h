@@ -260,7 +260,7 @@ const SharedExpr Value<T>::get_expr() const {
 // is used as a temporary, the compiler is likely to use RVO (return value
 // optimization) to avoid the overhead of copying the return value.
 template<typename T>
-inline const Value<T> reflect(const T value) {
+inline Value<T> reflect(const T value) {
   return Value<T>(value);
 }
 

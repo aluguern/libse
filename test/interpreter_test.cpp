@@ -30,7 +30,7 @@ TEST(InterpreterTest, UnsupportedShortIntValue) {
 TEST(InterpreterTest, SpInterpreterSatTernaryEquivalence) {
   const SharedExpr a = SharedExpr(new AnyExpr<int>("A"));
   const SharedExpr five = SharedExpr(new ValueExpr<int>(5));
-  const SharedExpr lss = SharedExpr(new BinaryExpr(a, five, LSS));
+  const SharedExpr lss = SharedExpr(new NaryExpr(LSS, ReflectOperator<LSS>::attr, a, five));
   const SharedExpr neg = SharedExpr(new UnaryExpr(lss, NOT));
   const SharedExpr c = SharedExpr(new AnyExpr<int>("C"));
   const SharedExpr d = SharedExpr(new AnyExpr<int>("D"));
@@ -52,7 +52,7 @@ TEST(InterpreterTest, SpInterpreterSatTernaryEquivalence) {
 TEST(InterpreterTest, SpInterpreterUnsatTernaryEquivalence) {
   const SharedExpr a = SharedExpr(new AnyExpr<int>("A"));
   const SharedExpr five = SharedExpr(new ValueExpr<int>(5));
-  const SharedExpr lss = SharedExpr(new BinaryExpr(a, five, LSS));
+  const SharedExpr lss = SharedExpr(new NaryExpr(LSS, ReflectOperator<LSS>::attr, a, five));
   const SharedExpr neg = SharedExpr(new UnaryExpr(lss, NOT));
   const SharedExpr c = SharedExpr(new AnyExpr<int>("C"));
   const SharedExpr d = SharedExpr(new AnyExpr<int>("D"));
@@ -71,10 +71,10 @@ TEST(InterpreterTest, SpInterpreterUnsatTernaryEquivalence) {
   EXPECT_EQ(z3::sat, solver.check());
 }
 
-TEST(InterpreterTest, SpInterpreterWithSatBinaryExpr) {
+TEST(InterpreterTest, SpInterpreterWithSatNaryExprAsBinaryExpr) {
   const SharedExpr a = SharedExpr(new AnyExpr<int>("A"));
   const SharedExpr b = SharedExpr(new ValueExpr<int>(-2));
-  const SharedExpr lss = SharedExpr(new BinaryExpr(a, b, LSS));
+  const SharedExpr lss = SharedExpr(new NaryExpr(LSS, ReflectOperator<LSS>::attr, a, b));
   
   SpInterpreter sp_interpreter;
   z3::solver solver(sp_interpreter.context);
@@ -89,10 +89,10 @@ TEST(InterpreterTest, SpInterpreterWithSatBinaryExpr) {
   EXPECT_EQ("(define-fun A () Int\n  (- 3))", out.str());
 }
 
-TEST(InterpreterTest, SpInterpreterWithUnsatBinaryExpr) {
+TEST(InterpreterTest, SpInterpreterWithUnsatNaryExprAsBinaryExpr) {
   const SharedExpr a = SharedExpr(new AnyExpr<int>("A"));
   const SharedExpr b = SharedExpr(new ValueExpr<int>(5));
-  const SharedExpr lss = SharedExpr(new BinaryExpr(a, b, LSS));
+  const SharedExpr lss = SharedExpr(new NaryExpr(LSS, ReflectOperator<LSS>::attr, a, b));
   const SharedExpr neg = SharedExpr(new UnaryExpr(lss, NOT));
   
   SpInterpreter sp_interpreter;
@@ -106,7 +106,7 @@ TEST(InterpreterTest, SpInterpreterWithUnsatBinaryExpr) {
 TEST(InterpreterTest, SpInterpreterWithSatTernaryExpr) {
   const SharedExpr a = SharedExpr(new AnyExpr<int>("A"));
   const SharedExpr b = SharedExpr(new ValueExpr<int>(5));
-  const SharedExpr lss = SharedExpr(new BinaryExpr(a, b, LSS));
+  const SharedExpr lss = SharedExpr(new NaryExpr(LSS, ReflectOperator<LSS>::attr, a, b));
   const SharedExpr neg = SharedExpr(new UnaryExpr(lss, NOT));
   const SharedExpr taut = SharedExpr(new ValueExpr<bool>(true));
   const SharedExpr ternary = SharedExpr(new TernaryExpr(lss, neg, taut));
@@ -121,7 +121,7 @@ TEST(InterpreterTest, SpInterpreterWithSatTernaryExpr) {
 TEST(InterpreterTest, SpInterpreterWithUnsatTernaryExpr) {
   const SharedExpr a = SharedExpr(new AnyExpr<int>("A"));
   const SharedExpr b = SharedExpr(new ValueExpr<int>(5));
-  const SharedExpr lss = SharedExpr(new BinaryExpr(a, b, LSS));
+  const SharedExpr lss = SharedExpr(new NaryExpr(LSS, ReflectOperator<LSS>::attr, a, b));
   const SharedExpr neg = SharedExpr(new UnaryExpr(lss, NOT));
   const SharedExpr falsum = SharedExpr(new ValueExpr<bool>(false));
   const SharedExpr ternary = SharedExpr(new TernaryExpr(lss, neg, falsum));
@@ -131,5 +131,55 @@ TEST(InterpreterTest, SpInterpreterWithUnsatTernaryExpr) {
   solver.add(sp_interpreter.walk(ternary));
 
   EXPECT_EQ(z3::unsat, solver.check());
+}
+
+TEST(InterpreterTest, SpInterpreterWithNaryExprThrows) {
+  NaryExpr nary = NaryExpr(ADD, ReflectOperator<ADD>::attr);
+  SpInterpreter sp_interpreter;
+  EXPECT_THROW(sp_interpreter.visit(nary), InterpreterException);
+
+  const SharedExpr a = SharedExpr(new AnyExpr<int>("A"));
+  nary.append_expr(a);
+  EXPECT_THROW(sp_interpreter.visit(nary), InterpreterException);
+
+  nary.append_expr(a);
+  EXPECT_NO_THROW(sp_interpreter.visit(nary));
+}
+
+TEST(InterpreterTest, SpInterpreterWithUnsatNaryExpr) {
+  const SharedExpr a = SharedExpr(new AnyExpr<int>("A"));
+  const SharedExpr b = SharedExpr(new ValueExpr<int>(5));
+  const SharedExpr c = SharedExpr(new ValueExpr<int>(3));
+  NaryExpr nary = NaryExpr(ADD, ReflectOperator<ADD>::attr);
+  nary.append_expr(a);
+  nary.append_expr(b);
+  nary.append_expr(c);
+
+  SpInterpreter sp_interpreter;
+  z3::solver solver(sp_interpreter.context);
+  solver.add(sp_interpreter.visit(nary) != (sp_interpreter.walk(a) + 8));
+
+  EXPECT_EQ(z3::unsat, solver.check());
+}
+
+TEST(InterpreterTest, SpInterpreterWithSatNaryExpr) {
+  const SharedExpr a = SharedExpr(new AnyExpr<int>("A"));
+  const SharedExpr b = SharedExpr(new ValueExpr<int>(5));
+  const SharedExpr c = SharedExpr(new ValueExpr<int>(3));
+  NaryExpr nary = NaryExpr(ADD, ReflectOperator<ADD>::attr);
+  nary.append_expr(a);
+  nary.append_expr(b);
+  nary.append_expr(c);
+
+  SpInterpreter sp_interpreter;
+  z3::solver solver(sp_interpreter.context);
+  solver.add(sp_interpreter.visit(nary) == 12);
+
+  EXPECT_EQ(z3::sat, solver.check());
+
+  std::stringstream out;
+  out << solver.get_model();
+
+  EXPECT_EQ("(define-fun A () Int\n  4)", out.str());
 }
 

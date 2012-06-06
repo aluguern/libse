@@ -20,9 +20,18 @@ static inline const se::Value<T>& __filter(const se::Value<T>& value) {
   return value;
 }
 
+// BINARY_EXPR is a strictly internal macro that instantiates a new binary
+// expression for the given binary operator enum value and operands.
+#define BINARY_EXPR(opname, x_expr, y_expr) \
+  se::SharedExpr(new se::NaryExpr(se::opname,\
+    se::ReflectOperator<se::opname>::attr, (x_expr), (y_expr)))
+
 // OVERLOAD_BINARY_OPERATOR(op, opname) is a macro that uses templates and the
 // statically overloaded and inlined __filter functions to implement a custom
-// C++ binary operator "op" whose reflection identifier is "opname".
+// C++ binary operator "op" whose reflection identifier is "opname". These
+// binary operators are assumed to be associative and commutative. If this is
+// not the case (e.g. IEEE 754 floating-point addition), function template
+// specializations should be used to deal with these cases separately.
 //
 // Note that none of the template types can ever be native or smart pointers.
 #define OVERLOAD_BINARY_OPERATOR(op, opname) \
@@ -34,8 +43,7 @@ static inline const se::Value<T>& __filter(const se::Value<T>& value) {
     const auto __y = __filter(y);\
     auto result = se::reflect(__x.get_value() op __y.get_value());\
     if(__x.is_symbolic() || __y.is_symbolic()) {\
-      result.set_expr(se::SharedExpr(new se::BinaryExpr(\
-        __x.get_expr(), __y.get_expr(), se::opname)));\
+      result.set_expr(BINARY_EXPR(opname, __x.get_expr(), __y.get_expr()));\
     }\
     return result;\
   }\
@@ -46,8 +54,7 @@ static inline const se::Value<T>& __filter(const se::Value<T>& value) {
     const auto __x = __filter(x);\
     auto result = se::reflect(__x.get_value() op y);\
     if(__x.is_symbolic()) {\
-      result.set_expr(se::SharedExpr(new se::BinaryExpr(\
-        __x.get_expr(), se::Value<int>(y).get_expr(), se::opname)));\
+      result.set_expr(BINARY_EXPR(opname, __x.get_expr(), se::Value<int>(y).get_expr()));\
     }\
     return result;\
   }\
@@ -58,8 +65,7 @@ static inline const se::Value<T>& __filter(const se::Value<T>& value) {
     const auto __y = __filter(y);\
     auto result = se::reflect(x op __y.get_value());\
     if(__y.is_symbolic()) {\
-      result.set_expr(se::SharedExpr(new se::BinaryExpr(\
-        se::Value<int>(x).get_expr(), __y.get_expr(), se::opname)));\
+      result.set_expr(BINARY_EXPR(opname, se::Value<int>(x).get_expr(), __y.get_expr()));\
     }\
     return result;\
   }\

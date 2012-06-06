@@ -7,9 +7,9 @@ using namespace se;
 TEST(TracerTest, WritePathConstraints) {
   const SharedExpr a = SharedExpr(new ValueExpr<short>(7));
   const SharedExpr b = SharedExpr(new ValueExpr<int>(3, "Var_1"));
-  const SharedExpr lss1 = SharedExpr(new BinaryExpr(a, b, LSS));
-  const SharedExpr add = SharedExpr(new BinaryExpr(a, b, ADD));
-  const SharedExpr lss2 = SharedExpr(new BinaryExpr(add, b, LSS));
+  const SharedExpr lss1 = SharedExpr(new NaryExpr(LSS, ReflectOperator<LSS>::attr, a, b));
+  const SharedExpr add = SharedExpr(new NaryExpr(ADD, ReflectOperator<ADD>::attr, a, b));
+  const SharedExpr lss2 = SharedExpr(new NaryExpr(LSS, ReflectOperator<LSS>::attr, add, b));
 
   Tracer tracer = Tracer();
 

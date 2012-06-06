@@ -39,21 +39,33 @@ private:
   // Internal member function pointer for fast dispatching of a binary operator.
   typedef z3::expr (SpInterpreter::*BinaryOperator)(const SharedExpr&, const SharedExpr&);
 
+  // Internal member function pointer for fast dispatching of an associative nary operator.
+  typedef z3::expr (SpInterpreter::*NaryOperator)(const std::list<SharedExpr>&);
+
+  /* CAUTION: The size of the following three array *
+   * fields depends on the number of operators!     */
+
   // unary_operators is an array of unary operators. The order of these unary
   // operators must be the same as in the Operator enum data structure. Given
   // such an enum value OP, its member function pointer can be retrieved with
   // unary_operators[OP - UNARY_BEGIN]. The size of the array must be equal to
-  // the number of times the UNARY_OP_DEF macro is called inside this class
-  // definition.
+  // the number of times the UNARY_OP_DEF macro is evaluated inside this class.
   const UnaryOperator unary_operators[1 /* CAUTION! */];
 
   // binary_operators is an array of binary operators. The order of these
   // binary operators must be the same as in the Operator enum data structure.
   // Given such an enum value OP, its member function pointer can be retrieved
-  // with binary_operators[OP - BINARY_BEGIN]. The size of the array must be
-  // equal to the number of times the BINARY_OP_DEF macro is called inside this
-  // class definition.
+  // with the index OP - NARY_BEGIN. The size of the array must be equal to the
+  // number of times the BINARY_OP_DEF macro is evaluated inside this class.
   const BinaryOperator binary_operators[2 /* CAUTION! */];
+
+  // nary_operators is an array of associative binary operators. The order of
+  // these must be the same as in the Operator enum data structure. Given such
+  // an enum value OP, its member function pointer can be retrieved with the
+  // index OP - NARY_BEGIN. The size of the array must be equal to the number
+  // of member function definitions of type NaryOperator.
+  const NaryOperator nary_operators[1 /* CAUTION! */];
+
 
 // UNARY_OP_DEF defines a member function of type UnaryOperator. The number of
 // times this macro is called inside this class definition must be equal to the
@@ -64,6 +76,7 @@ private:
   }
 
 UNARY_OP_DEF(!, NOT_1)
+
 
 // BINARY_OP_DEF defines a member function of type BinaryOperator. The number
 // of times this macro is called inside this class definition must be equal
@@ -76,6 +89,22 @@ UNARY_OP_DEF(!, NOT_1)
 BINARY_OP_DEF(+, ADD_2)
 BINARY_OP_DEF(<, LSS_2)
 
+
+  // ADD_N defines a member function of type NaryOperator that sums up an
+  // arbitrary number of integer expressions. There must be at least two
+  // summands.
+  z3::expr ADD_N(const std::list<SharedExpr>& exprs) {
+    // Zero is the additive identity element
+    z3::expr z3_expr = context.int_val(0);
+
+    //TODO: Use Z3_mk_add
+    for(SharedExpr expr : exprs) {
+      z3_expr = z3_expr + walk(expr);
+    }
+
+    return z3_expr;
+  }
+
 public:
 
   // C++ API to Z3 Theorem Prover context
@@ -83,7 +112,8 @@ public:
 
   SpInterpreter() : context(),
     unary_operators{&SpInterpreter::NOT_1},
-    binary_operators{&SpInterpreter::ADD_2, &SpInterpreter::LSS_2} {}
+    binary_operators{&SpInterpreter::ADD_2, &SpInterpreter::LSS_2},
+    nary_operators{&SpInterpreter::ADD_N} {}
  
   z3::expr visit(const AnyExpr<bool>& expr) {
     return context.bool_const(expr.get_name().c_str());
@@ -117,14 +147,13 @@ public:
     return context.int_val(expr.get_value());
   }
 
+  z3::expr visit(const CastExpr& expr) {
+    throw InterpreterException("Casts are currently unsupported.");
+  }
+
   z3::expr visit(const UnaryExpr& expr) {
     const UnaryOperator op = unary_operators[expr.get_op() - UNARY_BEGIN];
     return CALL_MEMBER_FN(this, op)(expr.get_expr());
-  }
-
-  z3::expr visit(const BinaryExpr& expr) {
-    const BinaryOperator op = binary_operators[expr.get_op() - BINARY_BEGIN];
-    return CALL_MEMBER_FN(this, op)(expr.get_x_expr(), expr.get_y_expr());
   }
 
   z3::expr visit(const TernaryExpr& expr) {
@@ -138,9 +167,21 @@ public:
     return z3::expr(cond_expr.ctx(), r);
   }
 
-  z3::expr visit(const CastExpr& expr) {
-    throw InterpreterException("Casts are currently unsupported.");
+  z3::expr visit(const NaryExpr& expr) {
+    const size_t operands = expr.get_exprs().size();
+    if(operands < 2) {
+      throw InterpreterException("NaryExpr must have at least two operands.");
+    }
+
+    if(operands == 2) {
+      const BinaryOperator op = binary_operators[expr.get_op() - UNARY_END];
+      return CALL_MEMBER_FN(this, op)(expr.get_exprs().front(), expr.get_exprs().back());
+    }
+    
+    const NaryOperator op = nary_operators[expr.get_op() - NARY_BEGIN];
+    return CALL_MEMBER_FN(this, op)(expr.get_exprs());
   }
+
 };
 
 }
