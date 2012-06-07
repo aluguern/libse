@@ -484,7 +484,7 @@ public:
 
   // Returns a bit vector that describes the mathematical properties of the
   // operator which is applied to the operands of this nary expression.
-  OperatorAttr get_attr() { return attr; }
+  OperatorAttr get_attr() const { return attr; }
 
   // is_commutative() returns true iff (x op y) = (y op x).
   bool is_commutative() const { return get_commutative_attr(attr); }
