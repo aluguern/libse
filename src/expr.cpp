@@ -7,6 +7,11 @@ const Operator UNARY_END = ADD;
 const Operator NARY_BEGIN = ADD;
 const Operator NARY_END = LSS;
 
+ExprKind CastExpr::kind = CAST_EXPR;
+ExprKind UnaryExpr::kind = UNARY_EXPR;
+ExprKind TernaryExpr::kind = TERNARY_EXPR;
+ExprKind NaryExpr::kind = NARY_EXPR;
+
 bool get_commutative_attr(const OperatorAttr attr) {
   return attr & COMM_ATTR;
 }

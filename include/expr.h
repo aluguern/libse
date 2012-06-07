@@ -139,7 +139,8 @@ static std::string COLON = ":";
 // string representation. Therefore, both data types need to be coordinated.
 static std::string operators[] = { "!", "+", "<" };
 
-// The Visitor can traverse the following type of vertices in the DAG:
+// Forward declarations of the kind of vertices the Visitor API must be able
+// to traverse in the DAG. These must match the expression kinds in ExprKind.
 template<typename T>
 class AnyExpr;
 
@@ -202,6 +203,18 @@ public:
   virtual ~Visitor() {}
 };
 
+// ExprKind is an internal enumeration type that identifies an Expr subclass.
+// Each such subclass must ensure that it has a public static "kind" member
+// field that can be used for identification purposes.
+enum ExprKind {
+  ANY_EXPR,
+  VALUE_EXPR,
+  CAST_EXPR,
+  UNARY_EXPR,
+  TERNARY_EXPR,
+  NARY_EXPR
+};
+
 // Expr is the base class for a symbolic expression such as "y = x + 7".
 // Once a symbolic expression object has been instantiated, it can never
 // be copied or modified. An Expr object corresponds to an rvalue in C++.
@@ -217,6 +230,11 @@ public:
 // both UnaryExpr and NaryExpr are always interior vertices in the DAG.
 // This DAG could be traversed in preorder or postorder. Since each vertex
 // in the DAG can have multiple children, there is no well-defined inorder.
+//
+// When a tree traversal is not desired, the get_kind() member function
+// uniquely identifies the implementation of an Expr object. Each such
+// implementation has a public static "kind" member field that should be used
+// for identification purposes. This identifier makes dynamic downcasts safe.
 class Expr {
 private:
   Expr(const Expr&);
@@ -226,6 +244,11 @@ protected:
   Expr() {}
 
 public:
+  // get_kind() uniquely identifies the implementation of this Expr object.
+  // Use the public static "kind" member field of the desired Expr subclass
+  // that needs to be identified for downcast purposes.
+  virtual ExprKind get_kind() const = 0;
+
   virtual std::ostream& write(std::ostream&) const = 0;
 
 // Declare an internal virtual walk member function that dispatches a
@@ -266,9 +289,12 @@ private:
   const std::string name;
 
 public:
+  static ExprKind kind;
 
   AnyExpr(const std::string& name) : name(name) {};
   AnyExpr(const AnyExpr& other) : name(other.name) {};
+
+  ExprKind get_kind() const { return kind; }
 
   const std::string& get_name() const { return name; }
 
@@ -296,11 +322,15 @@ private:
   const std::string name;
 
 public:
+  static ExprKind kind;
+
   ValueExpr(const T& value) : value(value), name("") {};
   ValueExpr(const ValueExpr& other) : value(other.value), name(other.name) {};
 
   ValueExpr(const T& value, const std::string& name) :
     value(value), name(name) {};
+
+  ExprKind get_kind() const { return kind; }
 
   T get_value() const { return value; }
 
@@ -318,8 +348,12 @@ private:
   const Type type;
 
 public:
+  static ExprKind kind;
+
   CastExpr(const SharedExpr& expr, const Type type) : expr(expr), type(type) {}
   CastExpr(const CastExpr& other) : expr(other.expr), type(other.type) {}
+
+  ExprKind get_kind() const { return kind; }
 
   GET_SHARED_EXPR(expr)
   SET_SHARED_EXPR(expr)
@@ -342,8 +376,12 @@ private:
   const Operator op;
 
 public:
+  static ExprKind kind;
+
   UnaryExpr(const SharedExpr& expr, const Operator op) : expr(expr), op(op) {};
   UnaryExpr(const UnaryExpr& other) : expr(other.expr), op(other.op) {}
+
+  ExprKind get_kind() const { return kind; }
 
   GET_SHARED_EXPR(expr)
   SET_SHARED_EXPR(expr)
@@ -367,12 +405,16 @@ private:
   SharedExpr else_expr;
 
 public:
+  static ExprKind kind;
+
   TernaryExpr(const SharedExpr& cond_expr, const SharedExpr& then_expr,
     const SharedExpr& else_expr) : cond_expr(cond_expr), then_expr(then_expr),
                                    else_expr(else_expr) {};
 
   TernaryExpr(const TernaryExpr& other) : cond_expr(other.cond_expr),
     then_expr(other.then_expr), else_expr(other.else_expr) {}
+
+  ExprKind get_kind() const { return kind; }
 
   GET_SHARED_EXPR(cond_expr)
   GET_SHARED_EXPR(then_expr)
@@ -404,6 +446,7 @@ private:
   const OperatorAttr attr;
 
 public:
+  static ExprKind kind;
 
   // Constructor for an nary expression with the specified operator attributes.
   // After this object has been instantiated, either one of the modifiers has
@@ -420,6 +463,8 @@ public:
 
   NaryExpr(const NaryExpr& other) : exprs(other.exprs), op(other.op),
       attr(other.attr) {}
+
+  ExprKind get_kind() const { return kind; }
 
   // get_exprs() returns the operands of this nary associative operator.
   // The order of these is according to the order in which the operands
@@ -452,6 +497,11 @@ public:
   WALK_DEF(void)
   WALK_DEF(z3::expr)
 };
+
+template<typename T>
+ExprKind AnyExpr<T>::kind = ANY_EXPR;
+template<typename T>
+ExprKind ValueExpr<T>::kind = VALUE_EXPR;
 
 template<typename T>
 std::ostream& AnyExpr<T>::write(std::ostream& out) const {
