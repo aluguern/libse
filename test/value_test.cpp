@@ -428,3 +428,103 @@ TEST(ValueTest, SymbolicBoolConversionWithIfStatement) {
   EXPECT_EQ("[A:1]\n(![B:0])\n", out.str());
 }
 
+TEST(ValueTest, InitialAndSetAuxValue) {
+  Value<int> a(2);
+  EXPECT_FALSE(a.has_aux_value());
+  a.set_aux_value(3);
+  EXPECT_TRUE(a.has_aux_value());
+
+  Value<int> b(2, SharedExpr(new AnyExpr<int>("A")));
+  EXPECT_FALSE(b.has_aux_value());
+  b.set_aux_value(3);
+  EXPECT_TRUE(b.has_aux_value());
+
+  Value<int> c("A");
+  EXPECT_FALSE(c.has_aux_value());
+  c.set_aux_value(3);
+  EXPECT_TRUE(c.has_aux_value());
+
+  Value<int> d(a);
+  EXPECT_TRUE(d.has_aux_value());
+  EXPECT_EQ(3, d.get_aux_value());
+  d.set_aux_value(4);
+  EXPECT_TRUE(d.has_aux_value());
+
+  Value<int> e(Value<int>(1));
+  EXPECT_FALSE(e.has_aux_value());
+  e.set_aux_value(3);
+  EXPECT_TRUE(e.has_aux_value());
+}
+
+TEST(ValueTest, InitialAndSetSameAuxValue) {
+  Value<int> a(2);
+  EXPECT_FALSE(a.has_aux_value());
+  a.set_aux_value(2);
+  EXPECT_TRUE(a.has_aux_value());
+
+  Value<int> b(2, SharedExpr(new AnyExpr<int>("A")));
+  EXPECT_FALSE(b.has_aux_value());
+  b.set_aux_value(2);
+  EXPECT_TRUE(b.has_aux_value());
+
+  Value<int> d(a);
+  EXPECT_TRUE(d.has_aux_value());
+  EXPECT_EQ(2, d.get_aux_value());
+  d.set_aux_value(2);
+  EXPECT_TRUE(d.has_aux_value());
+
+  Value<int> e(Value<int>(1));
+  EXPECT_FALSE(e.has_aux_value());
+  e.set_aux_value(1);
+  EXPECT_TRUE(e.has_aux_value());
+}
+
+TEST(ValueTest, AssignmentOperatorWithAuxValue) {
+  Value<int> a(2);
+  EXPECT_FALSE(a.has_aux_value());
+  a.set_aux_value(2);
+  EXPECT_TRUE(a.has_aux_value());
+
+  Value<int> b(2, SharedExpr(new AnyExpr<int>("A")));
+  EXPECT_FALSE(b.has_aux_value());
+
+  b = a;
+  EXPECT_TRUE(b.has_aux_value());
+}
+
+TEST(ValueTest, AssignmentOperatorWithoutAuxValue) {
+  Value<int> a(2);
+  EXPECT_FALSE(a.has_aux_value());
+  a.set_aux_value(2);
+  EXPECT_TRUE(a.has_aux_value());
+
+  Value<int> b(2, SharedExpr(new AnyExpr<int>("A")));
+  EXPECT_FALSE(b.has_aux_value());
+
+  a = b;
+  EXPECT_FALSE(a.has_aux_value());
+}
+
+TEST(ValueTest, ConvSupport) {
+  EXPECT_TRUE(Value<int>(2).has_conv_support());
+  EXPECT_TRUE(Value<int>(2, SharedExpr(new AnyExpr<int>("A"))).has_conv_support());
+  EXPECT_FALSE(Value<int>("A").has_conv_support());
+  EXPECT_FALSE(Value<int>(Value<int>("A")).has_conv_support());
+}
+
+TEST(ValueTest, AssignmentWithConvSupport) {
+  Value<int> a(2);
+  Value<int> b("A");
+
+  a = b;
+  EXPECT_TRUE(a.has_conv_support());
+}
+
+TEST(ValueTest, AssignmentWithoutConvSupport) {
+  Value<int> a(2);
+  Value<int> b("A");
+
+  b = a;
+  EXPECT_FALSE(b.has_conv_support());
+}
+

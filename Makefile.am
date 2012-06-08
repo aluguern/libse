@@ -50,14 +50,12 @@ lib_LTLIBRARIES = lib/libse.la
 lib_libse_la_SOURCES = \
   src/expr.cpp \
   src/value.cpp \
-  src/any.cpp \
   src/var.cpp \
   src/loop.cpp \
   src/tracer.cpp
 
 pkginclude_HEADERS = \
   include/value.h \
-  include/any.h \
   include/expr.h \
   include/interpreter.h \
   include/var.h \
