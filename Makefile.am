@@ -83,6 +83,7 @@ test_se_SOURCES = \
   test/loop_test.cpp \
   test/version_test.cpp \
   test/tracer_test.cpp \
+  test/simplify_test.cpp \
   test/functional_test.cpp
 
 test_se_CPPFLAGS = -std=c++0x -I$(srcdir)/include -I$(top_srcdir)/gtest/include

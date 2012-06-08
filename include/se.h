@@ -19,6 +19,13 @@ static inline const se::Value<T>& __filter(const se::Value<T>& value) {
   return value;
 }
 
+// PARTIAL_EXPR is a strictly internal macro that instantiates a new nary
+// expression that has got only one operand. It is the responsibility of the
+// caller to ensure that another NaryExpr modifier is invoked.
+#define PARTIAL_EXPR(opname, expr) \
+  se::SharedExpr(new se::NaryExpr(se::opname,\
+    se::ReflectOperator<se::opname>::attr, (expr)))
+
 // BINARY_EXPR is a strictly internal macro that instantiates a new binary
 // expression for the given binary operator enum value and operands.
 #define BINARY_EXPR(opname, x_expr, y_expr) \
@@ -52,7 +59,35 @@ static inline const se::Value<T>& __filter(const se::Value<T>& value) {
     \
     const auto __x = __filter(x);\
     auto result = se::reflect(__x.get_value() op y);\
+    \
     if(__x.is_symbolic()) {\
+      se::OperatorAttr attr = se::ReflectOperator<se::opname>::attr;\
+      se::SharedExpr raw_expr = __x.se::GenericValue::get_expr();\
+      if(se::get_associative_attr(attr) && se::get_commutative_attr(attr)) {\
+        bool create_partial_nary_expr = false;\
+        auto kind = raw_expr->get_kind();\
+        if(kind == se::ANY_EXPR || kind == se::VALUE_EXPR) {\
+          create_partial_nary_expr = true;\
+        } else if(kind == se::NaryExpr::kind) {\
+          auto nary_expr = std::dynamic_pointer_cast<se::NaryExpr>(raw_expr);\
+          if(nary_expr->get_attr() == attr) {\
+            if(nary_expr->is_partial()) {\
+              result.set_aux_value(__x.get_aux_value() op y);\
+              result.set_expr(raw_expr);\
+              return result;\
+            } else {\
+              create_partial_nary_expr = true;\
+            }\
+          }\
+        }\
+        if(create_partial_nary_expr) {\
+          /* __x.get_value() must act as the identity element of op. */\
+          result.set_aux_value(y);\
+          result.set_expr(PARTIAL_EXPR(opname, raw_expr));\
+          return result;\
+        }\
+      }\
+      \
       result.set_expr(BINARY_EXPR(opname, __x.get_expr(), se::Value<int>(y).get_expr()));\
     }\
     return result;\

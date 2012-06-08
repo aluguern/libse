@@ -31,6 +31,6 @@ TEST(FunctionalTest, IfStatementAndFunctionCall) {
 
   EXPECT_EQ("([Var_0:3]<8)\n"
             "(([Var_0:3]+2)<7)\n"
-            "(!((([Var_0:3]+2)+1)<6))\n"
-            "(!(((([Var_0:3]+2)+3)+4)<5))\n", out.str());
+            "(!(([Var_0:3]+3)<6))\n"
+            "(!(([Var_0:3]+9)<5))\n", out.str());
 }

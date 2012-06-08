@@ -263,7 +263,8 @@ public:
   // get_aux_value() returns the auxiliary value.
   T get_aux_value() const { return values[1]; }
 
-  // set_aux_value(T) initialized the auxiliary value.
+  // set_aux_value(T) initialized the auxiliary value. After this value
+  // has been set, get_expr() must return a partial nary expression.
   void set_aux_value(const T aux_value) {
     if(!aux_value_init) { aux_value_init = true; }
     values[1] = aux_value;
@@ -279,8 +280,13 @@ public:
   // Overrides GenericValue::write(std::outstream&)
   std::ostream& write(std::ostream&) const;
 
-  // get_expr() returns the symbolic expression of this value representation.
-  // The return value is a NULL pointer if and only if is_symbolic() is false.
+  // Unlike GenericValue::get_expr(), Value<T>::get_expr() also seeks to
+  // simplify nary expressions over an associative and commutative binary
+  // operator. This simplification is implemented through a partial nary
+  // expression that are completed using the auxiliary value. For this
+  // reason, GenericValue::get_expr() can only return a partial nary
+  // expression if has_aux_value() returns true. Note that the converse
+  // need not be true.
   const SharedExpr get_expr() const;
 
   // Assignment operator that copies the concrete value and shared symbolic
@@ -352,7 +358,26 @@ std::ostream& Value<T>::write(std::ostream& out) const {
 template<typename T>
 const SharedExpr Value<T>::get_expr() const {
   if(is_symbolic()) {
-    return GenericValue::get_expr();
+    SharedExpr raw_expr = GenericValue::get_expr();
+    if(raw_expr->get_kind() == NaryExpr::kind) {
+      std::shared_ptr<NaryExpr> nary_expr = std::dynamic_pointer_cast<NaryExpr>(raw_expr);
+      if(nary_expr->is_partial()) {
+        if(nary_expr->is_commutative() && nary_expr->is_associative()) {
+          if (!has_aux_value()) {
+            // TODO: Error
+          }
+
+          NaryExpr* new_nary_expr = new NaryExpr(*nary_expr);
+          new_nary_expr->append_expr(create_aux_value_expr());
+          return SharedExpr(new_nary_expr);
+        }
+      }
+    }
+    return raw_expr;
+  }
+
+  if(!has_conv_support()) {
+    // TODO: Error
   }
 
   return create_value_expr();

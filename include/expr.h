@@ -443,20 +443,33 @@ public:
 // subtraction. A non-associative but commutative operator is called a magma.
 // Even though the operator might be commutative, its operands are ordered
 // according to the order in which they have been prepended or appended.
+//
+// It is possible to have NaryExpr objects which have not got yet at least
+// two operands. These nary expressions are said to be partial. Partial
+// nary expressions play an important role in DAG rewriting.
 class NaryExpr : public Expr {
 private:
   std::list<SharedExpr> exprs;
+
   const Operator op;
   const OperatorAttr attr;
 
 public:
   static ExprKind kind;
 
-  // Constructor for an nary expression with the specified operator attributes.
-  // After this object has been instantiated, either one of the modifiers has
-  // to be called at least twice.
+  // Constructor for a partial nary expression with the specified operator
+  // attributes. After this object has been instantiated, either one of the
+  // modifiers has to be called at least twice.
   NaryExpr(const Operator op, const OperatorAttr attr) : exprs(), op(op),
       attr(attr) {}
+
+  // Constructor for a partial nary nary expression with the specified operator
+  // attributes. After this object has been instantiated, either one of the
+  // modifiers has to be called at least once.
+  NaryExpr(const Operator op, const OperatorAttr attr, const SharedExpr& expr) :
+      exprs(), op(op), attr(attr) {
+    append_expr(expr);
+  }
 
   // Constructor for a binary expression with the specified associativity.
   NaryExpr(const Operator op, const OperatorAttr attr, const SharedExpr& x_expr,
@@ -469,6 +482,10 @@ public:
       attr(other.attr) {}
 
   ExprKind get_kind() const { return kind; }
+
+  // is_partial() returns true if and only if there are fewer than
+  // two operands.
+  bool is_partial() const { return exprs.size() < 2; }
 
   // get_exprs() returns the operands of this nary associative operator.
   // The order of these is according to the order in which the operands
