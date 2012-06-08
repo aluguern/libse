@@ -37,11 +37,15 @@ enum OperatorAttrBit : OperatorAttr {
 
 // get_commutative_attr(const OperatorAttr) returns true if and only if
 // the commutative bit in the given attribute bit vector is set.
-extern bool get_commutative_attr(const OperatorAttr);
+inline bool get_commutative_attr(const OperatorAttr attr) {
+  return attr & COMM_ATTR;
+}
 
 // get_associative_attr(const OperatorAttr) returns true if and only if
 // the associative bit in the given attribute bit vector is set.
-extern bool get_associative_attr(const OperatorAttr);
+inline bool get_associative_attr(const OperatorAttr attr) {
+  return (attr & (LASSOC_ATTR | RASSOC_ATTR)) == (LASSOC_ATTR | RASSOC_ATTR);
+}
 
 // Type enumerates built-in primitive types. The order of these types
 // determines the order of elements in the internal types array.

@@ -12,14 +12,6 @@ ExprKind UnaryExpr::kind = UNARY_EXPR;
 ExprKind TernaryExpr::kind = TERNARY_EXPR;
 ExprKind NaryExpr::kind = NARY_EXPR;
 
-bool get_commutative_attr(const OperatorAttr attr) {
-  return attr & COMM_ATTR;
-}
-
-bool get_associative_attr(const OperatorAttr attr) {
-  return (attr & (LASSOC_ATTR | RASSOC_ATTR)) == (LASSOC_ATTR | RASSOC_ATTR);
-}
-
 std::ostream& CastExpr::write(std::ostream& out) const {
   out << LPAR << LPAR;
   out << types[type];
