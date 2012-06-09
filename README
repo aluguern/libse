@@ -1,5 +1,9 @@
 libse is a library that uses operator overloading and new C++11 language
-features to create a extensible symbolic execution framework.
+features to create an extensible native symbolic execution framework.
+Native symbolic execution targets lightweight symbolic execution by
+leveraging CPU architecture optimizations.
+
+libse is distributed under a BSD-style license.
 
 == Requirements ==
 
