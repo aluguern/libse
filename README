@@ -3,11 +3,14 @@ features to create a extensible symbolic execution framework.
 
 == Requirements ==
 
-You need to install the Z3 4.0 theorem prover. It can be downloaded from:
+You need to install the Z3 v4.0 theorem prover. It can be downloaded from:
 
   http://research.microsoft.com/en-us/um/redmond/projects/z3/download.html
 
 Extract the download to the solvers/ directory or install it globally.
+However, before you can do this, you need to fix the z3++.h header file
+by inlining all member function declarations. A bug report has been sent
+to Microsoft Research and this fix won't be needed in the future.
 
 == Installation == 
 
