@@ -56,6 +56,18 @@ sys	2m27.527s
 
 Time: 2800 sec
 
+size of program expression: 40973 assignments
+simple slicing removed 0 assignments
+Generated 0 VCC(s), 0 remaining after simplification
+VERIFICATION SUCCESSFUL
+
+
+real	15m52.247s
+user	1m8.569s
+sys	0m22.728s
+
+Time: 900 sec
+
 -------------------------
 
 Command: ./cbmc --unwind 65536 --no-unwinding-assertions implicit_loop_bench.c
