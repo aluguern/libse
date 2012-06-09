@@ -1,10 +1,10 @@
 #include <climits>
 #include <iostream>
-#include "sp.h"
+#include "se.h"
 
-using namespace sp;
+using namespace se;
 
-const int N = 65536;
+const int N = 8192;
 
 int main(void) {
   // slow down analysis with console I/O to compare against CBMC
