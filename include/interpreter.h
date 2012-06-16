@@ -103,7 +103,7 @@ BINARY_OP_DEF(<, LSS_2)
 
     //TODO: Use Z3_mk_add
     for(SharedExpr expr : exprs) {
-      z3_expr = z3_expr + walk(expr);
+      z3_expr = z3_expr + expr->walk(this);
     }
 
     return z3_expr;

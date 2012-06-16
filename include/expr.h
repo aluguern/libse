@@ -174,11 +174,6 @@ struct VisitorTraits<type> {\
 VISITOR_TRAIT_DECL(void)
 VISITOR_TRAIT_DECL(z3::expr)
 
-// Forward declaration to resolve circular dependency between
-// Visitor::walk(const SharedExpr&) and Expr::walk(Visitor<T>* const).
-class Expr;
-typedef std::shared_ptr<Expr> SharedExpr;
-
 // Visitor is an interface to traverse an acyclic directed graph (DAG) that
 // represents the syntactic structure of an expression. The order in which a
 // Visitor's visit member functions is called and the argument of that call is
@@ -194,9 +189,6 @@ public:
 
   // ReturnType declares the type that each visit member function returns.
   typedef typename VisitorTraits<T>::ReturnType ReturnType;
-
-  // walk(const SharedExpr&) starts the tree traversal at the specified root.
-  T walk(const SharedExpr& expr);
 
   TYPED_VISIT_DECL(bool)
   TYPED_VISIT_DECL(char)
@@ -259,14 +251,10 @@ public:
 
   virtual std::ostream& write(std::ostream&) const = 0;
 
-// Declare an internal virtual walk member function that dispatches a
+// Declare a public virtual walk member function that dispatches a
 // constant reference to the current polymorphic object by calling the
 // visit member function on the supplied Visitor<type> object. The type
 // argument must be one of the traits declared with VISITOR_TRAIT_DECL.
-// These member functions are only public because friends are not shared
-// through inheritance.
-//
-// Use Visitor::walk(const SharedExpr&) as the public tree traversal API.
 #define WALK_DECL(type)\
   virtual typename VisitorTraits<type>::ReturnType\
     walk(Visitor<typename VisitorTraits<type>::ReturnType>* const) const = 0;
@@ -284,9 +272,6 @@ public:
 
 // SharedExpr is a C++11 shared pointer to a vertex in the DAG.
 typedef std::shared_ptr<Expr> SharedExpr;
-
-template<typename T>
-inline T Visitor<T>::walk(const SharedExpr& expr) { return expr->walk(this); }
 
 // AnyExpr<T> represents a symbolic variable with an arbitrary value of type T.
 // The specified template parameter should be a primitive type. Since there is

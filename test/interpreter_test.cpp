@@ -40,9 +40,9 @@ TEST(InterpreterTest, SpInterpreterSatTernaryEquivalence) {
   z3::solver solver(sp_interpreter.context);
   z3::expr e = sp_interpreter.context.int_const("E");
 
-  solver.add((e == sp_interpreter.walk(ternary)) != 
-                ((!(sp_interpreter.walk(a) < 5) && e == sp_interpreter.walk(c)) ||
-                    ((sp_interpreter.walk(a) < 5) && e == sp_interpreter.walk(d))));
+  solver.add((e == ternary->walk(&sp_interpreter)) != 
+                ((!(a->walk(&sp_interpreter) < 5) && e == c->walk(&sp_interpreter)) ||
+                    ((a->walk(&sp_interpreter) < 5) && e == d->walk(&sp_interpreter))));
 
   // Proves that [e == ((!(a < 5)) ? c : d)] is equivalent to
   // [(!(a < 5) && e == c) || ((a < 5) && e == d)].
@@ -62,9 +62,9 @@ TEST(InterpreterTest, SpInterpreterUnsatTernaryEquivalence) {
   z3::solver solver(sp_interpreter.context);
   z3::expr e = sp_interpreter.context.int_const("E");
 
-  solver.add((e == sp_interpreter.walk(ternary)) != 
-                ((!(sp_interpreter.walk(a) < 5) && e == sp_interpreter.walk(c)) ||
-                    ((sp_interpreter.walk(a) < 5) && e == (sp_interpreter.walk(d) + 1))));
+  solver.add((e == ternary->walk(&sp_interpreter)) != 
+                ((!(a->walk(&sp_interpreter) < 5) && e == c->walk(&sp_interpreter)) ||
+                    ((a->walk(&sp_interpreter) < 5) && e == (d->walk(&sp_interpreter) + 1))));
 
   // Disproves that [e == ((!(a < 5)) ? c : d)] is equivalent to
   // [(!(a < 5) && e == c) || ((a < 5) && e == (d + 1))].
@@ -78,7 +78,7 @@ TEST(InterpreterTest, SpInterpreterWithSatNaryExprAsBinaryExpr) {
   
   SpInterpreter sp_interpreter;
   z3::solver solver(sp_interpreter.context);
-  solver.add(sp_interpreter.walk(lss));
+  solver.add(lss->walk(&sp_interpreter));
 
   solver.check();
   EXPECT_EQ(z3::sat, solver.check());
@@ -97,8 +97,8 @@ TEST(InterpreterTest, SpInterpreterWithUnsatNaryExprAsBinaryExpr) {
   
   SpInterpreter sp_interpreter;
   z3::solver solver(sp_interpreter.context);
-  solver.add(sp_interpreter.walk(lss));
-  solver.add(sp_interpreter.walk(neg));
+  solver.add(lss->walk(&sp_interpreter));
+  solver.add(neg->walk(&sp_interpreter));
 
   EXPECT_EQ(z3::unsat, solver.check());
 }
@@ -113,7 +113,7 @@ TEST(InterpreterTest, SpInterpreterWithSatTernaryExpr) {
   
   SpInterpreter sp_interpreter;
   z3::solver solver(sp_interpreter.context);
-  solver.add(sp_interpreter.walk(ternary));
+  solver.add(ternary->walk(&sp_interpreter));
 
   EXPECT_EQ(z3::sat, solver.check());
 }
@@ -128,7 +128,7 @@ TEST(InterpreterTest, SpInterpreterWithUnsatTernaryExpr) {
   
   SpInterpreter sp_interpreter;
   z3::solver solver(sp_interpreter.context);
-  solver.add(sp_interpreter.walk(ternary));
+  solver.add(ternary->walk(&sp_interpreter));
 
   EXPECT_EQ(z3::unsat, solver.check());
 }
@@ -157,7 +157,7 @@ TEST(InterpreterTest, SpInterpreterWithUnsatNaryExpr) {
 
   SpInterpreter sp_interpreter;
   z3::solver solver(sp_interpreter.context);
-  solver.add(sp_interpreter.visit(nary) != (sp_interpreter.walk(a) + 8));
+  solver.add(sp_interpreter.visit(nary) != (a->walk(&sp_interpreter) + 8));
 
   EXPECT_EQ(z3::unsat, solver.check());
 }

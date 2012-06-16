@@ -362,7 +362,7 @@ TEST(ExprTest, PostorderVisit) {
   const SharedExpr ternary = SharedExpr(new TernaryExpr(neg, cast, SharedExpr(nary)));
 
   PostorderVisitor postorder_visitor;
-  postorder_visitor.walk(ternary);
+  ternary->walk(&postorder_visitor);
 
   EXPECT_EQ("[A]5<![C]char[D][E][F]+", postorder_visitor.out.str());
 }
