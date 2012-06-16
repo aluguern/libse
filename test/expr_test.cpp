@@ -4,19 +4,6 @@
 
 using namespace se;
 
-TEST(ExprTest, Kind) {
-  EXPECT_EQ(ANY_EXPR, AnyExpr<bool>::kind);
-  EXPECT_EQ(VALUE_EXPR, ValueExpr<bool>::kind);
-  EXPECT_EQ(ANY_EXPR, AnyExpr<char>::kind);
-  EXPECT_EQ(VALUE_EXPR, ValueExpr<char>::kind);
-  EXPECT_EQ(ANY_EXPR, AnyExpr<int>::kind);
-  EXPECT_EQ(VALUE_EXPR, ValueExpr<int>::kind);
-  EXPECT_EQ(CAST_EXPR, CastExpr::kind);
-  EXPECT_EQ(UNARY_EXPR, UnaryExpr::kind);
-  EXPECT_EQ(TERNARY_EXPR, TernaryExpr::kind);
-  EXPECT_EQ(NARY_EXPR, NaryExpr::kind);
-}
-
 TEST(ExprTest, GetKind) {
   AnyExpr<char> a("A");
   EXPECT_EQ(ANY_EXPR, a.get_kind());

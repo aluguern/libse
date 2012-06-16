@@ -72,7 +72,7 @@ static inline const se::Value<T>& __filter(const se::Value<T>& value) {
         auto kind = raw_expr->get_kind();\
         if(kind == se::ANY_EXPR || kind == se::VALUE_EXPR) {\
           create_partial_nary_expr = true;\
-        } else if(kind == se::NaryExpr::kind) {\
+        } else if(kind == se::NARY_EXPR) {\
           auto nary_expr = std::dynamic_pointer_cast<se::NaryExpr>(raw_expr);\
           if(nary_expr->get_attr() == attr) {\
             if(nary_expr->is_partial()) {\

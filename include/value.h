@@ -363,7 +363,7 @@ template<typename T>
 const SharedExpr Value<T>::get_expr() const {
   if(is_symbolic()) {
     SharedExpr raw_expr = GenericValue::get_expr();
-    if(raw_expr->get_kind() == NaryExpr::kind) {
+    if(raw_expr->get_kind() == NARY_EXPR) {
       std::shared_ptr<NaryExpr> nary_expr = std::dynamic_pointer_cast<NaryExpr>(raw_expr);
       if(nary_expr->is_partial()) {
         if(nary_expr->is_commutative() && nary_expr->is_associative()) {

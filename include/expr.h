@@ -211,9 +211,7 @@ public:
   virtual ~Visitor() {}
 };
 
-// ExprKind is an internal enumeration type that identifies an Expr subclass.
-// Each such subclass must ensure that it has a public static "kind" member
-// field that can be used for identification purposes.
+// ExprKind is an enumeration type that identifies an Expr subclass.
 enum ExprKind {
   ANY_EXPR,
   VALUE_EXPR,
@@ -245,17 +243,19 @@ enum ExprKind {
 // for identification purposes. This identifier makes dynamic downcasts safe.
 class Expr {
 private:
+  const ExprKind kind;
+
   Expr(const Expr&);
   Expr& operator=(const Expr&);
 
 protected:
-  Expr() {}
+  Expr(const ExprKind kind) : kind(kind) {}
 
 public:
   // get_kind() uniquely identifies the implementation of this Expr object.
   // Use the public static "kind" member field of the desired Expr subclass
   // that needs to be identified for downcast purposes.
-  virtual ExprKind get_kind() const = 0;
+  ExprKind get_kind() const { return kind; }
 
   virtual std::ostream& write(std::ostream&) const = 0;
 
@@ -297,12 +297,9 @@ private:
   const std::string name;
 
 public:
-  static ExprKind kind;
 
-  AnyExpr(const std::string& name) : name(name) {};
-  AnyExpr(const AnyExpr& other) : name(other.name) {};
-
-  ExprKind get_kind() const { return kind; }
+  AnyExpr(const std::string& name) : Expr(ANY_EXPR), name(name) {}
+  AnyExpr(const AnyExpr& other) : Expr(ANY_EXPR), name(other.name) {}
 
   const std::string& get_name() const { return name; }
 
@@ -330,15 +327,12 @@ private:
   const std::string name;
 
 public:
-  static ExprKind kind;
 
-  ValueExpr(const T& value) : value(value), name("") {};
-  ValueExpr(const ValueExpr& other) : value(other.value), name(other.name) {};
+  ValueExpr(const T& value) : Expr(VALUE_EXPR), value(value), name("") {}
+  ValueExpr(const ValueExpr& other) : Expr(VALUE_EXPR), value(other.value), name(other.name) {}
 
   ValueExpr(const T& value, const std::string& name) :
-    value(value), name(name) {};
-
-  ExprKind get_kind() const { return kind; }
+    Expr(VALUE_EXPR), value(value), name(name) {}
 
   T get_value() const { return value; }
 
@@ -356,12 +350,12 @@ private:
   const Type type;
 
 public:
-  static ExprKind kind;
 
-  CastExpr(const SharedExpr& expr, const Type type) : expr(expr), type(type) {}
-  CastExpr(const CastExpr& other) : expr(other.expr), type(other.type) {}
+  CastExpr(const SharedExpr& expr, const Type type) :
+    Expr(CAST_EXPR), expr(expr), type(type) {}
 
-  ExprKind get_kind() const { return kind; }
+  CastExpr(const CastExpr& other) :
+    Expr(CAST_EXPR), expr(other.expr), type(other.type) {}
 
   GET_SHARED_EXPR(expr)
   SET_SHARED_EXPR(expr)
@@ -384,12 +378,12 @@ private:
   const Operator op;
 
 public:
-  static ExprKind kind;
 
-  UnaryExpr(const SharedExpr& expr, const Operator op) : expr(expr), op(op) {};
-  UnaryExpr(const UnaryExpr& other) : expr(other.expr), op(other.op) {}
+  UnaryExpr(const SharedExpr& expr, const Operator op) :
+    Expr(UNARY_EXPR), expr(expr), op(op) {}
 
-  ExprKind get_kind() const { return kind; }
+  UnaryExpr(const UnaryExpr& other) :
+    Expr(UNARY_EXPR), expr(other.expr), op(other.op) {}
 
   GET_SHARED_EXPR(expr)
   SET_SHARED_EXPR(expr)
@@ -413,16 +407,14 @@ private:
   SharedExpr else_expr;
 
 public:
-  static ExprKind kind;
 
   TernaryExpr(const SharedExpr& cond_expr, const SharedExpr& then_expr,
-    const SharedExpr& else_expr) : cond_expr(cond_expr), then_expr(then_expr),
-                                   else_expr(else_expr) {};
+      const SharedExpr& else_expr) : Expr(TERNARY_EXPR),
+    cond_expr(cond_expr), then_expr(then_expr), else_expr(else_expr) {}
 
-  TernaryExpr(const TernaryExpr& other) : cond_expr(other.cond_expr),
-    then_expr(other.then_expr), else_expr(other.else_expr) {}
-
-  ExprKind get_kind() const { return kind; }
+  TernaryExpr(const TernaryExpr& other) : Expr(TERNARY_EXPR),
+    cond_expr(other.cond_expr), then_expr(other.then_expr),
+    else_expr(other.else_expr) {}
 
   GET_SHARED_EXPR(cond_expr)
   GET_SHARED_EXPR(then_expr)
@@ -459,33 +451,33 @@ private:
   const OperatorAttr attr;
 
 public:
-  static ExprKind kind;
 
   // Constructor for a partial nary expression with the specified operator
   // attributes. After this object has been instantiated, either one of the
   // modifiers has to be called at least twice.
-  NaryExpr(const Operator op, const OperatorAttr attr) : exprs(), op(op),
-      attr(attr) {}
+  NaryExpr(const Operator op, const OperatorAttr attr) : Expr(NARY_EXPR),
+    exprs(), op(op), attr(attr) {}
 
   // Constructor for a partial nary nary expression with the specified operator
   // attributes. After this object has been instantiated, either one of the
   // modifiers has to be called at least once.
   NaryExpr(const Operator op, const OperatorAttr attr, const SharedExpr& expr) :
-      exprs(), op(op), attr(attr) {
+    Expr(NARY_EXPR), exprs(), op(op), attr(attr) {
+
     append_expr(expr);
   }
 
   // Constructor for a binary expression with the specified associativity.
   NaryExpr(const Operator op, const OperatorAttr attr, const SharedExpr& x_expr,
-      const SharedExpr& y_expr) : exprs(), op(op), attr(attr) {
+      const SharedExpr& y_expr) :
+    Expr(NARY_EXPR), exprs(), op(op), attr(attr) {
+
     append_expr(x_expr);
     append_expr(y_expr);
   }
 
-  NaryExpr(const NaryExpr& other) : exprs(other.exprs), op(other.op),
-      attr(other.attr) {}
-
-  ExprKind get_kind() const { return kind; }
+  NaryExpr(const NaryExpr& other) : Expr(NARY_EXPR), exprs(other.exprs),
+      op(other.op), attr(other.attr) {}
 
   // is_partial() returns true if and only if there are fewer than
   // two operands.
@@ -522,11 +514,6 @@ public:
   WALK_DEF(void)
   WALK_DEF(z3::expr)
 };
-
-template<typename T>
-ExprKind AnyExpr<T>::kind = ANY_EXPR;
-template<typename T>
-ExprKind ValueExpr<T>::kind = VALUE_EXPR;
 
 template<typename T>
 std::ostream& AnyExpr<T>::write(std::ostream& out) const {

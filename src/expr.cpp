@@ -11,11 +11,6 @@ const Operator UNARY_END = ADD;
 const Operator NARY_BEGIN = ADD;
 const Operator NARY_END = LSS;
 
-ExprKind CastExpr::kind = CAST_EXPR;
-ExprKind UnaryExpr::kind = UNARY_EXPR;
-ExprKind TernaryExpr::kind = TERNARY_EXPR;
-ExprKind NaryExpr::kind = NARY_EXPR;
-
 std::ostream& CastExpr::write(std::ostream& out) const {
   out << LPAR << LPAR;
   out << types[type];
