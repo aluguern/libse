@@ -91,7 +91,7 @@ TEST(AnyTest, OperationOnAnyExpr) {
   a = a + 2;
 
   std::stringstream out;
-  a.get_value().get_expr()->write(out);
+  out << a.get_value().get_expr();
   EXPECT_EQ("([A]+2)", out.str());
 }
 

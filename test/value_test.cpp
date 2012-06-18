@@ -237,7 +237,7 @@ TEST(ValueTest, AddWithExpression) {
   EXPECT_EQ(7, (b + a).get_value());
 
   std::stringstream out;
-  c.get_expr()->write(out);
+  out << c.get_expr();
   EXPECT_EQ("(2+5)", out.str());
 }
 
@@ -273,7 +273,7 @@ TEST(ValueTest, LessThanWithExpression) {
   EXPECT_FALSE((b < a).get_value());
 
   std::stringstream out;
-  c.get_expr()->write(out);
+  out << c.get_expr();
   EXPECT_EQ("(2<5)", out.str());
 }
 
@@ -304,7 +304,7 @@ TEST(ValueTest, NotTrueWithExpression) {
   EXPECT_FALSE((!a).get_value());
 
   std::stringstream out;
-  b.get_expr()->write(out);
+  out << b.get_expr();
   EXPECT_EQ("(!1)", out.str());
 }
 
@@ -317,7 +317,7 @@ TEST(ValueTest, NotFalseWithExpression) {
   EXPECT_TRUE((!a).get_value());
 
   std::stringstream out;
-  b.get_expr()->write(out);
+  out << b.get_expr();
   EXPECT_EQ("(!0)", out.str());
 }
 
@@ -336,12 +336,12 @@ TEST(ValueTest, SetSymbolicName) {
   a.set_symbolic(name);
 
   std::stringstream out;
-  a.get_expr()->write(out);
+  out << a.get_expr();
   EXPECT_EQ("[Var_0:5]", out.str());
 
   name.clear();
   std::stringstream after_clear;
-  a.get_expr()->write(after_clear);
+  after_clear << a.get_expr();
   EXPECT_EQ("[Var_0:5]", after_clear.str());
 }
 

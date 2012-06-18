@@ -87,7 +87,7 @@ TEST(LoopTest, Unwind1xWithSingleVar) {
   EXPECT_FALSE(ok);
 
   std::stringstream out;
-  i.get_value().get_expr()->write(out);
+  out << i.get_value().get_expr();
   EXPECT_EQ("(([I]<5)?([I]+1):[I])", out.str());
 }
 
@@ -104,7 +104,7 @@ TEST(LoopTest, Unwind2xWithSingleVar) {
   i = i + 1;
 
   std::stringstream out_1x;
-  i.get_value().get_expr()->write(out_1x);
+  out_1x << i.get_value().get_expr();
   EXPECT_EQ("([I]+1)", out_1x.str());
 
   // 2x
@@ -114,7 +114,7 @@ TEST(LoopTest, Unwind2xWithSingleVar) {
   i = i + 2;
 
   std::stringstream out_2x;
-  i.get_value().get_expr()->write(out_2x);
+  out_2x << i.get_value().get_expr();
   EXPECT_EQ("([I]+3)", out_2x.str());
 
   // 3x
@@ -122,7 +122,7 @@ TEST(LoopTest, Unwind2xWithSingleVar) {
   EXPECT_FALSE(ok);
 
   std::stringstream join_out;
-  i.get_value().get_expr()->write(join_out);
+  join_out << i.get_value().get_expr();
   EXPECT_EQ("(([I]<5)?((([I]+1)<7)?([I]+3):([I]+1)):[I])", join_out.str());
 }
 
@@ -139,7 +139,7 @@ TEST(LoopTest, Unwind3xWithSingleVar) {
   i = i + 1;
 
   std::stringstream out_1x;
-  i.get_value().get_expr()->write(out_1x);
+  out_1x << i.get_value().get_expr();
   EXPECT_EQ("([I]+1)", out_1x.str());
 
   // 2x
@@ -149,7 +149,7 @@ TEST(LoopTest, Unwind3xWithSingleVar) {
   i = i + 2;
 
   std::stringstream out_2x;
-  i.get_value().get_expr()->write(out_2x);
+  out_2x << i.get_value().get_expr();
   EXPECT_EQ("([I]+3)", out_2x.str());
  
   // 3x
@@ -159,7 +159,7 @@ TEST(LoopTest, Unwind3xWithSingleVar) {
   i = i + 3;
 
   std::stringstream out_3x;
-  i.get_value().get_expr()->write(out_3x);
+  out_3x << i.get_value().get_expr();
   EXPECT_EQ("([I]+6)", out_3x.str());
 
   // 4x
@@ -167,7 +167,7 @@ TEST(LoopTest, Unwind3xWithSingleVar) {
   EXPECT_FALSE(ok);
 
   std::stringstream join_out;
-  i.get_value().get_expr()->write(join_out);
+  join_out << i.get_value().get_expr();
   EXPECT_EQ("(([I]<5)?((([I]+1)<7)?((([I]+3)<7)?([I]+6):([I]+3)):([I]+1)):[I])", join_out.str());
 }
 
@@ -184,7 +184,7 @@ TEST(LoopTest, Unwind4xWithSingleVar) {
   i = i + 1;
 
   std::stringstream out_1x;
-  i.get_value().get_expr()->write(out_1x);
+  out_1x << i.get_value().get_expr();
   EXPECT_EQ("([I]+1)", out_1x.str());
 
   // 2x
@@ -194,7 +194,7 @@ TEST(LoopTest, Unwind4xWithSingleVar) {
   i = i + 2;
 
   std::stringstream out_2x;
-  i.get_value().get_expr()->write(out_2x);
+  out_2x << i.get_value().get_expr();
   EXPECT_EQ("([I]+3)", out_2x.str());
  
   // 3x
@@ -204,7 +204,7 @@ TEST(LoopTest, Unwind4xWithSingleVar) {
   i = i + 3;
 
   std::stringstream out_3x;
-  i.get_value().get_expr()->write(out_3x);
+  out_3x << i.get_value().get_expr();
   EXPECT_EQ("([I]+6)", out_3x.str());
 
   // 4x
@@ -214,7 +214,7 @@ TEST(LoopTest, Unwind4xWithSingleVar) {
   i = i + 4;
 
   std::stringstream out_4x;
-  i.get_value().get_expr()->write(out_4x);
+  out_4x << i.get_value().get_expr();
   EXPECT_EQ("([I]+10)", out_4x.str());
 
   // 5x
@@ -222,7 +222,7 @@ TEST(LoopTest, Unwind4xWithSingleVar) {
   EXPECT_FALSE(ok);
 
   std::stringstream join_out;
-  i.get_value().get_expr()->write(join_out);
+  join_out << i.get_value().get_expr();
   EXPECT_EQ("(([I]<5)?((([I]+1)<5)?((([I]+3)<5)?((([I]+6)<5)?([I]+10):([I]+6)):([I]+3)):([I]+1)):[I])", join_out.str());
 }
 
@@ -242,11 +242,11 @@ TEST(LoopTest, Unwind2xWithMultipleVars) {
   j = j + 1;
 
   std::stringstream out_i_1x;
-  i.get_value().get_expr()->write(out_i_1x);
+  out_i_1x << i.get_value().get_expr();
   EXPECT_EQ("([I]+1)", out_i_1x.str());
 
   std::stringstream out_j_1x;
-  j.get_value().get_expr()->write(out_j_1x);
+  out_j_1x << j.get_value().get_expr();
   EXPECT_EQ("([J]+1)", out_j_1x.str());
 
   // 2x
@@ -257,11 +257,11 @@ TEST(LoopTest, Unwind2xWithMultipleVars) {
   j = j + 2;
 
   std::stringstream out_i_2x;
-  i.get_value().get_expr()->write(out_i_2x);
+  out_i_2x << i.get_value().get_expr();
   EXPECT_EQ("([I]+3)", out_i_2x.str());
 
   std::stringstream out_j_2x;
-  j.get_value().get_expr()->write(out_j_2x);
+  out_j_2x << j.get_value().get_expr();
   EXPECT_EQ("([J]+3)", out_j_2x.str());
 
   // 3x
@@ -269,11 +269,11 @@ TEST(LoopTest, Unwind2xWithMultipleVars) {
   EXPECT_FALSE(ok);
 
   std::stringstream out_i_join;
-  i.get_value().get_expr()->write(out_i_join);
+  out_i_join << i.get_value().get_expr();
   EXPECT_EQ("(([I]<5)?((([I]+1)<7)?([I]+3):([I]+1)):[I])", out_i_join.str());
 
   std::stringstream out_j_join;
-  j.get_value().get_expr()->write(out_j_join);
+  out_j_join << j.get_value().get_expr();
   EXPECT_EQ("(([I]<5)?((([I]+1)<7)?([J]+3):([J]+1)):[J])", out_j_join.str());
 }
 
@@ -293,11 +293,11 @@ TEST(LoopTest, Unwind3xWithMultipleVars) {
   j = j + 2;
 
   std::stringstream out_i_1x;
-  i.get_value().get_expr()->write(out_i_1x);
+  out_i_1x << i.get_value().get_expr();
   EXPECT_EQ("([I]+1)", out_i_1x.str());
 
   std::stringstream out_j_1x;
-  j.get_value().get_expr()->write(out_j_1x);
+  out_j_1x << j.get_value().get_expr();
   EXPECT_EQ("([J]+2)", out_j_1x.str());
 
   // 2x
@@ -308,11 +308,11 @@ TEST(LoopTest, Unwind3xWithMultipleVars) {
   j = j + 4;
 
   std::stringstream out_i_2x;
-  i.get_value().get_expr()->write(out_i_2x);
+  out_i_2x << i.get_value().get_expr();
   EXPECT_EQ("([I]+4)", out_i_2x.str());
 
   std::stringstream out_j_2x;
-  j.get_value().get_expr()->write(out_j_2x);
+  out_j_2x << j.get_value().get_expr();
   EXPECT_EQ("([J]+6)", out_j_2x.str());
 
   // 3x
@@ -323,11 +323,11 @@ TEST(LoopTest, Unwind3xWithMultipleVars) {
   j = j + 6;
 
   std::stringstream out_i_3x;
-  i.get_value().get_expr()->write(out_i_3x);
+  out_i_3x << i.get_value().get_expr();
   EXPECT_EQ("([I]+9)", out_i_3x.str());
 
   std::stringstream out_j_3x;
-  j.get_value().get_expr()->write(out_j_3x);
+  out_j_3x << j.get_value().get_expr();
   EXPECT_EQ("([J]+12)", out_j_3x.str());
 
   // 4x
@@ -335,11 +335,11 @@ TEST(LoopTest, Unwind3xWithMultipleVars) {
   EXPECT_FALSE(ok);
 
   std::stringstream out_i_join;
-  i.get_value().get_expr()->write(out_i_join);
+  out_i_join << i.get_value().get_expr();
   EXPECT_EQ("(([I]<7)?((([I]+1)<7)?((([I]+4)<7)?([I]+9):([I]+4)):([I]+1)):[I])", out_i_join.str());
 
   std::stringstream out_j_join;
-  j.get_value().get_expr()->write(out_j_join);
+  out_j_join << j.get_value().get_expr();
   EXPECT_EQ("(([I]<7)?((([I]+1)<7)?((([I]+4)<7)?([J]+12):([J]+6)):([J]+2)):[J])", out_j_join.str());
 }
 
@@ -391,7 +391,7 @@ TEST(LoopTest, Unwind1xWithSingleVarWithAny) {
   EXPECT_FALSE(ok);
 
   std::stringstream out;
-  i.get_value().get_expr()->write(out);
+  out << i.get_value().get_expr();
   EXPECT_EQ("(([I]<5)?([I]+[A]):[I])", out.str());
 }
 
@@ -408,7 +408,7 @@ TEST(LoopTest, Unwind2xWithSingleVarWithAny) {
   i = i + any_int("A");
 
   std::stringstream out_1x;
-  i.get_value().get_expr()->write(out_1x);
+  out_1x << i.get_value().get_expr();
   EXPECT_EQ("([I]+[A])", out_1x.str());
 
   // 2x
@@ -418,7 +418,7 @@ TEST(LoopTest, Unwind2xWithSingleVarWithAny) {
   i = i + any_int("B");
 
   std::stringstream out_2x;
-  i.get_value().get_expr()->write(out_2x);
+  out_2x << i.get_value().get_expr();
   EXPECT_EQ("(([I]+[A])+[B])", out_2x.str());
 
   // 3x
@@ -426,7 +426,7 @@ TEST(LoopTest, Unwind2xWithSingleVarWithAny) {
   EXPECT_FALSE(ok);
 
   std::stringstream join_out;
-  i.get_value().get_expr()->write(join_out);
+  join_out << i.get_value().get_expr();
   EXPECT_EQ("(([I]<5)?((([I]+[A])<7)?(([I]+[A])+[B]):([I]+[A])):[I])", join_out.str());
 }
 
@@ -443,7 +443,7 @@ TEST(LoopTest, Unwind3xWithSingleVarWithAny) {
   i = i + any_int("A");
 
   std::stringstream out_1x;
-  i.get_value().get_expr()->write(out_1x);
+  out_1x << i.get_value().get_expr();
   EXPECT_EQ("([I]+[A])", out_1x.str());
 
   // 2x
@@ -453,7 +453,7 @@ TEST(LoopTest, Unwind3xWithSingleVarWithAny) {
   i = i + any_int("B");
 
   std::stringstream out_2x;
-  i.get_value().get_expr()->write(out_2x);
+  out_2x << i.get_value().get_expr();
   EXPECT_EQ("(([I]+[A])+[B])", out_2x.str());
  
   // 3x
@@ -463,7 +463,7 @@ TEST(LoopTest, Unwind3xWithSingleVarWithAny) {
   i = i + any_int("C");
 
   std::stringstream out_3x;
-  i.get_value().get_expr()->write(out_3x);
+  out_3x << i.get_value().get_expr();
   EXPECT_EQ("((([I]+[A])+[B])+[C])", out_3x.str());
 
   // 4x
@@ -471,7 +471,7 @@ TEST(LoopTest, Unwind3xWithSingleVarWithAny) {
   EXPECT_FALSE(ok);
 
   std::stringstream join_out;
-  i.get_value().get_expr()->write(join_out);
+  join_out << i.get_value().get_expr();
   EXPECT_EQ("(([I]<5)?((([I]+[A])<7)?(((([I]+[A])+[B])<7)?((([I]+[A])+[B])+[C]):(([I]+[A])+[B])):([I]+[A])):[I])", join_out.str());
 }
 
@@ -488,7 +488,7 @@ TEST(LoopTest, Unwind4xWithSingleVarWithAny) {
   i = i + any_int("A");
 
   std::stringstream out_1x;
-  i.get_value().get_expr()->write(out_1x);
+  out_1x << i.get_value().get_expr();
   EXPECT_EQ("([I]+[A])", out_1x.str());
 
   // 2x
@@ -498,7 +498,7 @@ TEST(LoopTest, Unwind4xWithSingleVarWithAny) {
   i = i + any_int("B");
 
   std::stringstream out_2x;
-  i.get_value().get_expr()->write(out_2x);
+  out_2x << i.get_value().get_expr();
   EXPECT_EQ("(([I]+[A])+[B])", out_2x.str());
  
   // 3x
@@ -508,7 +508,7 @@ TEST(LoopTest, Unwind4xWithSingleVarWithAny) {
   i = i + any_int("C");
 
   std::stringstream out_3x;
-  i.get_value().get_expr()->write(out_3x);
+  out_3x << i.get_value().get_expr();
   EXPECT_EQ("((([I]+[A])+[B])+[C])", out_3x.str());
 
   // 4x
@@ -518,7 +518,7 @@ TEST(LoopTest, Unwind4xWithSingleVarWithAny) {
   i = i + any_int("D");
 
   std::stringstream out_4x;
-  i.get_value().get_expr()->write(out_4x);
+  out_4x << i.get_value().get_expr();
   EXPECT_EQ("(((([I]+[A])+[B])+[C])+[D])", out_4x.str());
 
   // 5x
@@ -526,7 +526,7 @@ TEST(LoopTest, Unwind4xWithSingleVarWithAny) {
   EXPECT_FALSE(ok);
 
   std::stringstream join_out;
-  i.get_value().get_expr()->write(join_out);
+  join_out << i.get_value().get_expr();
   EXPECT_EQ("(([I]<5)?((([I]+[A])<5)?(((([I]+[A])+[B])<5)?((((([I]+[A])+[B])+[C])<5)?(((([I]+[A])+[B])+[C])+[D]):((([I]+[A])+[B])+[C])):(([I]+[A])+[B])):([I]+[A])):[I])", join_out.str());
 }
 
@@ -546,11 +546,11 @@ TEST(LoopTest, Unwind2xWithMultipleVarsWithAny) {
   j = j + any_int("A");
 
   std::stringstream out_i_1x;
-  i.get_value().get_expr()->write(out_i_1x);
+  out_i_1x << i.get_value().get_expr();
   EXPECT_EQ("([I]+[A])", out_i_1x.str());
 
   std::stringstream out_j_1x;
-  j.get_value().get_expr()->write(out_j_1x);
+  out_j_1x << j.get_value().get_expr();
   EXPECT_EQ("([J]+[A])", out_j_1x.str());
 
   // 2x
@@ -561,11 +561,11 @@ TEST(LoopTest, Unwind2xWithMultipleVarsWithAny) {
   j = j + any_int("B");
 
   std::stringstream out_i_2x;
-  i.get_value().get_expr()->write(out_i_2x);
+  out_i_2x << i.get_value().get_expr();
   EXPECT_EQ("(([I]+[A])+[B])", out_i_2x.str());
 
   std::stringstream out_j_2x;
-  j.get_value().get_expr()->write(out_j_2x);
+  out_j_2x << j.get_value().get_expr();
   EXPECT_EQ("(([J]+[A])+[B])", out_j_2x.str());
 
   // 3x
@@ -573,11 +573,11 @@ TEST(LoopTest, Unwind2xWithMultipleVarsWithAny) {
   EXPECT_FALSE(ok);
 
   std::stringstream out_i_join;
-  i.get_value().get_expr()->write(out_i_join);
+  out_i_join << i.get_value().get_expr();
   EXPECT_EQ("(([I]<5)?((([I]+[A])<7)?(([I]+[A])+[B]):([I]+[A])):[I])", out_i_join.str());
 
   std::stringstream out_j_join;
-  j.get_value().get_expr()->write(out_j_join);
+  out_j_join << j.get_value().get_expr();
   EXPECT_EQ("(([I]<5)?((([I]+[A])<7)?(([J]+[A])+[B]):([J]+[A])):[J])", out_j_join.str());
 }
 
@@ -597,11 +597,11 @@ TEST(LoopTest, Unwind3xWithMultipleVarsWithAny) {
   j = j + any_int("B");
 
   std::stringstream out_i_1x;
-  i.get_value().get_expr()->write(out_i_1x);
+  out_i_1x << i.get_value().get_expr();
   EXPECT_EQ("([I]+[A])", out_i_1x.str());
 
   std::stringstream out_j_1x;
-  j.get_value().get_expr()->write(out_j_1x);
+  out_j_1x << j.get_value().get_expr();
   EXPECT_EQ("([J]+[B])", out_j_1x.str());
 
   // 2x
@@ -612,11 +612,11 @@ TEST(LoopTest, Unwind3xWithMultipleVarsWithAny) {
   j = j + any_int("D");
 
   std::stringstream out_i_2x;
-  i.get_value().get_expr()->write(out_i_2x);
+  out_i_2x << i.get_value().get_expr();
   EXPECT_EQ("(([I]+[A])+[C])", out_i_2x.str());
 
   std::stringstream out_j_2x;
-  j.get_value().get_expr()->write(out_j_2x);
+  out_j_2x << j.get_value().get_expr();
   EXPECT_EQ("(([J]+[B])+[D])", out_j_2x.str());
 
   // 3x
@@ -627,11 +627,11 @@ TEST(LoopTest, Unwind3xWithMultipleVarsWithAny) {
   j = j + any_int("F");
 
   std::stringstream out_i_3x;
-  i.get_value().get_expr()->write(out_i_3x);
+  out_i_3x << i.get_value().get_expr();
   EXPECT_EQ("((([I]+[A])+[C])+[E])", out_i_3x.str());
 
   std::stringstream out_j_3x;
-  j.get_value().get_expr()->write(out_j_3x);
+  out_j_3x << j.get_value().get_expr();
   EXPECT_EQ("((([J]+[B])+[D])+[F])", out_j_3x.str());
 
   // 4x
@@ -639,11 +639,11 @@ TEST(LoopTest, Unwind3xWithMultipleVarsWithAny) {
   EXPECT_FALSE(ok);
 
   std::stringstream out_i_join;
-  i.get_value().get_expr()->write(out_i_join);
+  out_i_join << i.get_value().get_expr();
   EXPECT_EQ("(([I]<7)?((([I]+[A])<7)?(((([I]+[A])+[C])<7)?((([I]+[A])+[C])+[E]):(([I]+[A])+[C])):([I]+[A])):[I])", out_i_join.str());
 
   std::stringstream out_j_join;
-  j.get_value().get_expr()->write(out_j_join);
+  out_j_join << j.get_value().get_expr();
   EXPECT_EQ("(([I]<7)?((([I]+[A])<7)?(((([I]+[A])+[C])<7)?((([J]+[B])+[D])+[F]):(([J]+[B])+[D])):([J]+[B])):[J])", out_j_join.str());
 }
 

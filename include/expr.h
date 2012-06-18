@@ -158,6 +158,10 @@ enum ExprKind {
   NARY_EXPR
 };
 
+// Forward declaration for "Virtual Friend Function" idiom
+class Expr;
+typedef std::shared_ptr<Expr> SharedExpr;
+
 // Expr is the base class for a symbolic expression such as "y = x + 7".
 // Once a symbolic expression object has been instantiated, it can never
 // be copied or modified. An Expr object corresponds to an rvalue in C++.
@@ -188,19 +192,31 @@ private:
 protected:
   Expr(const ExprKind kind) : kind(kind) {}
 
+  // write(std::ostream&) serializes the expression to a human-readable format.
+  // Subclasses are allowed to increase the visibility of this member function.
+  virtual std::ostream& write(std::ostream&) const = 0;
+
 public:
   // get_kind() uniquely identifies the implementation of this Expr object.
   // Use the public static "kind" member field of the desired Expr subclass
   // that needs to be identified for downcast purposes.
   ExprKind get_kind() const { return kind; }
 
-  virtual std::ostream& write(std::ostream&) const = 0;
+  // Uses "Virtual Friend Function" idiom.
+  // See also http://www.parashift.com/c++-faq-lite/input-output.html#faq-15.11
+  friend std::ostream& operator<<(std::ostream& out, const SharedExpr& expr);
 
   virtual ~Expr(){};
 };
 
 // SharedExpr is a C++11 shared pointer to a vertex in the DAG.
 typedef std::shared_ptr<Expr> SharedExpr;
+
+inline std::ostream& operator<<(std::ostream& out, const SharedExpr& expr) {
+  // delegate the work to polymorphic member function
+  expr->write(out);
+  return out;
+} 
 
 // AnyExpr<T> represents a symbolic variable with an arbitrary value of type T.
 // The specified template parameter should be a primitive type. Since there is

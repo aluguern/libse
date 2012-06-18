@@ -290,12 +290,12 @@ TEST(VarTest, SetSymbolicName) {
   EXPECT_TRUE(var.is_symbolic());
 
   std::stringstream out;
-  var.get_value().get_expr()->write(out);
+  out << var.get_value().get_expr();
   EXPECT_EQ("[Var_0:A]", out.str());
 
   name.clear();
   std::stringstream after_clear;
-  var.get_value().get_expr()->write(after_clear);
+  after_clear << var.get_value().get_expr();
   EXPECT_EQ("[Var_0:A]", after_clear.str());
 }
 

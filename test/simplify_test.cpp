@@ -23,7 +23,7 @@ TEST(SimplifyTest, UpdateConcolicVariableWithRHSConstant) {
   EXPECT_EQ(2, var.get_value().get_aux_value());
 
   std::stringstream out_0;
-  var.get_expr()->write(out_0);
+  out_0 << var.get_expr();
   EXPECT_EQ("([Var_0:3]+2)", out_0.str());
 
   var = var + 7;
@@ -34,7 +34,7 @@ TEST(SimplifyTest, UpdateConcolicVariableWithRHSConstant) {
   EXPECT_EQ(9, var.get_value().get_aux_value());
 
   std::stringstream out_1;
-  var.get_expr()->write(out_1);
+  out_1 << var.get_expr();
   EXPECT_EQ("([Var_0:3]+9)", out_1.str());
 }
 
@@ -51,7 +51,7 @@ TEST(SimplifyTest, UpdateSymbolicVariableWithRHSConstant) {
   EXPECT_EQ(2, var.get_value().get_aux_value());
 
   std::stringstream out_0;
-  var.get_expr()->write(out_0);
+  out_0 << var.get_expr();
   EXPECT_EQ("([A]+2)", out_0.str());
 
   var = var + 7;
@@ -61,7 +61,7 @@ TEST(SimplifyTest, UpdateSymbolicVariableWithRHSConstant) {
   EXPECT_EQ(9, var.get_value().get_aux_value());
 
   std::stringstream out_1;
-  var.get_expr()->write(out_1);
+  out_1 << var.get_expr();
   EXPECT_EQ("([A]+9)", out_1.str());
 }
 
@@ -80,7 +80,7 @@ TEST(SimplifyTest, ValueWithRHSConstant) {
   EXPECT_EQ(5, value.get_aux_value());
 
   std::stringstream out;
-  value.get_expr()->write(out);
+  out << value.get_expr();
   EXPECT_EQ("([A]+5)", out.str());
 
   var = value;
@@ -96,7 +96,7 @@ TEST(SimplifyTest, DifferentOperatorsWithRHSConstants) {
   se::Int var = se::any_int("A");
 
   std::stringstream out;
-  ((var + 2 + 7) < 7).get_expr()->write(out);
+  out << ((var + 2 + 7) < 7).get_expr();
 
   EXPECT_EQ("(([A]+9)<7)", out.str());
 }

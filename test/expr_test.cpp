@@ -33,7 +33,7 @@ TEST(ExprTest, ValueExprWithoutName) {
   const SharedExpr a = SharedExpr(new ValueExpr<short>(7));
 
   std::stringstream out;
-  a->write(out);
+  out << a;
 
   EXPECT_EQ("7", out.str());
 }
@@ -50,7 +50,7 @@ TEST(ExprTest, ValueExprWithName) {
   const SharedExpr a = SharedExpr(new ValueExpr<short>(7, "A"));
 
   std::stringstream out;
-  a->write(out);
+  out << a;
 
   EXPECT_EQ("[A:7]", out.str());
 }
@@ -59,7 +59,7 @@ TEST(ExprTest, AnyExpr) {
   const SharedExpr a = SharedExpr(new AnyExpr<short>("A"));
 
   std::stringstream out;
-  a->write(out);
+  out << a;
 
   EXPECT_EQ("[A]", out.str());
 }
@@ -246,7 +246,7 @@ TEST(ExprTest, WriteTreeWithoutCast) {
   const SharedExpr lss = SharedExpr(new NaryExpr(LSS, ReflectOperator<LSS>::attr, add, neg));
 
   std::stringstream out;
-  lss->write(out);
+  out << lss;
 
   EXPECT_EQ("((7+[Var_1:3])<(!7))", out.str());
 }
@@ -260,7 +260,7 @@ TEST(ExprTest, WriteTreeWithCast) {
   const SharedExpr lss = SharedExpr(new NaryExpr(LSS, ReflectOperator<LSS>::attr, add, neg));
 
   std::stringstream out;
-  lss->write(out);
+  out << lss;
 
   EXPECT_EQ("((7+[Var_1:3])<(!((int)(7))))", out.str());
 }
@@ -274,7 +274,7 @@ TEST(ExprTest, WriteTreeWithTernary) {
   const SharedExpr ifThenElse = SharedExpr(new TernaryExpr(lss, d, a));
 
   std::stringstream out;
-  ifThenElse->write(out);
+  out << ifThenElse;
 
   EXPECT_EQ("((7<[Var_1:3])?([Var_1:3]+[Var_2:5]):7)", out.str());
 }
@@ -290,7 +290,7 @@ TEST(ExprTest, WriteTreeWithEveryTypeOfExpr) {
   const SharedExpr ternary = SharedExpr(new TernaryExpr(neg, cast, d));
 
   std::stringstream out;
-  ternary->write(out);
+  out << ternary;
 
   EXPECT_EQ("((!([A]<5))?((char)([C])):[D])", out.str());
 }
