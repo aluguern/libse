@@ -53,7 +53,7 @@ TEST(VersionTest, InitWithValue) {
 }
 
 TEST(VersionTest, InitWithValueRequiringCast) {
-  Int a = reflect<char>('a');
+  Int a = make_value<char>('a');
 
   EXPECT_EQ(0, a.get_version());
 }

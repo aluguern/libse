@@ -27,8 +27,8 @@ TEST(ValueTest, TypeConversions) {
 }
 
 TEST(ValueTest, BoolConversion) {
-  EXPECT_TRUE(reflect<bool>(true));
-  EXPECT_FALSE(reflect<bool>(false));
+  EXPECT_TRUE(make_value<bool>(true));
+  EXPECT_FALSE(make_value<bool>(false));
 }
 
 class BoolOperator {
@@ -200,14 +200,14 @@ TEST(ValueTest, ValueAssignmentWithNullExpressionAndWithoutCast) {
 
 template<typename T>
 const Value<T> reflect_with_expr(const T value) {
-  Value<T> a = reflect<T>(value);
+  Value<T> a = make_value<T>(value);
   a.set_expr(SharedExpr(new ValueExpr<T>(value)));
   return a;
 }
 
 TEST(ValueTest, AddWithoutExpression) {
-  const Value<char>& a = reflect<char>(2);
-  const Value<int>& b = reflect<int>(5);
+  const Value<char>& a = make_value<char>(2);
+  const Value<int>& b = make_value<int>(5);
   const GenericValue& c = a + b;
   const GenericValue& d = b + a;
 
@@ -223,7 +223,7 @@ TEST(ValueTest, AddWithoutExpression) {
 
 TEST(ValueTest, AddWithExpression) {
   const Value<int>& a = reflect_with_expr<int>(2);
-  const Value<int>& b = reflect<int>(5);
+  const Value<int>& b = make_value<int>(5);
   const GenericValue& c = a + b;
   const GenericValue& d = b + a;
 
@@ -242,8 +242,8 @@ TEST(ValueTest, AddWithExpression) {
 }
 
 TEST(ValueTest, LessThanWithoutExpression) {
-  const Value<char>& a = reflect<char>(2);
-  const Value<int>& b = reflect<int>(5);
+  const Value<char>& a = make_value<char>(2);
+  const Value<int>& b = make_value<int>(5);
   const GenericValue& c = a < b;
   const GenericValue& d = b < a;
 
@@ -259,7 +259,7 @@ TEST(ValueTest, LessThanWithoutExpression) {
 
 TEST(ValueTest, LessThanWithExpression) {
   const Value<int>& a = reflect_with_expr<int>(2);
-  const Value<int>& b = reflect<int>(5);
+  const Value<int>& b = make_value<int>(5);
   const GenericValue& c = a < b;
   const GenericValue& d = b < a;
 
@@ -278,7 +278,7 @@ TEST(ValueTest, LessThanWithExpression) {
 }
 
 TEST(ValueTest, NotTrueWithoutExpression) {
-  const Value<bool>& a = reflect<bool>(true);
+  const Value<bool>& a = make_value<bool>(true);
   const GenericValue& b = !a;
 
   EXPECT_EQ(BOOL, b.get_type());
@@ -287,7 +287,7 @@ TEST(ValueTest, NotTrueWithoutExpression) {
 }
 
 TEST(ValueTest, NotFalseWithoutExpression) {
-  const Value<bool>& a = reflect<bool>(false);
+  const Value<bool>& a = make_value<bool>(false);
   const GenericValue& b = !a;
 
   EXPECT_EQ(BOOL, b.get_type());
@@ -322,7 +322,7 @@ TEST(ValueTest, NotFalseWithExpression) {
 }
 
 TEST(ValueTest, SetSymbolic) {
-  Value<int> a = reflect<int>(5);
+  Value<int> a = make_value<int>(5);
 
   EXPECT_FALSE(a.is_symbolic());
   a.set_symbolic("a");
@@ -330,7 +330,7 @@ TEST(ValueTest, SetSymbolic) {
 }
 
 TEST(ValueTest, SetSymbolicName) {
-  Value<int> a = reflect<int>(5);
+  Value<int> a = make_value<int>(5);
   std::string name = "Var_0";
 
   a.set_symbolic(name);
@@ -346,7 +346,7 @@ TEST(ValueTest, SetSymbolicName) {
 }
 
 TEST(ValueTest, SetSymbolicTwice) {
-  Value<int> a = reflect<int>(5);
+  Value<int> a = make_value<int>(5);
   a.set_symbolic("a");
 
   EXPECT_TRUE(a.is_symbolic());
@@ -365,8 +365,8 @@ TEST(ValueTest, NativeBitPrecision) {
   int y = 5;
   int z = x + y;
 
-  const Value<char>& a = reflect(x);
-  const Value<int>& b = reflect(y);
+  const Value<char>& a = make_value(x);
+  const Value<int>& b = make_value(y);
   const Value<int>& c = a + b;
 
   // But C++ guarantees type promotion
@@ -378,8 +378,8 @@ TEST(ValueTest, NativeBitPrecision) {
 
 TEST(ValueTest, TypePromotion) {
   // C++ guarantees that a variable of type char is in the range [-128, 127].
-  const Value<char>& a = reflect<char>(127);
-  const Value<int>& b = reflect<int>(256);
+  const Value<char>& a = make_value<char>(127);
+  const Value<int>& b = make_value<int>(256);
   const GenericValue& c = a + b;
 
   // C++ guarantees type promotion
@@ -394,10 +394,10 @@ TEST(ValueTest, TypePromotion) {
 TEST(ValueTest, SymbolicBoolConversion) {
   tracer().reset();
 
-  Value<bool> a = reflect<bool>(true);
+  Value<bool> a = make_value<bool>(true);
   a.set_symbolic("A");
 
-  Value<bool> b = reflect<bool>(false);
+  Value<bool> b = make_value<bool>(false);
   b.set_symbolic("B");
 
   EXPECT_TRUE(a);
@@ -412,10 +412,10 @@ TEST(ValueTest, SymbolicBoolConversion) {
 TEST(ValueTest, SymbolicBoolConversionWithIfStatement) {
   tracer().reset();
 
-  Value<bool> a = reflect<bool>(true);
+  Value<bool> a = make_value<bool>(true);
   a.set_symbolic("A");
 
-  Value<bool> b = reflect<bool>(false);
+  Value<bool> b = make_value<bool>(false);
   b.set_symbolic("B");
 
   // C++ forces explicit conversion to bool

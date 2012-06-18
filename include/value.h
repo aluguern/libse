@@ -387,12 +387,12 @@ const SharedExpr Value<T>::get_expr() const {
   return create_value_expr();
 }
 
-// reflect(T) creates reflection value that represents the concrete value given
-// as the argument. Type T should be a primitive type. When the returned object
-// is used as a temporary, the compiler is likely to use RVO (return value
-// optimization) to avoid the overhead of copying the return value.
+// make_value(T) creates reflection value that represents the concrete value
+// given as the argument. Type T should be a primitive type. When the returned
+// object is used as a temporary, the compiler is likely to use RVO (return
+// value optimization) to avoid the overhead of copying the return value.
 template<typename T>
-inline Value<T> reflect(const T value) {
+inline Value<T> make_value(const T value) {
   return Value<T>(value);
 }
 

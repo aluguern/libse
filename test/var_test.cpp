@@ -110,7 +110,7 @@ TEST(VarTest, DowncastWithPointerAssignment) {
   Char a = 3;
   EXPECT_FALSE(a.is_cast());
 
-  a = reflect<int>(2);
+  a = make_value<int>(2);
 
   EXPECT_EQ(2, a);
   EXPECT_EQ(CHAR, a.get_type());
@@ -119,7 +119,7 @@ TEST(VarTest, DowncastWithPointerAssignment) {
 }
 
 TEST(VarTest, DowncastWithPointerConstructor) {
-  Char a = reflect<int>(2);
+  Char a = make_value<int>(2);
 
   EXPECT_EQ(2, a);
   EXPECT_EQ(CHAR, a.get_type());
@@ -218,7 +218,7 @@ TEST(VarTest, UpcastWithPointerAssignment) {
   Int a = 3;
   EXPECT_FALSE(a.is_cast());
 
-  a = reflect<char>(2);
+  a = make_value<char>(2);
 
   EXPECT_EQ(2, a);
   EXPECT_EQ(INT, a.get_type());
@@ -227,7 +227,7 @@ TEST(VarTest, UpcastWithPointerAssignment) {
 }
 
 TEST(VarTest, UpcastWithPointerConstructor) {
-  Int a = reflect<char>(2);
+  Int a = make_value<char>(2);
 
   EXPECT_EQ(2, a);
   EXPECT_EQ(INT, a.get_type());
