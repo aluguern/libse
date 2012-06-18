@@ -38,6 +38,8 @@ VISITOR_TRAIT_DECL(z3::expr)
 // represents the syntactic structure of an expression. The order in which a
 // Visitor's visit member functions is called and the argument of that call is
 // determined by the tree traversal algorithm.
+//
+// Only Expr subclasses that implement the Walker interface can be visited.
 template<typename T>
 class Visitor {
 
@@ -61,6 +63,45 @@ public:
   virtual ReturnType visit(const NaryExpr&) = 0;
 
   virtual ~Visitor() {}
+};
+
+// Walker is an interface that must be implemented by every Expr subclass.
+// The easiest to achieve this is for the Expr class to inherit Walker and
+// each Expr subclass to use the WALK_DEF macro inside its class definition.
+//
+// Example:
+//
+// class UnaryExpr : public Expr {
+//   public:
+//   ...
+//   WALK_DEF(T1)
+//   WALK_DEF(T2)
+//   ...
+//   WALK_DEF(TN)
+// }
+//
+// where T1 ... TN are types that have registered with VISITOR_TRAIT_DECL.
+class Walker {
+
+public:
+
+// Declare a public virtual walk member function that dispatches a
+// constant reference to the current polymorphic object by calling the
+// visit member function on the supplied Visitor<type> object. The type
+// argument must be one of the traits declared with VISITOR_TRAIT_DECL.
+#define WALK_DECL(type)\
+  virtual typename VisitorTraits<type>::ReturnType\
+    walk(Visitor<typename VisitorTraits<type>::ReturnType>* const) const = 0;
+
+// Define member function that has been declared with WALK_DECL.
+// Only Expr subclasses are allowed to use this macro.
+#define WALK_DEF(type)\
+  typename VisitorTraits<type>::ReturnType\
+    walk(Visitor<typename VisitorTraits<type>::ReturnType>* const v_ptr) const { return v_ptr->visit(*this); }
+
+  WALK_DECL(void)
+  WALK_DECL(z3::expr)
+
 };
 
 }

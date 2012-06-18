@@ -178,7 +178,7 @@ enum ExprKind {
 // uniquely identifies the implementation of an Expr object. Each such
 // implementation has a public static "kind" member field that should be used
 // for identification purposes. This identifier makes dynamic downcasts safe.
-class Expr {
+class Expr : public Walker {
 private:
   const ExprKind kind;
 
@@ -195,22 +195,6 @@ public:
   ExprKind get_kind() const { return kind; }
 
   virtual std::ostream& write(std::ostream&) const = 0;
-
-// Declare a public virtual walk member function that dispatches a
-// constant reference to the current polymorphic object by calling the
-// visit member function on the supplied Visitor<type> object. The type
-// argument must be one of the traits declared with VISITOR_TRAIT_DECL.
-#define WALK_DECL(type)\
-  virtual typename VisitorTraits<type>::ReturnType\
-    walk(Visitor<typename VisitorTraits<type>::ReturnType>* const) const = 0;
-
-// Define member function that has been declared with WALK_DECL.
-#define WALK_DEF(type)\
-  typename VisitorTraits<type>::ReturnType\
-    walk(Visitor<typename VisitorTraits<type>::ReturnType>* const v_ptr) const { return v_ptr->visit(*this); }
-
-  WALK_DECL(void)
-  WALK_DECL(z3::expr)
 
   virtual ~Expr(){};
 };
