@@ -124,6 +124,10 @@ private:
   // loop unwinding given the most recent loop condition.
   bool unwind_flag;
 
+  // internal_init(const Value<bool>&) must be called only once before any of
+  // the internal data structures are modified.
+  void internal_init(const Value<bool>& cond);
+
   // internal_unwind(const Value<bool>&) must be called if and only if the
   // unwinding policy allows another unwinding for the given boolean condition
   // and join_expr_map has been initialized. If this precondition is satisfied,

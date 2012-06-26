@@ -12,11 +12,7 @@ bool Loop::unwind(const Value<bool>& cond) {
   unwind_flag = unwinding_policy_ptr->unwind(cond);
   if(unwind_flag) {
     if(join_expr_map.empty()) {
-      const SharedExpr cond_expr = cond.get_expr();
-      for(GenericVar* var_ptr : var_ptrs) {
-        TernaryExpr* join_expr = new TernaryExpr(cond_expr, NIL_EXPR, var_ptr->get_expr());
-        join_expr_map.insert(std::make_pair(var_ptr, join_expr));
-      }
+      internal_init(cond);
     } else {
       internal_unwind(cond);
     }
@@ -25,6 +21,14 @@ bool Loop::unwind(const Value<bool>& cond) {
   }
 
   return unwind_flag;
+}
+
+void Loop::internal_init(const Value<bool>& cond) {
+  const SharedExpr cond_expr = cond.get_expr();
+  for(GenericVar* var_ptr : var_ptrs) {
+    TernaryExpr* join_expr = new TernaryExpr(cond_expr, NIL_EXPR, var_ptr->get_expr());
+    join_expr_map.insert(std::make_pair(var_ptr, join_expr));
+  } 
 }
 
 void Loop::internal_unwind(const Value<bool>& cond) {
