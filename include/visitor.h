@@ -25,14 +25,15 @@ class NaryExpr;
 // we declare the permissible return types as traits.
 template<typename T> struct VisitorTraits;
 
-#define VISITOR_TRAIT_DECL(type)\
+// Macro to register T in order to be able to instantiate a Visitor<T> object.
+#define VISITOR_TRAIT_DEF(type)\
 template<>\
 struct VisitorTraits<type> {\
   typedef type ReturnType;\
 };
 
-VISITOR_TRAIT_DECL(void)
-VISITOR_TRAIT_DECL(z3::expr)
+VISITOR_TRAIT_DEF(void)
+VISITOR_TRAIT_DEF(z3::expr)
 
 // Visitor is an interface to traverse an acyclic directed graph (DAG) that
 // represents the syntactic structure of an expression. The order in which a
@@ -80,7 +81,7 @@ public:
 //   WALK_DEF(TN)
 // }
 //
-// where T1 ... TN are types that have registered with VISITOR_TRAIT_DECL.
+// where T1 ... TN are types that have registered with VISITOR_TRAIT_DEF.
 class Walker {
 
 public:
@@ -88,7 +89,7 @@ public:
 // Declare a public virtual walk member function that dispatches a
 // constant reference to the current polymorphic object by calling the
 // visit member function on the supplied Visitor<type> object. The type
-// argument must be one of the traits declared with VISITOR_TRAIT_DECL.
+// argument must be one of the traits declared with VISITOR_TRAIT_DEF.
 #define WALK_DECL(type)\
   virtual typename VisitorTraits<type>::ReturnType\
     walk(Visitor<typename VisitorTraits<type>::ReturnType>* const) const = 0;

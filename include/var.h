@@ -198,7 +198,7 @@ public:
     return *this;
   }
 
-  Type get_type() const { return ReflectType<T>::type; }
+  Type get_type() const { return TypeTraits<T>::type; }
   bool is_cast() const { return cast; }
   void set_symbolic(const std::string& name) { value.set_symbolic(name); }
   bool is_symbolic() const { return value.is_symbolic(); }

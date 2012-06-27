@@ -16,21 +16,22 @@ namespace se {
 // tracer() returns a static object that can record path constraints.
 extern Tracer& tracer();
 
-// ReflectType is a lookup function that maps primitive types to an enum Type.
+// TypeTraits is a lookup function that maps primitive types to an enum Type.
 // Since template specializations are used, this lookup occurs at compile-time.
 template<typename T>
-class ReflectType {};
+class TypeTraits {};
 
-#define REFLECT_TYPE(reflect_type, builtin_type)\
+// Macro to associate a built-in type with an enum Type value.
+#define TYPE_TRAITS_DEF(builtin_type, enum_value)\
 template<>\
-class ReflectType<builtin_type> {\
+class TypeTraits<builtin_type> {\
   public:\
-    static const Type type = reflect_type;\
+    static const Type type = enum_value;\
 };\
 
-REFLECT_TYPE(BOOL, bool)
-REFLECT_TYPE(CHAR, char)
-REFLECT_TYPE(INT, int)
+TYPE_TRAITS_DEF(bool, BOOL)
+TYPE_TRAITS_DEF(char, CHAR)
+TYPE_TRAITS_DEF(int, INT)
 
 // GenericValue is an abstract base class that represents the concrete and (if
 // applicable) symbolic value at a specific physical memory address. Concrete
@@ -225,7 +226,7 @@ public:
   // has no symbolic expression associated with it. The auxiliary value
   // is undefined until set_aux_value(T) is called.
   Value(const T value) :
-      GenericValue(ReflectType<T>::type, true),
+      GenericValue(TypeTraits<T>::type, true),
       values{value, 0}, aux_value_init(false) {}
 
   // Constructor to create a generic value implementation that supports implicit
@@ -233,14 +234,14 @@ public:
   // symbolic expression given by the second argument. The auxiliary value is
   // undefined until set_aux_value(T) is called.
   Value(const T value, const SharedExpr& expr) :
-      GenericValue(ReflectType<T>::type, expr, true),
+      GenericValue(TypeTraits<T>::type, expr, true),
       values{value, 0}, aux_value_init(false) {}
 
   // Constructor to create a generic value implementation that does not support
   // implicit type conversions. Unless a concrete value is assigned to it later,
   // the value is arbitrary and get_value() is undefined. The auxiliary value
   // is undefined until set_aux_value(T) is called.
-  Value(const std::string& name) : GenericValue(ReflectType<T>::type, false),
+  Value(const std::string& name) : GenericValue(TypeTraits<T>::type, false),
       values{0, 0}, aux_value_init(false) {
     set_symbolic(name);
   }
@@ -317,7 +318,7 @@ public:
 template<typename T>
 template<typename S>
 Value<T>::Value(const Value<S>& other) :
-    GenericValue(ReflectType<T>::type, other.has_conv_support()),
+    GenericValue(TypeTraits<T>::type, other.has_conv_support()),
     values{static_cast<T>(other.get_value()), static_cast<T>(other.get_aux_value())} {
 
   if(other.is_symbolic()) {
