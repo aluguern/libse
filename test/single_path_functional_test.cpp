@@ -12,7 +12,7 @@ se::Int foo(se::Int other) {
   return other + 4;
 }
 
-TEST(FunctionalTest, IfStatementAndFunctionCall) {
+TEST(SinglePathFunctionalTest, IfStatementAndFunctionCall) {
   se::reset_tracer();
 
   se::Int var = 3;
