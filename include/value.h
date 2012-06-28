@@ -117,9 +117,14 @@ public:
   // A value is symbolic if and only if get_expr() does not return NULL.
   bool is_symbolic() const { return static_cast<bool>(expr); }
 
-  // as_conv_support() returns true if and only if the value or any of the
+  // has_conv_support() returns true if and only if the value or any of the
   // type conversion operators in subclasses return a value that should be
   // able to drive symbolic execution along particular execution paths.
+  // This is also known as directed symbolic execution.
+  //
+  // If has_conv_support() returns true, then the leafs of of the DAG formed
+  // by get_expr() are of type ValueExpr<T>. Otherwise, the leafs are of type
+  // AnyExpr<T>.
   bool has_conv_support() const { return conv_support; }
 
   // set_expr(const SharedExpr&) sets the symbolic expression of the value.
@@ -131,7 +136,10 @@ public:
   // pointer if and only if is_symbolic() is false.
   virtual const SharedExpr get_expr() const { return expr; }
 
-  // set_symbolic(const std::string&) marks this value as symbolic.
+  // set_symbolic(const std::string&) marks this value as symbolic by either
+  // assigning a new AnyExpr<T> or ValueExpr<T>. The choice depends on if this
+  // value object supports directed symbolic execution. Recall that this is the
+  // case if and only if has_conv_support() returns true.
   virtual void set_symbolic(const std::string&) = 0;
 
   // write(std::ostream&) writes the concrete value of the value to
@@ -343,12 +351,10 @@ T Value<T>::conv(__id<bool>) const {
 
 template<typename T>
 void Value<T>::set_symbolic(const std::string& name) {
-  if(!is_symbolic()) {
-    if(has_conv_support()) {
-      set_expr(create_value_expr(name));
-    } else {
-      set_expr(create_any_expr(name));
-    }
+  if(has_conv_support()) {
+    set_expr(create_value_expr(name));
+  } else {
+    set_expr(create_any_expr(name));
   }
 }
 

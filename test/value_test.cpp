@@ -345,18 +345,47 @@ TEST(ValueTest, SetSymbolicName) {
   EXPECT_EQ("[Var_0:5]", after_clear.str());
 }
 
-TEST(ValueTest, SetSymbolicTwice) {
+// Reset a value's symbolic expression to a new ValueExpr<T> object.
+TEST(ValueTest, SetSymbolicTwiceWithValue) {
   Value<int> a = make_value<int>(5);
-  a.set_symbolic("a");
+  a.set_symbolic("A");
+
+  std::stringstream out;
+  out << a.get_expr();
+  EXPECT_EQ("[A:5]", out.str());
 
   EXPECT_TRUE(a.is_symbolic());
   const SharedExpr& expr = a.get_expr();
 
-  a.set_symbolic("__a");
+  a.set_symbolic("__A");
   EXPECT_TRUE(a.is_symbolic());
 
-  // Thus, symbolic variable name remains the same as well.
-  EXPECT_EQ(expr, a.get_expr());
+  EXPECT_NE(expr, a.get_expr());
+  
+  std::stringstream __out;
+  __out << a.get_expr();
+  EXPECT_EQ("[__A:5]", __out.str());
+}
+
+// Reset a value's symbolic expression to a new AnyExpr<T> object.
+TEST(ValueTest, SetSymbolicTwiceWithAny) {
+  Value<int> a = any_int("A");
+
+  std::stringstream out;
+  out << a.get_expr();
+  EXPECT_EQ("[A]", out.str());
+
+  EXPECT_TRUE(a.is_symbolic());
+  const SharedExpr& expr = a.get_expr();
+
+  a.set_symbolic("__A");
+  EXPECT_TRUE(a.is_symbolic());
+
+  EXPECT_NE(expr, a.get_expr());
+  
+  std::stringstream __out;
+  __out << a.get_expr();
+  EXPECT_EQ("[__A]", __out.str());
 }
 
 TEST(ValueTest, NativeBitPrecision) {
