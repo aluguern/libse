@@ -159,6 +159,9 @@ static std::string operators[] = { "!", "+", "&&", "||", "==", "<" };
 
 // ExprKind is an enumeration type that identifies an Expr subclass.
 enum ExprKind {
+  // Reserved for Expr subclasses that are not part of the library
+  UNDEF_EXPR,
+
   ANY_EXPR,
   VALUE_EXPR,
   CAST_EXPR,
@@ -199,6 +202,7 @@ private:
   Expr& operator=(const Expr&);
 
 protected:
+  // Subclasses that are not part of this library should use UNDEF_EXPR as kind.
   Expr(const ExprKind kind) : kind(kind) {}
 
   // write(std::ostream&) serializes the expression to a human-readable format.
