@@ -27,10 +27,10 @@ TEST(ExprTest, GetKind) {
   ValueExpr<char> b('b');
   EXPECT_EQ(VALUE_EXPR, b.get_kind());
 
-  CastExpr c(SharedExpr(new AnyExpr<char>("X")), INT);
+  CastExpr c(INT, SharedExpr(new AnyExpr<char>("X")));
   EXPECT_EQ(CAST_EXPR, c.get_kind());
 
-  UnaryExpr d(SharedExpr(new AnyExpr<char>("X")), ADD);
+  UnaryExpr d(ADD, SharedExpr(new AnyExpr<char>("X")));
   EXPECT_EQ(UNARY_EXPR, d.get_kind());
 
   TernaryExpr e(SharedExpr(new AnyExpr<bool>("X")), SharedExpr(new AnyExpr<char>("Y")), SharedExpr(new AnyExpr<char>("Z")));
@@ -102,7 +102,7 @@ TEST(ExprTest, NaryExprPrependAndAppend) {
   NaryExpr a = NaryExpr(ADD, OperatorTraits<ADD>::attr);
   a.prepend_expr(SharedExpr(new ValueExpr<int>(3, "C")));
   a.append_expr(SharedExpr(new AnyExpr<short>("A")));
-  a.prepend_expr(SharedExpr(new CastExpr(SharedExpr(new ValueExpr<short>(7)), INT)));
+  a.prepend_expr(SharedExpr(new CastExpr(INT, SharedExpr(new ValueExpr<short>(7)))));
   a.append_expr(SharedExpr(new AnyExpr<short>("B")));
 
   std::stringstream out;
@@ -179,7 +179,7 @@ TEST(ExprTest, AttrFunctions) {
 TEST(ExprTest, GetAndSetOnUnaryExpr) {
   const SharedExpr a = SharedExpr(new AnyExpr<short>("A"));
   const SharedExpr b = SharedExpr(new AnyExpr<short>("B"));
-  UnaryExpr c(a, NOT);
+  UnaryExpr c(NOT, a);
   
   EXPECT_EQ(a, c.get_expr());
   c.set_expr(b);
@@ -257,7 +257,7 @@ TEST(ExprTest, GetAndSetOnTernaryExpr) {
 TEST(ExprTest, WriteTreeWithoutCast) {
   const SharedExpr a = SharedExpr(new ValueExpr<short>(7));
   const SharedExpr b = SharedExpr(new ValueExpr<int>(3, "Var_1"));
-  const SharedExpr neg = SharedExpr(new UnaryExpr(a, NOT));
+  const SharedExpr neg = SharedExpr(new UnaryExpr(NOT, a));
   const SharedExpr add = SharedExpr(new NaryExpr(ADD, OperatorTraits<ADD>::attr, a, b));
   const SharedExpr lss = SharedExpr(new NaryExpr(LSS, OperatorTraits<LSS>::attr, add, neg));
 
@@ -269,9 +269,9 @@ TEST(ExprTest, WriteTreeWithoutCast) {
 
 TEST(ExprTest, WriteTreeWithCast) {
   const SharedExpr a = SharedExpr(new ValueExpr<short>(7));
-  const SharedExpr cast = SharedExpr(new CastExpr(a, INT));
+  const SharedExpr cast = SharedExpr(new CastExpr(INT, a));
   const SharedExpr b = SharedExpr(new ValueExpr<int>(3, "Var_1"));
-  const SharedExpr neg = SharedExpr(new UnaryExpr(cast, NOT));
+  const SharedExpr neg = SharedExpr(new UnaryExpr(NOT, cast));
   const SharedExpr add = SharedExpr(new NaryExpr(ADD, OperatorTraits<ADD>::attr, a, b));
   const SharedExpr lss = SharedExpr(new NaryExpr(LSS, OperatorTraits<LSS>::attr, add, neg));
 
@@ -299,9 +299,9 @@ TEST(ExprTest, WriteTreeWithEveryTypeOfExpr) {
   const SharedExpr a = SharedExpr(new AnyExpr<int>("A"));
   const SharedExpr b = SharedExpr(new ValueExpr<short>(5));
   const SharedExpr lss = SharedExpr(new NaryExpr(LSS, OperatorTraits<LSS>::attr, a, b));
-  const SharedExpr neg = SharedExpr(new UnaryExpr(lss, NOT));
+  const SharedExpr neg = SharedExpr(new UnaryExpr(NOT, lss));
   const SharedExpr c = SharedExpr(new AnyExpr<int>("C"));
-  const SharedExpr cast = SharedExpr(new CastExpr(c, CHAR));
+  const SharedExpr cast = SharedExpr(new CastExpr(CHAR, c));
   const SharedExpr d = SharedExpr(new AnyExpr<int>("D"));
   const SharedExpr ternary = SharedExpr(new TernaryExpr(neg, cast, d));
 

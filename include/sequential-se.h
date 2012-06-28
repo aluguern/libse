@@ -127,7 +127,7 @@ OVERLOAD_BINARY_OPERATOR(<, LSS)
     const auto __x = __filter(x);\
     auto result = se::make_value(op __x.get_value());\
     if(__x.is_symbolic()) {\
-      result.set_expr(se::SharedExpr(new se::UnaryExpr(__x.get_expr(), se::opname)));\
+      result.set_expr(se::SharedExpr(new se::UnaryExpr(se::opname, __x.get_expr())));\
     }\
     return result;\
   }\

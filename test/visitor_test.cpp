@@ -51,9 +51,9 @@ TEST(ExprTest, PostorderVisit) {
   const SharedExpr a = SharedExpr(new AnyExpr<int>("A"));
   const SharedExpr b = SharedExpr(new ValueExpr<short>(5));
   const SharedExpr lss = SharedExpr(new NaryExpr(LSS, OperatorTraits<LSS>::attr, a, b));
-  const SharedExpr neg = SharedExpr(new UnaryExpr(lss, NOT));
+  const SharedExpr neg = SharedExpr(new UnaryExpr(NOT, lss));
   const SharedExpr c = SharedExpr(new AnyExpr<int>("C"));
-  const SharedExpr cast = SharedExpr(new CastExpr(c, CHAR));
+  const SharedExpr cast = SharedExpr(new CastExpr(CHAR, c));
 
   NaryExpr* const nary = new NaryExpr(ADD, OperatorTraits<ADD>::attr);
   nary->append_expr(SharedExpr(new AnyExpr<int>("D")));

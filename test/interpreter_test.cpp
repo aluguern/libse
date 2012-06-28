@@ -31,7 +31,7 @@ TEST(InterpreterTest, SpInterpreterSatTernaryEquivalence) {
   const SharedExpr a = SharedExpr(new AnyExpr<int>("A"));
   const SharedExpr five = SharedExpr(new ValueExpr<int>(5));
   const SharedExpr lss = SharedExpr(new NaryExpr(LSS, OperatorTraits<LSS>::attr, a, five));
-  const SharedExpr neg = SharedExpr(new UnaryExpr(lss, NOT));
+  const SharedExpr neg = SharedExpr(new UnaryExpr(NOT, lss));
   const SharedExpr c = SharedExpr(new AnyExpr<int>("C"));
   const SharedExpr d = SharedExpr(new AnyExpr<int>("D"));
   const SharedExpr ternary = SharedExpr(new TernaryExpr(neg, c, d));
@@ -53,7 +53,7 @@ TEST(InterpreterTest, SpInterpreterUnsatTernaryEquivalence) {
   const SharedExpr a = SharedExpr(new AnyExpr<int>("A"));
   const SharedExpr five = SharedExpr(new ValueExpr<int>(5));
   const SharedExpr lss = SharedExpr(new NaryExpr(LSS, OperatorTraits<LSS>::attr, a, five));
-  const SharedExpr neg = SharedExpr(new UnaryExpr(lss, NOT));
+  const SharedExpr neg = SharedExpr(new UnaryExpr(NOT, lss));
   const SharedExpr c = SharedExpr(new AnyExpr<int>("C"));
   const SharedExpr d = SharedExpr(new AnyExpr<int>("D"));
   const SharedExpr ternary = SharedExpr(new TernaryExpr(neg, c, d));
@@ -93,7 +93,7 @@ TEST(InterpreterTest, SpInterpreterWithUnsatNaryExprAsBinaryExpr) {
   const SharedExpr a = SharedExpr(new AnyExpr<int>("A"));
   const SharedExpr b = SharedExpr(new ValueExpr<int>(5));
   const SharedExpr lss = SharedExpr(new NaryExpr(LSS, OperatorTraits<LSS>::attr, a, b));
-  const SharedExpr neg = SharedExpr(new UnaryExpr(lss, NOT));
+  const SharedExpr neg = SharedExpr(new UnaryExpr(NOT, lss));
   
   SpInterpreter sp_interpreter;
   z3::solver solver(sp_interpreter.context);
@@ -107,7 +107,7 @@ TEST(InterpreterTest, SpInterpreterWithSatTernaryExpr) {
   const SharedExpr a = SharedExpr(new AnyExpr<int>("A"));
   const SharedExpr b = SharedExpr(new ValueExpr<int>(5));
   const SharedExpr lss = SharedExpr(new NaryExpr(LSS, OperatorTraits<LSS>::attr, a, b));
-  const SharedExpr neg = SharedExpr(new UnaryExpr(lss, NOT));
+  const SharedExpr neg = SharedExpr(new UnaryExpr(NOT, lss));
   const SharedExpr taut = SharedExpr(new ValueExpr<bool>(true));
   const SharedExpr ternary = SharedExpr(new TernaryExpr(lss, neg, taut));
   
@@ -122,7 +122,7 @@ TEST(InterpreterTest, SpInterpreterWithUnsatTernaryExpr) {
   const SharedExpr a = SharedExpr(new AnyExpr<int>("A"));
   const SharedExpr b = SharedExpr(new ValueExpr<int>(5));
   const SharedExpr lss = SharedExpr(new NaryExpr(LSS, OperatorTraits<LSS>::attr, a, b));
-  const SharedExpr neg = SharedExpr(new UnaryExpr(lss, NOT));
+  const SharedExpr neg = SharedExpr(new UnaryExpr(NOT, lss));
   const SharedExpr falsum = SharedExpr(new ValueExpr<bool>(false));
   const SharedExpr ternary = SharedExpr(new TernaryExpr(lss, neg, falsum));
   

@@ -290,11 +290,11 @@ private:
 
 public:
 
-  CastExpr(const SharedExpr& expr, const Type type) :
-    Expr(CAST_EXPR), expr(expr), type(type) {}
+  CastExpr(const Type type, const SharedExpr& expr) :
+    Expr(CAST_EXPR), type(type), expr(expr) {}
 
   CastExpr(const CastExpr& other) :
-    Expr(CAST_EXPR), expr(other.expr), type(other.type) {}
+    Expr(CAST_EXPR), type(other.type), expr(other.expr) {}
 
   GET_SHARED_EXPR(expr)
   SET_SHARED_EXPR(expr)
@@ -318,11 +318,11 @@ private:
 
 public:
 
-  UnaryExpr(const SharedExpr& expr, const Operator op) :
-    Expr(UNARY_EXPR), expr(expr), op(op) {}
+  UnaryExpr(const Operator op, const SharedExpr& expr) :
+    Expr(UNARY_EXPR), op(op), expr(expr) {}
 
   UnaryExpr(const UnaryExpr& other) :
-    Expr(UNARY_EXPR), expr(other.expr), op(other.op) {}
+    Expr(UNARY_EXPR), op(other.op), expr(other.expr) {}
 
   GET_SHARED_EXPR(expr)
   SET_SHARED_EXPR(expr)

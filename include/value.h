@@ -332,7 +332,7 @@ Value<T>::Value(const Value<S>& other) :
     value(static_cast<T>(other.get_value())), aux_value(static_cast<T>(other.get_aux_value())) {
 
   if(other.is_symbolic()) {
-    set_expr(SharedExpr(new CastExpr(other.get_expr(), get_type())));
+    set_expr(SharedExpr(new CastExpr(get_type(), other.get_expr())));
   }
 }
 
@@ -342,7 +342,7 @@ T Value<T>::conv(__id<bool>) const {
     if(value) {
       tracer().add_path_constraint(get_expr());
     } else {
-      tracer().add_path_constraint(SharedExpr(new UnaryExpr(get_expr(), NOT)));
+      tracer().add_path_constraint(SharedExpr(new UnaryExpr(NOT, get_expr())));
     }
   }
 
