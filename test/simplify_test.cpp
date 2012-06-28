@@ -1,6 +1,6 @@
 #include <sstream>
 #include "gtest/gtest.h"
-#include "se.h"
+#include "sequential-se.h"
 
 TEST(SimplifyTest, UpdateConcolicVariableWithRHSConstant) {
   se::reset_tracer();

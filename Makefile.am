@@ -61,7 +61,7 @@ pkginclude_HEADERS = \
   include/interpreter.h \
   include/var.h \
   include/loop.h \
-  include/se.h \
+  include/sequential-se.h \
   include/tracer.h
 
 # Build rules for functional and unit tests.

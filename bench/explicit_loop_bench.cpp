@@ -1,5 +1,5 @@
 #include <climits>
-#include "se.h"
+#include "sequential-se.h"
 
 int main(void) {
   se::Int k = 0;

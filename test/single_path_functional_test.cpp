@@ -1,6 +1,6 @@
 #include <sstream>
 #include "gtest/gtest.h"
-#include "se.h"
+#include "sequential-se.h"
 
 se::Int foo(se::Int other) {
   if(other + 1 < 6) {
