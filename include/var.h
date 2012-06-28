@@ -236,25 +236,22 @@ extern unsigned int var_seq;
 // sstream is an internally reusable string builder.
 static std::stringstream sstream;
 
+// reset_var_seq() sets the counter which is used by create_var_name() to zero.
+extern void reset_var_seq();
+
 // reset_tracer() clears the path constraints of the global Tracer object.
 // See also symtracer.h
 extern void reset_tracer();
+
+// create_var_name() returns a unique symbolic variable identifier which
+// has the form Var_%d where %d is an increasing non-negative integer.
+std::string create_var_name();
 
 // set_symbolic(var) sets the given variable as symbolic with a unique
 // symbolic variable identifier. This identifier is of the form Var_%d
 // where %d is a non-negative integer that increments with each call.
 template<typename T>
-void set_symbolic(Var<T>& var) {
-  sstream << SymbolicVarPrefix;
-  sstream << var_seq;
-  var_seq++;
-
-  set_symbolic(var, sstream.str());
-
-  // reset buffer
-  sstream.clear();
-  sstream.str("");
-}
+void set_symbolic(Var<T>& var) { set_symbolic(var, create_var_name()); }
 
 }
 

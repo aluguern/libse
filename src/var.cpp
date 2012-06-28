@@ -8,9 +8,25 @@ namespace se {
 
 unsigned int var_seq = 0;
 
+void reset_var_seq() { var_seq = 0; }
+
 void reset_tracer() {
   tracer().reset();
-  var_seq = 0;
+  reset_var_seq();
+}
+
+std::string create_var_name() {
+  sstream << SymbolicVarPrefix;
+  sstream << var_seq;
+  var_seq++;
+
+  std::string name = sstream.str();
+
+  // reset buffer
+  sstream.clear();
+  sstream.str("");
+
+  return name;
 }
 
 }

@@ -790,3 +790,17 @@ TEST(VarTest, GetVersionAfterSetExpr) {
   EXPECT_EQ(VZERO + 1, a.get_version());
 }
 
+TEST(VarTest, CreateVarName) {
+  reset_var_seq();
+  EXPECT_EQ("Var_0", create_var_name());
+  EXPECT_EQ("Var_1", create_var_name());
+  EXPECT_EQ("Var_2", create_var_name());
+  EXPECT_EQ("Var_3", create_var_name());
+
+  reset_var_seq();
+  EXPECT_EQ("Var_0", create_var_name());
+  EXPECT_EQ("Var_1", create_var_name());
+  EXPECT_EQ("Var_2", create_var_name());
+  EXPECT_EQ("Var_3", create_var_name());
+}
+
