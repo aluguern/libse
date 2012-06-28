@@ -4,6 +4,22 @@
 
 using namespace se;
 
+TEST(ExprTest, OperatorsStringConversion) {
+  EXPECT_EQ("!", operators[NOT]);
+  EXPECT_EQ("+", operators[ADD]);
+  EXPECT_EQ("&&", operators[LAND]);
+  EXPECT_EQ("||", operators[LOR]);
+  EXPECT_EQ("==", operators[EQL]);
+  EXPECT_EQ("<", operators[LSS]);
+}
+
+TEST(ExprTest, OperatorsOrder) {
+  EXPECT_EQ(NOT + 1, ADD);
+  EXPECT_EQ(ADD + 1, LAND);
+  EXPECT_EQ(LOR + 1, EQL);
+  EXPECT_EQ(EQL + 1, LSS);
+}
+
 TEST(ExprTest, GetKind) {
   AnyExpr<char> a("A");
   EXPECT_EQ(ANY_EXPR, a.get_kind());

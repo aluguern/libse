@@ -86,7 +86,8 @@ test_se_SOURCES = \
   test/version_test.cpp \
   test/tracer_test.cpp \
   test/simplify_test.cpp \
-  test/single_path_functional_test.cpp
+  test/single_path_functional_test.cpp \
+  test/multi_path_functional_test.cpp
 
 test_se_CPPFLAGS = -std=c++0x -I$(srcdir)/include -I$(top_srcdir)/gtest/include
 test_se_LDADD = $(top_builddir)/gtest/lib/libgtest_main.la lib/libse.la

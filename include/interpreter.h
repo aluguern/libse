@@ -59,16 +59,16 @@ private:
   // binary_operators is an array of binary operators. The order of these
   // binary operators must be the same as in the Operator enum data structure.
   // Given such an enum value OP, its member function pointer can be retrieved
-  // with the index OP - NARY_BEGIN. The size of the array must be equal to the
+  // with the index OP - UNARY_END. The size of the array must be equal to the
   // number of times the BINARY_OP_DEF macro is evaluated inside this class.
-  const BinaryOperator binary_operators[2 /* CAUTION! */];
+  const BinaryOperator binary_operators[5 /* CAUTION! */];
 
   // nary_operators is an array of associative binary operators. The order of
   // these must be the same as in the Operator enum data structure. Given such
   // an enum value OP, its member function pointer can be retrieved with the
   // index OP - NARY_BEGIN. The size of the array must be equal to the number
   // of member function definitions of type NaryOperator.
-  const NaryOperator nary_operators[1 /* CAUTION! */];
+  const NaryOperator nary_operators[3 /* CAUTION! */];
 
 
 // UNARY_OP_DEF defines a member function of type UnaryOperator. The number of
@@ -91,6 +91,9 @@ UNARY_OP_DEF(!, NOT_1)
   }
 
 BINARY_OP_DEF(+, ADD_2)
+BINARY_OP_DEF(&&, LAND_2)
+BINARY_OP_DEF(||, LOR_2)
+BINARY_OP_DEF(==, EQL_2)
 BINARY_OP_DEF(<, LSS_2)
 
 
@@ -109,6 +112,31 @@ BINARY_OP_DEF(<, LSS_2)
     return z3_expr;
   }
 
+  z3::expr LAND_N(const std::list<SharedExpr>& exprs) {
+    // True is the identity element for logical AND
+    z3::expr z3_expr = context.bool_val(true);
+
+    //TODO: Use Z3_mk_and
+    for(SharedExpr expr : exprs) {
+      z3_expr = z3_expr && expr->walk(this);
+    }
+
+    return z3_expr;
+  }
+
+
+  z3::expr LOR_N(const std::list<SharedExpr>& exprs) {
+    // False is the identity element for logical OR
+    z3::expr z3_expr = context.bool_val(false);
+
+    //TODO: Use Z3_mk_or
+    for(SharedExpr expr : exprs) {
+      z3_expr = z3_expr || expr->walk(this);
+    }
+
+    return z3_expr;
+  }
+
 public:
 
   // C++ API to Z3 Theorem Prover context
@@ -116,8 +144,10 @@ public:
 
   SpInterpreter() : context(),
     unary_operators{&SpInterpreter::NOT_1},
-    binary_operators{&SpInterpreter::ADD_2, &SpInterpreter::LSS_2},
-    nary_operators{&SpInterpreter::ADD_N} {}
+    binary_operators{&SpInterpreter::ADD_2, &SpInterpreter::LAND_2,
+                     &SpInterpreter::LOR_2, &SpInterpreter::EQL_2,
+                     &SpInterpreter::LSS_2},
+    nary_operators{&SpInterpreter::ADD_N, &SpInterpreter::LAND_N, &SpInterpreter::LOR_N} {}
  
   z3::expr visit(const AnyExpr<bool>& expr) {
     return context.bool_const(expr.get_name().c_str());

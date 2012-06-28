@@ -109,6 +109,9 @@ static inline const se::Value<T>& __filter(const se::Value<T>& value) {
   }\
 
 OVERLOAD_BINARY_OPERATOR(+, ADD)
+OVERLOAD_BINARY_OPERATOR(&&, LAND)
+OVERLOAD_BINARY_OPERATOR(||, LOR)
+OVERLOAD_BINARY_OPERATOR(==, EQL)
 OVERLOAD_BINARY_OPERATOR(<, LSS)
 
 // OVERLOAD_UNARY_OPERATOR(op, opname) is a macro that uses templates and the

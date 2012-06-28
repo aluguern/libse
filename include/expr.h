@@ -99,7 +99,13 @@ static std::string types[] = { "bool", "char", "int" };
 // the elements in the internal operators string array.
 enum Operator : unsigned short {
   NOT,
+
   ADD,
+
+  LAND,
+  LOR,
+
+  EQL,
   LSS,
 };
 
@@ -135,9 +141,12 @@ class ReflectOperator<op> {\
 };\
 
 // TODO: Consider using another bit mask for floats etc.
-REFLECT_OPERATOR(NOT, CLEAR_ATTR)
-REFLECT_OPERATOR(ADD, LASSOC_ATTR | RASSOC_ATTR | COMM_ATTR)
-REFLECT_OPERATOR(LSS, CLEAR_ATTR)
+REFLECT_OPERATOR(NOT,  CLEAR_ATTR)
+REFLECT_OPERATOR(ADD,  LASSOC_ATTR | RASSOC_ATTR | COMM_ATTR)
+REFLECT_OPERATOR(LAND, LASSOC_ATTR | RASSOC_ATTR | COMM_ATTR)
+REFLECT_OPERATOR(LOR,  LASSOC_ATTR | RASSOC_ATTR | COMM_ATTR)
+REFLECT_OPERATOR(EQL,  LASSOC_ATTR | RASSOC_ATTR | COMM_ATTR)
+REFLECT_OPERATOR(LSS,  CLEAR_ATTR)
 
 static std::string LPAR = "(";
 static std::string RPAR = ")";
@@ -146,7 +155,7 @@ static std::string COLON = ":";
 
 // operators is an internal array that maps an Operator to its corresponding
 // string representation. Therefore, both data types need to be coordinated.
-static std::string operators[] = { "!", "+", "<" };
+static std::string operators[] = { "!", "+", "&&", "||", "==", "<" };
 
 // ExprKind is an enumeration type that identifies an Expr subclass.
 enum ExprKind {
