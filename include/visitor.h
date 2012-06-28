@@ -9,6 +9,8 @@ namespace se {
 
 // Forward declarations of the kind of vertices the Visitor API must be able
 // to traverse in the DAG. These must match the expression kinds in ExprKind.
+class Expr;
+
 template<typename T>
 class AnyExpr;
 
@@ -38,9 +40,12 @@ VISITOR_TRAIT_DEF(z3::expr)
 // Visitor is an interface to traverse an acyclic directed graph (DAG) that
 // represents the syntactic structure of an expression. The order in which a
 // Visitor's visit member functions is called and the argument of that call is
-// determined by the tree traversal algorithm.
-//
-// Only Expr subclasses that implement the Walker interface can be visited.
+// determined by the tree traversal algorithm. Every DAG of Expr subclasses can
+// be inspected this way. However, an Expr subclass E whose get_kind() member
+// function returns a value less than EXT_EXPR must be traversable by a unique
+// Visitor<T>::visit(const E&) member function. If instead get_kind() is greater
+// than EXT_EXPR, the Expr subclass can be visited through visit(const Expr&).
+// This allows for incremental extensions of the library.
 template<typename T>
 class Visitor {
 
@@ -52,6 +57,10 @@ public:
 
   // ReturnType declares the type that each visit member function returns.
   typedef typename VisitorTraits<T>::ReturnType ReturnType;
+
+  // visit(const Expr&) handles all other expressions where get_kind()
+  // returns an unsigned integer greater than EXT_EXPR.
+  virtual ReturnType visit(const Expr& other) {};
 
   TYPED_VISIT_DECL(bool)
   TYPED_VISIT_DECL(char)

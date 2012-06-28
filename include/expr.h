@@ -158,17 +158,25 @@ static std::string COLON = ":";
 static std::string operators[] = { "!", "+", "&&", "||", "==", "<" };
 
 // ExprKind is an enumeration type that identifies an Expr subclass.
-enum ExprKind {
-  // Reserved for Expr subclasses that are not part of the library
-  UNDEF_EXPR,
-
+enum ExprKind : unsigned int {
   ANY_EXPR,
   VALUE_EXPR,
   CAST_EXPR,
   UNARY_EXPR,
   TERNARY_EXPR,
-  NARY_EXPR
+  NARY_EXPR,
+
+  // Expr subclasses that are not part of the library must register
+  // with an ExprKind enum value that is greater than EXT_EXPR.
+  //
+  // See also ext_expr_kind()
+  EXT_EXPR = 256u,
 };
+
+// ext_expr_kind(unsigned short) should be only used by library
+// extensions that wish to create an Expr subclass whose kind
+// must be greater than EXT_EXPR. The id value must be positive.
+ExprKind ext_expr_kind(unsigned short id);
 
 // Forward declaration for "Virtual Friend Function" idiom
 class Expr;
@@ -190,10 +198,11 @@ typedef std::shared_ptr<Expr> SharedExpr;
 // This DAG could be traversed in preorder or postorder. Since each vertex
 // in the DAG can have multiple children, there is no well-defined inorder.
 //
-// When a tree traversal is not desired, the get_kind() member function
-// uniquely identifies the implementation of an Expr object. Each such
-// implementation has a public static "kind" member field that should be used
-// for identification purposes. This identifier makes dynamic downcasts safe.
+// Subclasses whose get_kind() member function returns a value less than
+// EXT_EXPR must be traversable with a unique member functions of the
+// Visitor<T> class. Visitor<T>::visit(const Expr&) accounts for the case
+// when get_kind() returns a value is greater than or equal to EXT_EXPR.
+// This can be achieved by calling ext_expr_kind(unsigned short).
 class Expr : public Walker {
 private:
   const ExprKind kind;
@@ -202,14 +211,19 @@ private:
   Expr& operator=(const Expr&);
 
 protected:
-  // Subclasses that are not part of this library should use UNDEF_EXPR as kind.
+
+  // Subclasses that are not part of this library must use a
+  // kind enum value that is greater than EXT_EXPR.
   Expr(const ExprKind kind) : kind(kind) {}
 
+public:
+
   // write(std::ostream&) serializes the expression to a human-readable format.
-  // Subclasses are allowed to increase the visibility of this member function.
   virtual std::ostream& write(std::ostream&) const = 0;
 
-public:
+  WALK_DEF(void)
+  WALK_DEF(z3::expr)
+
   // get_kind() uniquely identifies the implementation of this Expr object.
   // Use the public static "kind" member field of the desired Expr subclass
   // that needs to be identified for downcast purposes.

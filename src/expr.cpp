@@ -11,6 +11,11 @@ const Operator UNARY_END = ADD;
 const Operator NARY_BEGIN = ADD;
 const Operator NARY_END = LSS;
 
+ExprKind ext_expr_kind(unsigned short id) {
+  // assumes IDs are sufficiently small
+  return static_cast<ExprKind>(EXT_EXPR + id);
+}
+
 std::ostream& CastExpr::write(std::ostream& out) const {
   out << LPAR << LPAR;
   out << types[type];

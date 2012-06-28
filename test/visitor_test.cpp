@@ -13,6 +13,7 @@ public:
 
   PostorderVisitor() : out() {}
 
+  void visit(const Expr& expr) { expr.write(out); out << "Wrote Other!"; };
   void visit(const AnyExpr<bool>& expr) { expr.write(out); }
   void visit(const ValueExpr<bool>& expr) { expr.write(out); }
   void visit(const AnyExpr<char>& expr) { expr.write(out); }
@@ -66,5 +67,22 @@ TEST(ExprTest, PostorderVisit) {
   ternary->walk(&postorder_visitor);
 
   EXPECT_EQ("[A]5<![C]char[D][E][F]+", postorder_visitor.out.str());
+}
+
+class OtherExpr : public Expr {
+public:
+
+  OtherExpr() : Expr(ext_expr_kind(1u)) {}
+
+  std::ostream& write(std::ostream& out) const { out << "Other!"; };
+};
+
+TEST(ExprTest, OtherVisit) {
+  OtherExpr other;
+
+  PostorderVisitor postorder_visitor;
+  other.walk(&postorder_visitor);
+
+  EXPECT_EQ("Other!Wrote Other!", postorder_visitor.out.str());
 }
 
