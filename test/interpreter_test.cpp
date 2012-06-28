@@ -27,6 +27,32 @@ TEST(InterpreterTest, UnsupportedShortIntValue) {
   EXPECT_THROW(sp_interpreter.visit(ValueExpr<short int>(5)), InterpreterException);
 }
 
+TEST(InterpreterTest, EqualityUnsat) {
+  const SharedExpr a = SharedExpr(new AnyExpr<int>("A"));
+  const SharedExpr b = SharedExpr(new AnyExpr<int>("A"));
+  const SharedExpr equality = SharedExpr(new NaryExpr(EQL, OperatorTraits<EQL>::attr, a, b));
+  const SharedExpr not_equality = SharedExpr(new UnaryExpr(NOT, equality));
+  
+  SpInterpreter sp_interpreter;
+  z3::solver solver(sp_interpreter.context);
+  solver.add(not_equality->walk(&sp_interpreter));
+
+  EXPECT_EQ(z3::unsat, solver.check());
+}
+
+TEST(InterpreterTest, EqualitySat) {
+  const SharedExpr a = SharedExpr(new AnyExpr<int>("A"));
+  const SharedExpr b = SharedExpr(new AnyExpr<int>("B"));
+  const SharedExpr equality = SharedExpr(new NaryExpr(EQL, OperatorTraits<EQL>::attr, a, b));
+  const SharedExpr not_equality = SharedExpr(new UnaryExpr(NOT, equality));
+  
+  SpInterpreter sp_interpreter;
+  z3::solver solver(sp_interpreter.context);
+  solver.add(not_equality->walk(&sp_interpreter));
+
+  EXPECT_EQ(z3::sat, solver.check());
+}
+
 TEST(InterpreterTest, SpInterpreterSatTernaryEquivalence) {
   const SharedExpr a = SharedExpr(new AnyExpr<int>("A"));
   const SharedExpr five = SharedExpr(new ValueExpr<int>(5));
