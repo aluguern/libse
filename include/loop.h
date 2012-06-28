@@ -206,12 +206,9 @@ public:
   // in one loop iteration. It is safe to call track(Var<T>&) multiple times on
   // the same variable object. The order of calls does not matter.
   template<typename T>
-  void track(Var<T>&);
+  void track(Var<T>& var) { var_ptrs.insert(&var); }
 
 };
-
-template<typename T>
-void Loop::track(Var<T>& var) { var_ptrs.insert(&var); }
 
 }
 
