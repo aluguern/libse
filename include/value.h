@@ -166,42 +166,44 @@ class Value : public GenericValue {
 
 private:
 
-  // values is an array. Its size is always two. The first element, values[0],
-  // is called the primary value and the second element, values[1], is said
-  // to be the auxiliary value. The primary value drives symbolic execution
-  // along a particular execution path iff GenericValue::has_conv_support()
+  // The value field is called the primary value and aux_value is called the
+  // auxiliary value. The primary value drives symbolic execution along a
+  // particular execution path if and only if GenericValue::has_conv_support()
   // is true. Recall that in this case the primary value must be ensured to
   // be consistent with the program semantics of the program to be analysed.
-  // Thus, GenericValue::has_conv_support() indicates if values[0] is defined.
+  // In other words, GenericValue::has_conv_support() returns true if and only
+  // if the primary value is defined.
+  //
   // The auxiliary value is used to propagate a constant expression within
   // an nary expression over an associative and commutative binary operator.
   // This auxiliary value is defined if and only if has_set_aux() is true.
   //
-  // To avoid confusion between the primary and auxiliary value, values[0]
-  // must only be set through constructors or the assignment operator.
-  T values[2];
+  // To avoid confusion between the primary and auxiliary value, the value
+  // field must only be set through constructors or the assignment operator.
+  T value;
+  T aux_value;
 
-  // aux_value_init is a flag that indicates if values[1] is defined.
+  // aux_value_init is a flag that indicates if aux_value is defined.
   // It is always initialized to false.
   bool aux_value_init;
 
   // create_value_expr() returns a shared pointer to a value expression that
   // matches the type and content of the primary value.
   SharedExpr create_value_expr() const {
-    return SharedExpr(new ValueExpr<type>(values[0]));
+    return SharedExpr(new ValueExpr<type>(value));
   }
 
   // create_aux_value_expr() returns a shared pointer to a value expression
   // that matches the type and content of the auxiliary value.
   SharedExpr create_aux_value_expr() const {
-    return SharedExpr(new ValueExpr<T>(values[1]));
+    return SharedExpr(new ValueExpr<T>(aux_value));
   }
 
   // create_value_expr(const std::string&) returns a pointer to a symbolic
   // value expression that matches the type and content of the primary value.
   // The symbolic variable is named according to the supplied string.
   SharedExpr create_value_expr(const std::string& name) const {
-    return SharedExpr(new ValueExpr<T>(values[0], name));
+    return SharedExpr(new ValueExpr<T>(value, name));
   }
 
   // create_any_expr(const std::string&) returns a shared pointer to a symbolic
@@ -212,7 +214,7 @@ private:
 
   // conv(__any) is a default conversion function that returns the primitive
   // value of type T.
-  T conv(__any) const { return values[0]; }
+  T conv(__any) const { return value; }
 
   // conv(__id<bool>) overloads conv(__any). It adds the symbolic expression to
   // the path constraints if and only if is_symbolic() returns true.
@@ -227,7 +229,7 @@ public:
   // is undefined until set_aux_value(T) is called.
   Value(const T value) :
       GenericValue(TypeTraits<T>::type, true),
-      values{value, 0}, aux_value_init(false) {}
+      value(value), aux_value(0), aux_value_init(false) {}
 
   // Constructor to create a generic value implementation that supports implicit
   // type conversions of the injected value. This value is associated with the
@@ -235,20 +237,20 @@ public:
   // undefined until set_aux_value(T) is called.
   Value(const T value, const SharedExpr& expr) :
       GenericValue(TypeTraits<T>::type, expr, true),
-      values{value, 0}, aux_value_init(false) {}
+      value(value), aux_value(0), aux_value_init(false) {}
 
   // Constructor to create a generic value implementation that does not support
   // implicit type conversions. Unless a concrete value is assigned to it later,
   // the value is arbitrary and get_value() is undefined. The auxiliary value
   // is undefined until set_aux_value(T) is called.
   Value(const std::string& name) : GenericValue(TypeTraits<T>::type, false),
-      values{0, 0}, aux_value_init(false) {
+      value(0), aux_value(0), aux_value_init(false) {
     set_symbolic(name);
   }
 
   // Copy constructor that creates a value representation based on another.
   Value(const Value& other) : GenericValue(other),
-      values{other.values[0], other.values[1]},
+      value(other.value), aux_value(other.aux_value),
       aux_value_init(other.aux_value_init) {}
 
   // Copy conversion constructor that creates a  value based on another whose
@@ -266,18 +268,18 @@ public:
   bool has_aux_value() const { return aux_value_init; }
 
   // get_aux_value() returns the auxiliary value.
-  T get_aux_value() const { return values[1]; }
+  T get_aux_value() const { return aux_value; }
 
   // set_aux_value(T) initialized the auxiliary value. After this value
   // has been set, get_expr() must return a partial nary expression.
-  void set_aux_value(const T aux_value) {
+  void set_aux_value(const T v) {
     if(!aux_value_init) { aux_value_init = true; }
-    values[1] = aux_value;
+    aux_value = v;
   }
 
   // get_value() returns the primary value. A new value can be assigned
   // through the assignment operator.
-  T get_value() const { return values[0]; }
+  T get_value() const { return value; }
 
   // Overrides GenericValue::set_symbolic(const std::string&)
   void set_symbolic(const std::string&);
@@ -300,8 +302,8 @@ public:
   Value& operator=(const Value& other) {
     GenericValue::operator=(other);
 
-    values[0] = other.values[0];
-    values[1] = other.values[1];
+    value = other.value;
+    aux_value = other.aux_value;
     aux_value_init = other.aux_value_init;
     return *this;
   }
@@ -319,7 +321,7 @@ template<typename T>
 template<typename S>
 Value<T>::Value(const Value<S>& other) :
     GenericValue(TypeTraits<T>::type, other.has_conv_support()),
-    values{static_cast<T>(other.get_value()), static_cast<T>(other.get_aux_value())} {
+    value(static_cast<T>(other.get_value())), aux_value(static_cast<T>(other.get_aux_value())) {
 
   if(other.is_symbolic()) {
     set_expr(SharedExpr(new CastExpr(other.get_expr(), get_type())));
@@ -329,14 +331,14 @@ Value<T>::Value(const Value<S>& other) :
 template<typename T>
 T Value<T>::conv(__id<bool>) const {
   if(is_symbolic()) {
-    if(values[0]) {
+    if(value) {
       tracer().add_path_constraint(get_expr());
     } else {
       tracer().add_path_constraint(SharedExpr(new UnaryExpr(get_expr(), NOT)));
     }
   }
 
-  return values[0];
+  return value;
 }
 
 template<typename T>
@@ -356,7 +358,7 @@ std::ostream& Value<T>::write(std::ostream& out) const {
     // TODO: Error
   }
 
-  out << values[0];
+  out << value;
   return out;
 }
 
