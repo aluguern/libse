@@ -126,27 +126,27 @@ extern const Operator NARY_BEGIN;
 // require at least two operands.
 extern const Operator NARY_END;
 
-// ReflectOperator is a lookup function that maps operators to their attributes.
+// OperatorTraits is a lookup function that maps operators to their attributes.
 // Since template specializations are used, this lookup occurs at compile-time.
 template<Operator op>
-class ReflectOperator {};
+class OperatorTraits {};
 
-// REFLECT_OPERATOR is a macro whose second argument defines the mathematical
+// OPERATOR_TRAITS_DEF is a macro whose second argument defines the mathematical
 // properties of the operator given as the first argument.
-#define REFLECT_OPERATOR(op, attribute_bv)\
+#define OPERATOR_TRAITS_DEF(op, attribute_bv)\
 template<>\
-class ReflectOperator<op> {\
+class OperatorTraits<op> {\
   public:\
     static const OperatorAttr attr = (attribute_bv);\
 };\
 
 // TODO: Consider using another bit mask for floats etc.
-REFLECT_OPERATOR(NOT,  CLEAR_ATTR)
-REFLECT_OPERATOR(ADD,  LASSOC_ATTR | RASSOC_ATTR | COMM_ATTR)
-REFLECT_OPERATOR(LAND, LASSOC_ATTR | RASSOC_ATTR | COMM_ATTR)
-REFLECT_OPERATOR(LOR,  LASSOC_ATTR | RASSOC_ATTR | COMM_ATTR)
-REFLECT_OPERATOR(EQL,  LASSOC_ATTR | RASSOC_ATTR | COMM_ATTR)
-REFLECT_OPERATOR(LSS,  CLEAR_ATTR)
+OPERATOR_TRAITS_DEF(NOT,  CLEAR_ATTR)
+OPERATOR_TRAITS_DEF(ADD,  LASSOC_ATTR | RASSOC_ATTR | COMM_ATTR)
+OPERATOR_TRAITS_DEF(LAND, LASSOC_ATTR | RASSOC_ATTR | COMM_ATTR)
+OPERATOR_TRAITS_DEF(LOR,  LASSOC_ATTR | RASSOC_ATTR | COMM_ATTR)
+OPERATOR_TRAITS_DEF(EQL,  LASSOC_ATTR | RASSOC_ATTR | COMM_ATTR)
+OPERATOR_TRAITS_DEF(LSS,  CLEAR_ATTR)
 
 static std::string LPAR = "(";
 static std::string RPAR = ")";

@@ -28,13 +28,13 @@ static inline const se::Value<T>& __filter(const se::Value<T>& value) {
 // caller to ensure that another NaryExpr modifier is invoked.
 #define PARTIAL_EXPR(opname, expr) \
   se::SharedExpr(new se::NaryExpr(se::opname,\
-    se::ReflectOperator<se::opname>::attr, (expr)))
+    se::OperatorTraits<se::opname>::attr, (expr)))
 
 // BINARY_EXPR is a strictly internal macro that instantiates a new binary
 // expression for the given binary operator enum value and operands.
 #define BINARY_EXPR(opname, x_expr, y_expr) \
   se::SharedExpr(new se::NaryExpr(se::opname,\
-    se::ReflectOperator<se::opname>::attr, (x_expr), (y_expr)))
+    se::OperatorTraits<se::opname>::attr, (x_expr), (y_expr)))
 
 // OVERLOAD_BINARY_OPERATOR(op, opname) is a macro that uses templates and the
 // statically overloaded and inlined __filter functions to implement a custom
@@ -65,7 +65,7 @@ static inline const se::Value<T>& __filter(const se::Value<T>& value) {
     auto result = se::make_value(__x.get_value() op y);\
     \
     if(__x.is_symbolic()) {\
-      se::OperatorAttr attr = se::ReflectOperator<se::opname>::attr;\
+      se::OperatorAttr attr = se::OperatorTraits<se::opname>::attr;\
       se::SharedExpr raw_expr = __x.se::GenericValue::get_expr();\
       if(se::get_associative_attr(attr) && se::get_commutative_attr(attr)) {\
         bool create_partial_nary_expr = false;\
