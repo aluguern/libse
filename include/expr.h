@@ -225,8 +225,7 @@ public:
   WALK_DEF(z3::expr)
 
   // get_kind() uniquely identifies the implementation of this Expr object.
-  // Use the public static "kind" member field of the desired Expr subclass
-  // that needs to be identified for downcast purposes.
+  // This identifier can be safely used for downcast purposes.
   ExprKind get_kind() const { return kind; }
 
   // Uses "Virtual Friend Function" idiom.
