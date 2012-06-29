@@ -98,7 +98,7 @@ static inline const se::Value<T>& __filter(const se::Value<T>& value) {
   }\
   template<typename Y>\
   const auto operator op(const int x, const Y& y) ->\
-    decltype(se::make_value(x + __filter(y).get_value())) {\
+    decltype(se::make_value(x op __filter(y).get_value())) {\
     \
     const auto __y = __filter(y);\
     auto result = se::make_value(x op __y.get_value());\
