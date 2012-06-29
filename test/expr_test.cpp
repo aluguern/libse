@@ -112,7 +112,7 @@ TEST(ExprTest, NaryExprPrependAndAppend) {
 }
 
 TEST(ExprTest, AddAttr) {
-  OperatorAttr expected_attr = LASSOC_ATTR | RASSOC_ATTR | COMM_ATTR;
+  OperatorAttr expected_attr = LASSOC_ATTR | RASSOC_ATTR | COMM_ATTR | HAS_ID_ELEMENT_ATTR;
   OperatorAttr actual_attr = OperatorTraits<ADD>::attr;
   EXPECT_EQ(expected_attr, actual_attr);
 }
@@ -156,24 +156,43 @@ TEST(ExprTest, GetAttr) {
 TEST(ExprTest, AttrFunctions) {
   EXPECT_TRUE(get_commutative_attr(OperatorTraits<ADD>::attr));
   EXPECT_TRUE(get_associative_attr(OperatorTraits<ADD>::attr));
+  EXPECT_TRUE(get_identity_attr(OperatorTraits<ADD>::attr));
+
+  EXPECT_TRUE(get_commutative_attr(OperatorTraits<LAND>::attr));
+  EXPECT_TRUE(get_associative_attr(OperatorTraits<LAND>::attr));
+  EXPECT_TRUE(get_identity_attr(OperatorTraits<LAND>::attr));
+
+  EXPECT_TRUE(get_commutative_attr(OperatorTraits<LOR>::attr));
+  EXPECT_TRUE(get_associative_attr(OperatorTraits<LOR>::attr));
+  EXPECT_TRUE(get_identity_attr(OperatorTraits<LOR>::attr));
+
+  EXPECT_TRUE(get_commutative_attr(OperatorTraits<EQL>::attr));
+  EXPECT_TRUE(get_associative_attr(OperatorTraits<EQL>::attr));
+  EXPECT_FALSE(get_identity_attr(OperatorTraits<EQL>::attr));
 
   EXPECT_FALSE(get_commutative_attr(OperatorTraits<LSS>::attr));
   EXPECT_FALSE(get_associative_attr(OperatorTraits<LSS>::attr));
+  EXPECT_FALSE(get_identity_attr(OperatorTraits<LSS>::attr));
 
   EXPECT_TRUE(get_commutative_attr(COMM_ATTR));
   EXPECT_FALSE(get_associative_attr(COMM_ATTR));
+  EXPECT_FALSE(get_identity_attr(COMM_ATTR));
 
   EXPECT_FALSE(get_commutative_attr(LASSOC_ATTR));
   EXPECT_FALSE(get_associative_attr(LASSOC_ATTR));
+  EXPECT_FALSE(get_identity_attr(LASSOC_ATTR));
 
   EXPECT_FALSE(get_commutative_attr(RASSOC_ATTR));
   EXPECT_FALSE(get_associative_attr(RASSOC_ATTR));
+  EXPECT_FALSE(get_identity_attr(RASSOC_ATTR));
 
   EXPECT_FALSE(get_commutative_attr(LASSOC_ATTR | RASSOC_ATTR));
   EXPECT_TRUE(get_associative_attr(LASSOC_ATTR | RASSOC_ATTR));
+  EXPECT_FALSE(get_identity_attr(LASSOC_ATTR | RASSOC_ATTR));
 
   EXPECT_FALSE(get_commutative_attr(CLEAR_ATTR));
   EXPECT_FALSE(get_associative_attr(CLEAR_ATTR));
+  EXPECT_FALSE(get_identity_attr(CLEAR_ATTR));
 }
 
 TEST(ExprTest, GetAndSetOnUnaryExpr) {

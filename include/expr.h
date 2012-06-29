@@ -37,7 +37,10 @@ enum OperatorAttrBit : OperatorAttr {
   RASSOC_ATTR = (1u << 1),
 
   // Operator is commutative, i.e. (x ~ y) = (y ~ x).
-  COMM_ATTR = (1u << 3)
+  COMM_ATTR = (1u << 3),
+
+  // Operator has a unique identity element e such that x ~ e = e ~ x = x.
+  HAS_ID_ELEMENT_ATTR = (1u << 4)
 };
 
 // get_commutative_attr(const OperatorAttr) returns true if and only if
@@ -50,6 +53,12 @@ inline bool get_commutative_attr(const OperatorAttr attr) {
 // the associative bit in the given attribute bit vector is set.
 inline bool get_associative_attr(const OperatorAttr attr) {
   return (attr & (LASSOC_ATTR | RASSOC_ATTR)) == (LASSOC_ATTR | RASSOC_ATTR);
+}
+
+// get_identity_attr(const OperatorAttr) returns true if and only if
+// the identity element bit in the given attribute bit vector is set.
+inline bool get_identity_attr(const OperatorAttr attr) {
+  return (attr & HAS_ID_ELEMENT_ATTR) == (HAS_ID_ELEMENT_ATTR);
 }
 
 // Type enumerates built-in primitive types. The order of these types
@@ -142,9 +151,9 @@ class OperatorTraits<op> {\
 
 // TODO: Consider using another bit mask for floats etc.
 OPERATOR_TRAITS_DEF(NOT,  CLEAR_ATTR)
-OPERATOR_TRAITS_DEF(ADD,  LASSOC_ATTR | RASSOC_ATTR | COMM_ATTR)
-OPERATOR_TRAITS_DEF(LAND, LASSOC_ATTR | RASSOC_ATTR | COMM_ATTR)
-OPERATOR_TRAITS_DEF(LOR,  LASSOC_ATTR | RASSOC_ATTR | COMM_ATTR)
+OPERATOR_TRAITS_DEF(ADD,  LASSOC_ATTR | RASSOC_ATTR | COMM_ATTR | HAS_ID_ELEMENT_ATTR)
+OPERATOR_TRAITS_DEF(LAND, LASSOC_ATTR | RASSOC_ATTR | COMM_ATTR | HAS_ID_ELEMENT_ATTR)
+OPERATOR_TRAITS_DEF(LOR,  LASSOC_ATTR | RASSOC_ATTR | COMM_ATTR | HAS_ID_ELEMENT_ATTR)
 OPERATOR_TRAITS_DEF(EQL,  LASSOC_ATTR | RASSOC_ATTR | COMM_ATTR)
 OPERATOR_TRAITS_DEF(LSS,  CLEAR_ATTR)
 
