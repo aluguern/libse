@@ -159,15 +159,36 @@ TEST(InterpreterTest, SpInterpreterWithUnsatTernaryExpr) {
   EXPECT_EQ(z3::unsat, solver.check());
 }
 
+TEST(InterpreterTest, SpInterpreterWithTrueNaryExpr) {
+  const SharedExpr true_expr = SharedExpr(new ValueExpr<bool>(true));
+  NaryExpr true_nary = NaryExpr(LOR, OperatorTraits<LOR>::attr, true_expr);
+
+  SpInterpreter sp_interpreter;
+  EXPECT_NO_THROW(sp_interpreter.visit(true_nary));
+
+  z3::solver solver(sp_interpreter.context);
+  solver.add(true_nary.walk(&sp_interpreter));
+  EXPECT_EQ(z3::sat, solver.check());
+}
+
+TEST(InterpreterTest, SpInterpreterWithFalseNaryExpr) {
+  const SharedExpr false_expr = SharedExpr(new ValueExpr<bool>(false));
+  NaryExpr false_nary = NaryExpr(LOR, OperatorTraits<LOR>::attr, false_expr);
+
+  SpInterpreter sp_interpreter;
+  EXPECT_NO_THROW(sp_interpreter.visit(false_nary));
+
+  z3::solver solver(sp_interpreter.context);
+  solver.add(false_nary.walk(&sp_interpreter));
+  EXPECT_EQ(z3::unsat, solver.check());
+}
+
 TEST(InterpreterTest, SpInterpreterWithNaryExprThrows) {
   NaryExpr nary = NaryExpr(ADD, OperatorTraits<ADD>::attr);
   SpInterpreter sp_interpreter;
   EXPECT_THROW(sp_interpreter.visit(nary), InterpreterException);
 
   const SharedExpr a = SharedExpr(new AnyExpr<int>("A"));
-  nary.append_expr(a);
-  EXPECT_THROW(sp_interpreter.visit(nary), InterpreterException);
-
   nary.append_expr(a);
   EXPECT_NO_THROW(sp_interpreter.visit(nary));
 }

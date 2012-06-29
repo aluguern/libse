@@ -203,8 +203,12 @@ public:
 
   z3::expr visit(const NaryExpr& expr) {
     const size_t operands = expr.get_exprs().size();
-    if(operands < 2) {
-      throw InterpreterException("NaryExpr must have at least two operands.");
+    if(operands < 1) {
+      throw InterpreterException("NaryExpr must have at least one operand.");
+    }
+
+    if(operands == 1) {
+      return expr.get_exprs().front()->walk(this);
     }
 
     if(operands == 2) {
