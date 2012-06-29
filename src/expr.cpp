@@ -47,6 +47,12 @@ std::ostream& TernaryExpr::write(std::ostream& out) const {
 std::ostream& NaryExpr::write(std::ostream& out) const {
   out << LPAR;
   std::list<SharedExpr>::const_iterator iter = exprs.cbegin();
+
+  if(iter == exprs.cend()) {
+    out << RPAR;
+    return out;
+  }
+
   out << *iter;
   for(iter++; iter != exprs.cend(); iter++) {
     out << operators[op];

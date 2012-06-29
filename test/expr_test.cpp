@@ -209,6 +209,17 @@ TEST(ExprTest, NaryExprAsBinaryExpr) {
   EXPECT_EQ("([A]+[B]+[C])", nary_out.str());
 }
 
+TEST(ExprTest, NaryExprWriteEmpty) {
+  NaryExpr a(ADD, OperatorTraits<ADD>::attr);
+
+  EXPECT_EQ(0, a.get_exprs().size());
+
+  std::stringstream out;
+  a.write(out);
+
+  EXPECT_EQ("()", out.str());
+}
+
 TEST(ExprTest, NaryExpr) {
   const SharedExpr a = SharedExpr(new AnyExpr<short>("A"));
   const SharedExpr b = SharedExpr(new AnyExpr<short>("B"));
