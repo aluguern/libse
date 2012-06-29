@@ -67,7 +67,7 @@ static inline const se::Value<T>& __filter(const se::Value<T>& value) {
     if(__x.is_symbolic()) {\
       se::OperatorAttr attr = se::OperatorTraits<se::opname>::attr;\
       se::SharedExpr raw_expr = __x.se::GenericValue::get_expr();\
-      if(se::get_associative_attr(attr) && se::get_commutative_attr(attr)) {\
+      if(se::get_associative_attr(attr) && se::get_commutative_attr(attr) && se::get_identity_attr(attr)) {\
         bool create_partial_nary_expr = false;\
         auto kind = raw_expr->get_kind();\
         if(kind == se::ANY_EXPR || kind == se::VALUE_EXPR) {\

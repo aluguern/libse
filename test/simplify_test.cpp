@@ -2,6 +2,16 @@
 #include "gtest/gtest.h"
 #include "sequential-se.h"
 
+// Equality has no unique identity element.
+// Therefore, no simplifications are applied.
+TEST(SimplifyTest, Equality) {
+  se::Int i = se::any_int("I");
+
+  std::stringstream out;
+  out << ((i == 3) == 5).get_expr();
+  EXPECT_EQ("(([I]==3)==5)", out.str());
+}
+
 TEST(SimplifyTest, UpdateConcolicVariableWithRHSConstant) {
   se::reset_tracer();
 
