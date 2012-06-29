@@ -167,7 +167,7 @@ enum ExprKind : unsigned int {
   NARY_EXPR,
 
   // Expr subclasses that are not part of the library must register
-  // with an ExprKind enum value that is greater than EXT_EXPR.
+  // with an ExprKind enum value that is greater than or equal to EXT_EXPR.
   //
   // See also ext_expr_kind()
   EXT_EXPR = 256u,
@@ -175,8 +175,11 @@ enum ExprKind : unsigned int {
 
 // ext_expr_kind(unsigned short) should be only used by library
 // extensions that wish to create an Expr subclass whose kind
-// must be greater than EXT_EXPR. The id value must be positive.
-ExprKind ext_expr_kind(unsigned short id);
+// must be greater than or equal to EXT_EXPR.
+constexpr ExprKind ext_expr_kind(unsigned short id) {
+  // assumes IDs are sufficiently small such that there is no overflow
+  return static_cast<ExprKind>(EXT_EXPR + id);
+}
 
 // Forward declaration for "Virtual Friend Function" idiom
 class Expr;
@@ -213,7 +216,7 @@ private:
 protected:
 
   // Subclasses that are not part of this library must use a
-  // kind enum value that is greater than EXT_EXPR.
+  // kind enum value that is greater than or equal to EXT_EXPR.
   Expr(const ExprKind kind) : kind(kind) {}
 
 public:
