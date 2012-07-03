@@ -1,6 +1,43 @@
 #include <sstream>
 #include "gtest/gtest.h"
 #include "sequential-se.h"
+#include "interpreter.h"
+
+TEST(MultiPathFunctionalTest, Safe) {
+  int MAX = 3;
+  se::Int j = se::any_int("K");
+
+  // Unroll loop once to get if statement
+  se::Loop if_then_0 = se::Loop(1);
+  if_then_0.track(j);
+  while(if_then_0.unwind(j < 0)) { j = 0; }
+
+  se::Loop if_then_1 = se::Loop(1);
+  if_then_1.track(j);
+  while(if_then_1.unwind(j < MAX)) { j = j + MAX; }
+
+  se::SpInterpreter sp_interpreter;
+  z3::solver solver(sp_interpreter.context);
+  solver.add((j < MAX).get_expr()->walk(&sp_interpreter));
+
+  EXPECT_EQ(z3::unsat, solver.check());
+}
+
+TEST(MultiPathFunctionalTest, Unsafe) {
+  int MAX = 3;
+  se::Int j = se::any_int("K");
+
+  // Unroll loop once to get if statement
+  se::Loop if_then_1 = se::Loop(1);
+  if_then_1.track(j);
+  while(if_then_1.unwind(j < MAX)) { j = j + MAX; }
+
+  se::SpInterpreter sp_interpreter;
+  z3::solver solver(sp_interpreter.context);
+  solver.add((j < MAX).get_expr()->walk(&sp_interpreter));
+
+  EXPECT_EQ(z3::sat, solver.check());
+}
 
 TEST(MultiPathFunctionalTest, Cast) {
   se::Char i = se::any_char("I");
