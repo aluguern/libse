@@ -35,6 +35,14 @@ Note that "make install" may require superuser privileges.
 For advanced usage information on other configure options refer to the
 Autoconf documentation: http://www.gnu.org/software/autoconf/
 
+== Troubleshooting ==
+
+Since the library uses advanced C++11 language features, older compiler
+versions are likely to be troublesome. To date, the library has been
+successfully compiled on the following systems:
+
+* GNU/Linux with GCC v4.6.3
+
 == Benchmarks ==
 
 The benchmarks can be executed with "make bench".
