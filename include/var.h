@@ -240,7 +240,7 @@ static std::stringstream sstream;
 extern void reset_var_seq();
 
 // reset_tracer() clears the path constraints of the global Tracer object.
-// See also symtracer.h
+// See also tracer.h
 extern void reset_tracer();
 
 // create_var_name() returns a unique symbolic variable identifier which
