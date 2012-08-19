@@ -42,6 +42,7 @@ versions are likely to be troublesome. To date, the library has been
 successfully compiled on the following systems:
 
 * GNU/Linux with GCC v4.6.3
+* OS X with GCC v4.7.1
 
 == Benchmarks ==
 
