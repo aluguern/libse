@@ -6,7 +6,7 @@ using namespace se;
 
 TEST(LoopTest, BoundedUnwindingPolicy) {
   const Value<bool> anything = any_bool("ANY");
-  BoundedUnwindingPolicy policy(2);
+  BoundedUnwindingPolicy policy(2u);
   EXPECT_TRUE(policy.unwind(anything));
   EXPECT_TRUE(policy.unwind(anything));
 
@@ -19,7 +19,7 @@ TEST(LoopTest, BoundedUnwindingPolicy) {
 
 TEST(LoopTest, LoopWithBoundedUnwindingPolicy) {
   const Value<bool> anything = any_bool("ANY");
-  std::unique_ptr<UnwindingPolicy> policy_ptr(new BoundedUnwindingPolicy(2));
+  std::unique_ptr<UnwindingPolicy> policy_ptr(new BoundedUnwindingPolicy(2u));
   Loop loop(std::move(policy_ptr));
 
   EXPECT_FALSE(policy_ptr);
@@ -36,7 +36,7 @@ TEST(LoopTest, LoopWithBoundedUnwindingPolicy) {
 
 TEST(LoopTest, LoopWithK) {
   const Value<bool> anything = any_bool("ANY");
-  Loop loop(2);
+  Loop loop(2u);
 
   EXPECT_TRUE(loop.unwind(anything));
   EXPECT_TRUE(loop.unwind(anything));
@@ -51,7 +51,7 @@ TEST(LoopTest, LoopWithK) {
 TEST(LoopTest, VersionAfterUnwind1xWithSingleVar) {
   bool ok;
   Int i = any_int("I");
-  Loop loop(1);
+  Loop loop(1u);
   loop.track(i);
 
   // 1x
@@ -73,7 +73,7 @@ TEST(LoopTest, VersionAfterUnwind1xWithSingleVar) {
 TEST(LoopTest, Unwind1xWithSingleVar) {
   bool ok;
   Int i = any_int("I");
-  Loop loop(1);
+  Loop loop(1u);
   loop.track(i);
 
   // 1x
@@ -94,7 +94,7 @@ TEST(LoopTest, Unwind1xWithSingleVar) {
 TEST(LoopTest, Unwind2xWithSingleVar) {
   bool ok;
   Int i = any_int("I");
-  Loop loop(2);
+  Loop loop(2u);
   loop.track(i);
 
   // 1x
@@ -129,7 +129,7 @@ TEST(LoopTest, Unwind2xWithSingleVar) {
 TEST(LoopTest, Unwind3xWithSingleVar) {
   bool ok;
   Int i = any_int("I");
-  Loop loop(3);
+  Loop loop(3u);
   loop.track(i);
 
   // 1x
@@ -174,7 +174,7 @@ TEST(LoopTest, Unwind3xWithSingleVar) {
 TEST(LoopTest, Unwind4xWithSingleVar) {
   bool ok;
   Int i = any_int("I");
-  Loop loop(4);
+  Loop loop(4u);
   loop.track(i);
 
   // 1x
@@ -230,7 +230,7 @@ TEST(LoopTest, Unwind2xWithMultipleVars) {
   bool ok;
   Int i = any_int("I");
   Int j = any_int("J");
-  Loop loop(2);
+  Loop loop(2u);
   loop.track(i);
   loop.track(j);
 
@@ -281,7 +281,7 @@ TEST(LoopTest, Unwind3xWithMultipleVars) {
   bool ok;
   Int i = any_int("I");
   Int j = any_int("J");
-  Loop loop(3);
+  Loop loop(3u);
   loop.track(i);
   loop.track(j);
 
@@ -346,7 +346,7 @@ TEST(LoopTest, Unwind3xWithMultipleVars) {
 TEST(LoopTest, MultipleTrack) {
   bool ok;
   Int i = any_int("I");
-  Loop loop(2);
+  Loop loop(2u);
 
   loop.track(i);
   EXPECT_NO_THROW(loop.track(i));
@@ -355,7 +355,7 @@ TEST(LoopTest, MultipleTrack) {
 TEST(LoopTest, VersionAfterUnwind1xWithSingleVarWithAny) {
   bool ok;
   Int i = any_int("I");
-  Loop loop(1);
+  Loop loop(1u);
   loop.track(i);
 
   // 1x
@@ -377,7 +377,7 @@ TEST(LoopTest, VersionAfterUnwind1xWithSingleVarWithAny) {
 TEST(LoopTest, Unwind1xWithSingleVarWithAny) {
   bool ok;
   Int i = any_int("I");
-  Loop loop(1);
+  Loop loop(1u);
   loop.track(i);
 
   // 1x
@@ -398,7 +398,7 @@ TEST(LoopTest, Unwind1xWithSingleVarWithAny) {
 TEST(LoopTest, Unwind2xWithSingleVarWithAny) {
   bool ok;
   Int i = any_int("I");
-  Loop loop(2);
+  Loop loop(2u);
   loop.track(i);
 
   // 1x
@@ -433,7 +433,7 @@ TEST(LoopTest, Unwind2xWithSingleVarWithAny) {
 TEST(LoopTest, Unwind3xWithSingleVarWithAny) {
   bool ok;
   Int i = any_int("I");
-  Loop loop(3);
+  Loop loop(3u);
   loop.track(i);
 
   // 1x
@@ -478,7 +478,7 @@ TEST(LoopTest, Unwind3xWithSingleVarWithAny) {
 TEST(LoopTest, Unwind4xWithSingleVarWithAny) {
   bool ok;
   Int i = any_int("I");
-  Loop loop(4);
+  Loop loop(4u);
   loop.track(i);
 
   // 1x
@@ -534,7 +534,7 @@ TEST(LoopTest, Unwind2xWithMultipleVarsWithAny) {
   bool ok;
   Int i = any_int("I");
   Int j = any_int("J");
-  Loop loop(2);
+  Loop loop(2u);
   loop.track(i);
   loop.track(j);
 
@@ -585,7 +585,7 @@ TEST(LoopTest, Unwind3xWithMultipleVarsWithAny) {
   bool ok;
   Int i = any_int("I");
   Int j = any_int("J");
-  Loop loop(3);
+  Loop loop(3u);
   loop.track(i);
   loop.track(j);
 

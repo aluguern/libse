@@ -8,11 +8,11 @@ TEST(MultiPathFunctionalTest, Safe) {
   se::Int j = se::any_int("K");
 
   // Unroll loop once to get if statement
-  se::Loop if_then_0 = se::Loop(1);
+  se::Loop if_then_0(1u);
   if_then_0.track(j);
   while(if_then_0.unwind(j < 0)) { j = 0; }
 
-  se::Loop if_then_1 = se::Loop(1);
+  se::Loop if_then_1(1u);
   if_then_1.track(j);
   while(if_then_1.unwind(j < MAX)) { j = j + MAX; }
 
@@ -28,7 +28,7 @@ TEST(MultiPathFunctionalTest, Unsafe) {
   se::Int j = se::any_int("K");
 
   // Unroll loop once to get if statement
-  se::Loop if_then_1 = se::Loop(1);
+  se::Loop if_then_1(1u);
   if_then_1.track(j);
   while(if_then_1.unwind(j < MAX)) { j = j + MAX; }
 
@@ -65,7 +65,7 @@ TEST(MultiPathFunctionalTest, BasicLogicalOperators) {
 TEST(MultiPathFunctionalTest, IntUnwind2x) {
   se::Int i = se::any_int("I");
 
-  se::Loop loop(2);
+  se::Loop loop(2u);
   loop.track(i);
   while(loop.unwind(i < 5)) {
     i = i + 4;
@@ -79,7 +79,7 @@ TEST(MultiPathFunctionalTest, IntUnwind2x) {
 TEST(MultiPathFunctionalTest, BoolUnwind1x) {
   se::Bool i = se::any_bool("I");
 
-  se::Loop loop(1);
+  se::Loop loop(1u);
   loop.track(i);
   while(loop.unwind(i == se::Value<bool>(true))) {
     i = i && se::Value<bool>(false);
