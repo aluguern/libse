@@ -70,7 +70,18 @@ pkginclude_HEADERS = \
 # TESTS -- Programs run automatically by "make check"
 # check_PROGRAMS -- Programs built by "make check" but not necessarily run
 
-TESTS_ENVIRONMENT = LD_LIBRARY_PATH=$(srcdir)/solvers/z3/lib:$$LD_LIBRARY_PATH
+tests_library_path = $(srcdir)/solvers/z3/lib
+
+TESTS_ENVIRONMENT = \
+  LIBPATH=$(tests_library_path):$$LIBPATH \
+  LD_LIBRARY_PATH=$(tests_library_path):$$LD_LIBRARY_PATH \
+  DYLD_LIBRARY_PATH=$(tests_library_path):$$DYLD_LIBRARY_PATH \
+  LIBRARY_PATH=$(tests_library_path):$$LIBRARY_PATH \
+  SHLIB_PATH=$(tests_library_path):$$SHLIB_PATH \
+  LD_LIBRARY64_PATH=$(tests_library_path):$$LD_LIBRARY64_PATH \
+  LD_LIBRARYN32_PATH=$(tests_library_path):$$LD_LIBRARYN32_PATH \
+  LD_LIBRARY_PATH_32=$(tests_library_path):$$LD_LIBRARY_PATH_32 \
+  LD_LIBRARY_PATH_64=$(tests_library_path):$$LD_LIBRARY_PATH_64
 
 TESTS = test/se
 check_PROGRAMS = test/se
