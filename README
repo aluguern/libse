@@ -7,7 +7,7 @@ libse is distributed under a BSD-style license.
 
 == Requirements ==
 
-You need to install the Z3 v4.0 theorem prover. It can be downloaded from:
+You need to install the Z3 v4.1 theorem prover. It can be downloaded from:
 
   http://research.microsoft.com/en-us/um/redmond/projects/z3/download.html
 
