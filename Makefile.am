@@ -51,6 +51,7 @@ lib_libse_la_SOURCES = \
   src/expr.cpp \
   src/value.cpp \
   src/var.cpp \
+  src/if.cpp \
   src/loop.cpp \
   src/tracer.cpp
 
@@ -60,6 +61,7 @@ pkginclude_HEADERS = \
   include/visitor.h \
   include/interpreter.h \
   include/var.h \
+  include/if.h \
   include/loop.h \
   include/sequential-se.h \
   include/tracer.h
@@ -93,6 +95,7 @@ test_se_SOURCES = \
   test/visitor_test.cpp \
   test/interpreter_test.cpp \
   test/var_test.cpp \
+  test/if_test.cpp \
   test/loop_test.cpp \
   test/version_test.cpp \
   test/tracer_test.cpp \

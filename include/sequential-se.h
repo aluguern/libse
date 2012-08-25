@@ -7,6 +7,7 @@
 
 #include "value.h"
 #include "var.h"
+#include "if.h"
 #include "loop.h"
 
 // Internal function to guide the type inference of template functions that

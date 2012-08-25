@@ -3,7 +3,78 @@
 #include "sequential-se.h"
 #include "interpreter.h"
 
-TEST(MultiPathFunctionalTest, Safe) {
+TEST(MultiPathFunctionalTest, SafeWithIfThenElse) {
+  se::Int j = se::any_int("J");
+
+  se::If branch(j < 0);
+  branch.track(j);
+  if (branch.begin_then()) { j = 0; }
+  if (branch.begin_else()) { j = 1; }
+  branch.end();
+
+  se::SpInterpreter sp_interpreter;
+  z3::solver solver(sp_interpreter.context);
+  se::Bool vc = (j < 0) || !(j < 2);
+  solver.add(vc.get_expr()->walk(&sp_interpreter));
+
+  EXPECT_EQ(z3::unsat, solver.check());
+}
+
+TEST(MultiPathFunctionalTest, UnsafeWithIfThenElse) {
+  se::Int j = se::any_int("J");
+
+  se::If branch(j < 0);
+  branch.track(j);
+  if (branch.begin_then()) { j = 0; }
+  if (branch.begin_else()) { j = 1; }
+  branch.end();
+
+  se::SpInterpreter sp_interpreter;
+  z3::solver solver(sp_interpreter.context);
+  se::Bool vc = !(j < 1);
+  solver.add(vc.get_expr()->walk(&sp_interpreter));
+
+  EXPECT_EQ(z3::sat, solver.check());
+}
+
+TEST(MultiPathFunctionalTest, SafeWithIfThen) {
+  int MAX = 3;
+  se::Int j = se::any_int("K");
+
+  se::If if_0(j < 0);
+  if_0.track(j);
+  if (if_0.begin_then()) { j = 0; }
+  if_0.end();
+
+  se::If if_1(j < MAX);
+  if_1.track(j);
+  if (if_1.begin_then()) { j = j + MAX; }
+  if_1.end();
+
+  se::SpInterpreter sp_interpreter;
+  z3::solver solver(sp_interpreter.context);
+  solver.add((j < MAX).get_expr()->walk(&sp_interpreter));
+
+  EXPECT_EQ(z3::unsat, solver.check());
+}
+
+TEST(MultiPathFunctionalTest, UnsafeWithIfThen) {
+  int MAX = 3;
+  se::Int j = se::any_int("K");
+
+  se::If branch(j < MAX);
+  branch.track(j);
+  if (branch.begin_then()) { j = j + MAX; }
+  branch.end();
+
+  se::SpInterpreter sp_interpreter;
+  z3::solver solver(sp_interpreter.context);
+  solver.add((j < MAX).get_expr()->walk(&sp_interpreter));
+
+  EXPECT_EQ(z3::sat, solver.check());
+}
+
+TEST(MultiPathFunctionalTest, SafeWithLoop) {
   int MAX = 3;
   se::Int j = se::any_int("K");
 
@@ -23,7 +94,7 @@ TEST(MultiPathFunctionalTest, Safe) {
   EXPECT_EQ(z3::unsat, solver.check());
 }
 
-TEST(MultiPathFunctionalTest, Unsafe) {
+TEST(MultiPathFunctionalTest, UnsafeWithLoop) {
   int MAX = 3;
   se::Int j = se::any_int("K");
 
@@ -48,6 +119,49 @@ TEST(MultiPathFunctionalTest, Cast) {
   std::stringstream out;
   out << i.get_expr();
   EXPECT_EQ("((char)([J]))", out.str());
+}
+
+TEST(MultiPathFunctionalTest, IfThen) {
+  int MAX = 3;
+  se::Int j = se::any_int("J");
+
+  se::If branch(j < 0);
+  branch.track(j);
+  if (branch.begin_then()) { j = j + MAX; }
+  branch.end();
+
+  std::stringstream out;
+  out << j.get_value().get_expr();
+  EXPECT_EQ("(([J]<0)?([J]+3):[J])", out.str());
+}
+
+TEST(MultiPathFunctionalTest, IfThenElse) {
+  int MAX = 3;
+  se::Int j = se::any_int("J");
+
+  se::If branch(j < 0);
+  branch.track(j);
+  if (branch.begin_then()) { j = j + MAX; }
+  if (branch.begin_else()) { j = j + se::any_int("A"); }
+  branch.end();
+
+  std::stringstream out;
+  out << j.get_value().get_expr();
+  EXPECT_EQ("(([J]<0)?([J]+3):([J]+[A]))", out.str());
+}
+
+TEST(MultiPathFunctionalTest, IfThenElseWithConstantAssignment) {
+  se::Int j = se::any_int("J");
+
+  se::If branch(j < 0);
+  branch.track(j);
+  if (branch.begin_then()) { j = 0; }
+  if (branch.begin_else()) { j = 1; }
+  branch.end();
+
+  std::stringstream out;
+  out << j.get_value().get_expr();
+  EXPECT_EQ("(([J]<0)?0:1)", out.str());
 }
 
 TEST(MultiPathFunctionalTest, BasicLogicalOperators) {
