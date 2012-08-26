@@ -52,16 +52,21 @@ private:
   // associated through the track(Var<T>&) API.
   TernaryExpr* find_join_expr_ptr(GenericVar*);
 
-  // Boolean symbolic expression which represents the condition that guards
-  // the "then" and "else" block of the control-flow statement.
-  const SharedExpr cond_expr;
+  // Boolean value which represents the condition that guards the "then" and
+  // "else" block of the control-flow statement. The condition has a symbolic
+  // expression if and only if the is_symbolic_cond flag is true.
+  const Value<bool> cond;
+
+  // flag that indicates if the condition value has a symbolic expression.
+  const bool is_symbolic_cond;
 
 public:
 
   // Constructor which can be used to build symbolic expressions of variables
   // whose values are being modified in an if-then-else control-flow statement.
   If(const Value<bool>& cond) :
-    cond_expr(cond.get_expr()), is_if_then_else(false), join_expr_map(), var_ptrs() {}
+    cond(cond), is_symbolic_cond(cond.is_symbolic()),
+    is_if_then_else(false), join_expr_map(), var_ptrs() {}
 
   ~If() {}
 

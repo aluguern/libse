@@ -73,10 +73,10 @@ public:
 // together, there could be an exponential number of these as the loop is
 // unwound. For example, this occurs in a loop that has an if-then-else
 // statement in which both branches are always possible on each iteration.
-// Thus, a loop object has also a join operator. Joins are expected to be
-// performed after every loop programming statement.
+// By default, these joins are done on each loop iteration if the loop
+// condition is symbolic.
 //
-// The exact loop unwinding policy is controlled by dependency injection.
+// The exact loop unwinding policy is controlled through dependency injection.
 class Loop {
 
 private:
@@ -198,7 +198,8 @@ public:
 
   // unwind(const Value<bool>&) unwinds the loop once more if and only if
   // it returns true. The unwinding semantics is determined by the injected
-  // unwinding policy implementation.
+  // unwinding policy implementation. If the return value is false, the effect
+  // of subsequent unwind(const Value<bool>&) calls is undefined.
   bool unwind(const Value<bool>& cond);
 
   // track(Var<T>&) must be called before unwind(const Value<bool>&) is called

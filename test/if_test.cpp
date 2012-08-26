@@ -4,6 +4,48 @@
 
 using namespace se;
 
+TEST(IfTest, ThenElseWithConcreteTrueCondition) {
+  bool ok;
+  Int i = 2;
+  If branch(i < 5);
+  branch.track(i);
+
+  ok = branch.begin_then();
+  EXPECT_TRUE(ok);
+
+  i = i + any_int("A");
+
+  ok = branch.begin_else();
+  EXPECT_FALSE(ok);
+
+  branch.end();
+
+  std::stringstream out_end;
+  out_end << i.get_value().get_expr();
+  EXPECT_EQ("(2+[A])", out_end.str());
+}
+
+TEST(IfTest, ThenElseWithConcreteFalseCondition) {
+  bool ok;
+  Int i = 7;
+  If branch(i < 5);
+  branch.track(i);
+
+  ok = branch.begin_then();
+  EXPECT_FALSE(ok);
+
+  ok = branch.begin_else();
+  EXPECT_TRUE(ok);
+
+  i = i + any_int("A");
+
+  branch.end();
+
+  std::stringstream out_end;
+  out_end << i.get_value().get_expr();
+  EXPECT_EQ("(7+[A])", out_end.str());
+}
+
 TEST(IfTest, VersionAfterThenWithSingleVar) {
   bool ok;
   Int i = any_int("I");

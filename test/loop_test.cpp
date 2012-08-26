@@ -48,6 +48,144 @@ TEST(LoopTest, LoopWithK) {
   // ...
 }
 
+// k is less than the number of loop iterations induced by concrete values.
+TEST(LoopTest, UnwindWithConcreteConditionLessThanK) {
+  bool ok;
+  Int i = 1;
+  Loop loop(1u);
+  loop.track(i);
+
+  // 1x
+  ok = loop.unwind(i < 7);
+  EXPECT_TRUE(ok);
+
+  i = i + 2;
+
+  std::stringstream out_1x;
+  out_1x << i.get_value().get_expr();
+  EXPECT_EQ("3", out_1x.str());
+
+  // 2x
+  ok = loop.unwind(i < 7);
+  EXPECT_TRUE(ok);
+
+  i = i + 4;
+
+  std::stringstream out_2x;
+  out_2x << i.get_value().get_expr();
+  EXPECT_EQ("7", out_2x.str());
+  
+  // 3x
+  ok = loop.unwind(i < 7);
+  EXPECT_FALSE(ok);
+
+  std::stringstream out;
+  out << i.get_value().get_expr();
+  EXPECT_EQ("7", out.str());
+}
+
+// k is equal to the number of loop iterations induced by concrete values.
+TEST(LoopTest, UnwindWithConcreteConditionEqualK) {
+  bool ok;
+  Int i = 1;
+  Loop loop(1u);
+  loop.track(i);
+
+  // 1x
+  ok = loop.unwind(i < 7);
+  EXPECT_TRUE(ok);
+
+  i = i + 2;
+
+  std::stringstream out_1x;
+  out_1x << i.get_value().get_expr();
+  EXPECT_EQ("3", out_1x.str());
+
+  // 2x
+  ok = loop.unwind(i < 3);
+  EXPECT_FALSE(ok);
+
+  // unwind(const Value<bool>&) call for 3x is undefined because ok == false.
+
+  std::stringstream out;
+  out << i.get_value().get_expr();
+  EXPECT_EQ("3", out.str());
+}
+
+// k is greater than the number of loop iterations induced by concrete values.
+TEST(LoopTest, UnwindWithConcreteConditionGreaterThanK) {
+  bool ok;
+  Int i = 1;
+  Loop loop(5u);
+  loop.track(i);
+
+  // 1x
+  ok = loop.unwind(i < 7);
+  EXPECT_TRUE(ok);
+
+  i = i + 2;
+
+  std::stringstream out_1x;
+  out_1x << i.get_value().get_expr();
+  EXPECT_EQ("3", out_1x.str());
+
+  // 2x
+  ok = loop.unwind(i < 3);
+  EXPECT_FALSE(ok);
+
+  // unwind(const Value<bool>&) call for 3x is undefined because ok == false.
+
+  std::stringstream out;
+  out << i.get_value().get_expr();
+  EXPECT_EQ("3", out.str());
+}
+
+// A concrete loop condition becomes symbolic.
+TEST(LoopTest, UnwindWithConcreteAndSymbolicCondition) {
+  bool ok;
+  Int i = 1;
+  Loop loop(1u);
+  loop.track(i);
+
+  // 1x
+  ok = loop.unwind(i < 7);
+  EXPECT_TRUE(ok);
+
+  i = i + 2;
+
+  std::stringstream out_1x;
+  out_1x << i.get_value().get_expr();
+  EXPECT_EQ("3", out_1x.str());
+
+  // 2x
+  ok = loop.unwind(i < 7);
+  EXPECT_TRUE(ok);
+
+  i = i + any_int("A");
+
+  std::stringstream out_2x;
+  out_2x << i.get_value().get_expr();
+  EXPECT_EQ("(3+[A])", out_2x.str());
+
+  // 3x
+  ok = loop.unwind(i < 8);
+  EXPECT_TRUE(ok);
+
+  i = i + any_int("B");
+
+  std::stringstream out_3x;
+  out_3x << i.get_value().get_expr();
+  EXPECT_EQ("((3+[A])+[B])", out_3x.str());
+
+  // 4x
+  ok = loop.unwind(i < 9);
+  EXPECT_FALSE(ok);
+
+  std::stringstream out;
+  out << i.get_value().get_expr();
+  EXPECT_EQ("(((3+[A])<8)?((3+[A])+[B]):(3+[A]))", out.str());
+}
+
 TEST(LoopTest, VersionAfterUnwind1xWithSingleVar) {
   bool ok;
   Int i = any_int("I");

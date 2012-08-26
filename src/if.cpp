@@ -9,27 +9,40 @@ namespace se {
 const SharedExpr If::NIL_EXPR = SharedExpr(0);
 
 bool If::begin_then() {
-  for(GenericVar* var_ptr : var_ptrs) {
-    TernaryExpr* join_expr = new TernaryExpr(cond_expr, NIL_EXPR, var_ptr->get_expr());
-    join_expr_map.insert(std::make_pair(var_ptr, join_expr));
+  if(is_symbolic_cond) {
+    const SharedExpr& cond_expr = cond.get_expr();
+    for(GenericVar* var_ptr : var_ptrs) {
+      TernaryExpr* join_expr = new TernaryExpr(cond_expr, NIL_EXPR, var_ptr->get_expr());
+      join_expr_map.insert(std::make_pair(var_ptr, join_expr));
+    }
+    return true;
+  } else {
+    return cond.get_value();
   }
-
-  return true;
 }
 
 bool If::begin_else() {
   is_if_then_else = true;
-  for(GenericVar* var_ptr : var_ptrs) {
-    TernaryExpr* join_expr = find_join_expr_ptr(var_ptr);
-    const SharedExpr& expr = var_ptr->get_expr();
-    join_expr->set_then_expr(expr);
-    var_ptr->set_expr(join_expr->get_else_expr());
+  if(is_symbolic_cond) {
+    const SharedExpr& cond_expr = cond.get_expr();
+    for(GenericVar* var_ptr : var_ptrs) {
+      TernaryExpr* join_expr = find_join_expr_ptr(var_ptr);
+      const SharedExpr& expr = var_ptr->get_expr();
+      join_expr->set_then_expr(expr);
+      var_ptr->set_expr(join_expr->get_else_expr());
+    }
+    return true;
+  } else {
+    return !cond.get_value();
   }
-
-  return true;
 }
 
 void If::end() {
+  if(!is_symbolic_cond) {
+    // no joining needed
+    return;
+  }
+
   for(GenericVar* var_ptr : var_ptrs) {
     TernaryExpr* join_expr = find_join_expr_ptr(var_ptr);
     const SharedExpr& expr = var_ptr->get_expr();

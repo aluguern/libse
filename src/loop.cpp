@@ -8,19 +8,22 @@ namespace se {
 
 const SharedExpr Loop::NIL_EXPR = SharedExpr(0);
 
-bool Loop::unwind(const Value<bool>& cond) {
-  unwind_flag = unwinding_policy_ptr->unwind(cond);
-  if(unwind_flag) {
-    if(join_expr_map.empty()) {
-      internal_init(cond);
-    } else {
-      internal_unwind(cond);
-    }
-  } else if(!join_expr_map.empty()) {
+bool Loop::unwind(const Value<bool>& cond) { 
+  if(cond.is_symbolic()) {
+    unwind_flag = unwinding_policy_ptr->unwind(cond);
+    if(unwind_flag) {
+      if(join_expr_map.empty()) {
+        internal_init(cond);
+      } else {
+        internal_unwind(cond);
+      }
+    } else if(!join_expr_map.empty()) {
       internal_join();
+    }
+    return unwind_flag;
+  } else {
+    return cond.get_value();
   }
-
-  return unwind_flag;
 }
 
 void Loop::internal_init(const Value<bool>& cond) {
