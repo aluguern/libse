@@ -1,0 +1,32 @@
+OS X 10.8
+Processor: 2 GHz Intel Core i7
+Memory: 8 GB 1600 MHz DDR3
+
+Revision: 4b5b05143f495c8405b17fa6ea6ceaa4ed0be8a0
+
+time -p bench/for_loop
+real 1307.83
+user 1124.07
+sys 0.15
+time -p bench/while_loop
+real 0.48
+user 0.43
+sys 0.04
+	
+time -p bench/for_loop
+real 1130.55
+user 1129.80
+sys 0.74
+time -p bench/while_loop
+real 0.49
+user 0.44
+sys 0.04
+
+time -p bench/for_loop
+real      1135.60
+user      1134.21
+sys          1.36
+time -p bench/while_loop
+real         0.49
+user         0.44
+sys          0.04

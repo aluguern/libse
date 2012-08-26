@@ -24,8 +24,8 @@ test: check-local check
 
 bench: all
 	git rev-parse HEAD >> bench/LOG
-	time -p -o bench/LOG -a bench/explicit_loop
-	time -p -o bench/LOG -a bench/implicit_loop
+	time -p -o bench/LOG -a bench/for_loop
+	time -p -o bench/LOG -a bench/while_loop
 
 .PHONY: bench
 
@@ -108,11 +108,11 @@ test_se_LDADD = $(top_builddir)/gtest/lib/libgtest_main.la lib/libse.la
 
 # Benchmarks
 
-bin_PROGRAMS = bench/explicit_loop bench/implicit_loop
-bench_explicit_loop_SOURCES = bench/explicit_loop_bench.cpp
-bench_explicit_loop_CPPFLAGS = -std=c++0x -I$(srcdir)/include
-bench_explicit_loop_LDADD = lib/libse.la
+bin_PROGRAMS = bench/for_loop bench/while_loop
+bench_for_loop_SOURCES = bench/for_loop_bench.cpp
+bench_for_loop_CPPFLAGS = -std=c++0x -I$(srcdir)/include
+bench_for_loop_LDADD = lib/libse.la
 
-bench_implicit_loop_SOURCES = bench/implicit_loop_bench.cpp
-bench_implicit_loop_CPPFLAGS = -std=c++0x -I$(srcdir)/include
-bench_implicit_loop_LDADD = lib/libse.la
+bench_while_loop_SOURCES = bench/while_loop_bench.cpp
+bench_while_loop_CPPFLAGS = -std=c++0x -I$(srcdir)/include
+bench_while_loop_LDADD = lib/libse.la

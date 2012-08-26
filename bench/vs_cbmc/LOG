@@ -4,7 +4,7 @@ Date: Tuesday May 22, 2012
 
 libsp (git rev-parse HEAD: bac2c6d2d034c651cf59562167fab8d38942eb71)
 
-explicit_loop_sp.cpp:
+for_loop_se.cpp:
 
 real 14.65
 user 0.05
@@ -12,7 +12,7 @@ sys 0.20
 
 Time: 15 sec
 
-implicit_loop_sp.cpp (8192 = 2^13):
+while_loop_se.cpp (8192 = 2^13):
 
 real	0m2.696s
 user	0m0.028s
@@ -20,7 +20,7 @@ sys	0m0.030s
 
 Time: 3 sec
 
-implicit_loop_sp.cpp (65536 = 2^16):
+while_loop_se.cpp (65536 = 2^16):
 
 real 20.61
 user 0.14
@@ -32,7 +32,7 @@ Time: 21 sec
 
 CBMC 64-bit v4.1 (http://www.cprover.org/cbmc/download/cbmc-4-1-linux-64.tgz)
 
-Command: time ./cbmc explicit_loop_bench.c
+Command: time ./cbmc for_loop_bench.c
 
 real	32m17.056s
 user	31m57.098s
@@ -42,7 +42,7 @@ Time: 1900 sec
 
 -------------------------
 
-Command: time ./cbmc --unwind 8192 --no-unwinding-assertions implicit_loop_bench.c
+Command: time ./cbmc --unwind 8192 --no-unwinding-assertions while_loop_bench.c
 
 ...
 size of program expression: 40974 assignments
@@ -70,7 +70,7 @@ Time: 900 sec
 
 -------------------------
 
-Command: ./cbmc --unwind 65536 --no-unwinding-assertions implicit_loop_bench.c
+Command: ./cbmc --unwind 65536 --no-unwinding-assertions while_loop_bench.c
 
 May 21 18:30:12 localhost kernel: [163135.874829] Out of memory: Kill
 process 3002 (gnome-shell) score 15 or sacrifice child

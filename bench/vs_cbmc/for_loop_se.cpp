@@ -15,7 +15,7 @@ int main(void) {
     if(k == 7) {
       k = 0;
     }
-    std::cout << "Unwinding loop c::main.0 iteration " << i++ << " file explicit_loop_bench.c line 6 function main" << std::endl;
+    std::cout << "Unwinding loop c::main.0 iteration " << i++ << " file for_loop_bench.c line 6 function main" << std::endl;
     k = k + 1;
   }
 
