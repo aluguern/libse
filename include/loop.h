@@ -63,20 +63,25 @@ public:
 
 };
 
-// A Loop object represents the unwinding of an iterative program structure
-// such as do { ... } while( ... ) repetitions. On each iteration, the loop
-// condition can be either true or false. However, since the condition can
-// be over symbolic variables, both outcomes are often possible. Thus, each
-// loop unwinding must generally account for both possibilities. For this
-// purpose, a loop has member functions that can store and restore previous
-// versions of symbolic variables. Unless these various versions are joined
-// together, there could be an exponential number of these as the loop is
-// unwound. For example, this occurs in a loop that has an if-then-else
-// statement in which both branches are always possible on each iteration.
-// By default, these joins are done on each loop iteration if the loop
-// condition is symbolic.
+// Loop can be used to control and capture the execution of an iterative
+// program control-flow statement such as a do { ... } while( ... ) loop. Both
+// concrete and symbolic loop conditions are supported. A concrete condition
+// can be only either true or false. In contrast, a symbolic loop condition has
+// no definite truth value since it references symbolic variables which range
+// over arbitrary values. Thus, each loop unwinding must generally account for
+// the possibility that the loop exists or continues. Thus, there could be an
+// exponential number of execution paths that would need to be considered as
+// the loop is unwound. To see this, consider a loop that has an if-then-else
+// statement with a symbolic branch condition such that both branches are
+// possible on each loop iteration.
 //
-// The exact loop unwinding policy is controlled through dependency injection.
+// Single-path symbolic execution reasons about these paths on an individual
+// basis. This tends to be tedious and slow. Therefore, this API embraces the
+// multi-path symbolic execution strategy which encodes multiple paths as a
+// symbolic expression. This is called path joining.
+//
+// The exact loop unwinding policy should be configurable through dependency
+// injection. Such a policy determines when the unwinding of a loop terminates.
 class Loop {
 
 private:
