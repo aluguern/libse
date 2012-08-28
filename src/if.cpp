@@ -22,7 +22,9 @@ bool If::begin_then() {
 }
 
 bool If::begin_else() {
-  is_if_then_else = true;
+  if_then_else = true;
+  assert(is_if_then_else());
+
   if(is_symbolic_cond) {
     const SharedExpr& cond_expr = cond.get_expr();
     for(GenericVar* var_ptr : var_ptrs) {
@@ -46,7 +48,7 @@ void If::end() {
   for(GenericVar* var_ptr : var_ptrs) {
     TernaryExpr* join_expr = find_join_expr_ptr(var_ptr);
     const SharedExpr& expr = var_ptr->get_expr();
-    if (is_if_then_else) {
+    if (is_if_then_else()) {
       join_expr->set_else_expr(expr);
     } else {
       join_expr->set_then_expr(expr);

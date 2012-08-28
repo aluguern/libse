@@ -174,6 +174,9 @@ private:
   // function that extracts the join expression from an JoinExprMap iterator.
   static TernaryExpr* to_ternary_expr_ptr(const Loop::JoinExprMap::iterator& iter);
 
+  Loop(const Loop&) {}
+  Loop& operator=(const Loop&) {}
+
 public:
 
   // Constructor which instantiates a BoundedUnwindingPolicy with the specified
@@ -205,7 +208,9 @@ public:
   // it returns true. The unwinding semantics is determined by the injected
   // unwinding policy implementation. If the return value is false, the effect
   // of subsequent unwind(const Value<bool>&) calls is undefined.
-  bool unwind(const Value<bool>& cond);
+  //
+  // Subclasses may perform extra work on each unwinding.
+  virtual bool unwind(const Value<bool>& cond);
 
   // track(Var<T>&) must be called before unwind(const Value<bool>&) is called
   // on each loop iteration. The argument is a variable that might be modified

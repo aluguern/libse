@@ -45,12 +45,17 @@ private:
   JoinExprMap join_expr_map;
 
   // flag is true if and only if the if statement has an "else" block.
-  bool is_if_then_else;
+  bool if_then_else;
 
   // find_join_expr_ptr(const GenericVar* const) returns a pointer to the
   // ternary expression with which the symbolic variable pointer has been
   // associated through the track(Var<T>&) API.
   TernaryExpr* find_join_expr_ptr(GenericVar*);
+
+  If(const If&);
+  If& operator=(const If&);
+
+protected:
 
   // Boolean value which represents the condition that guards the "then" and
   // "else" block of the control-flow statement. The condition has a symbolic
@@ -60,13 +65,16 @@ private:
   // flag that indicates if the condition value has a symbolic expression.
   const bool is_symbolic_cond;
 
+  // Returns true if and only if the if statement has an "else" block.
+  bool is_if_then_else() const { return if_then_else; }
+
 public:
 
   // Constructor which can be used to build symbolic expressions of variables
   // whose values are being modified in an if-then-else control-flow statement.
   If(const Value<bool>& cond) :
     cond(cond), is_symbolic_cond(cond.is_symbolic()),
-    is_if_then_else(false), join_expr_map(), var_ptrs() {}
+    if_then_else(false), join_expr_map(), var_ptrs() {}
 
   ~If() {}
 
@@ -74,18 +82,24 @@ public:
   // begin_then() denotes the beginning of the "then" block. Note that this
   // block is ignored if and only if the return value is false. This member
   // function must always be called exactly once.
-  bool begin_then();
+  //
+  // Subclasses may perform extra work based on the if-statement condition.
+  virtual bool begin_then();
   
   // begin_else() denotes the end of the "then" block and the beginning of
   // the "else" block. For this reason, execute_else() must never be called
   // prior to calling execute_then(). In addition, this member function should
   // be called at most once. Note that the "else" block is ignored if and only
   // if the return value is false.
-  bool begin_else();
+  //
+  // Subclasses may perform extra work based on the if-statement condition.
+  virtual bool begin_else();
 
   // end() must always be called exactly once such that its call location is the
   // immediate post-dominator of the if-then-else statement.
-  void end();
+  //
+  // Subclasses may perform extra work based on the if-statement condition.
+  virtual void end();
 
   // track(Var<T>&) must be called if and only if no other member function has
   // been invoked yet. The procedure's argument is a symbolic variable whose
