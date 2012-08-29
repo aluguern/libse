@@ -150,6 +150,60 @@ TEST(MultiPathFunctionalTest, IfThenElse) {
   EXPECT_EQ("(([J]<0)?([J]+3):([J]+[A]))", out.str());
 }
 
+TEST(MultiPathFunctionalTest, LoopWithSimplificationsOnAnyExpr) {
+  se::Int j = se::any_int("J");
+
+  se::Loop loop(2u);
+  loop.track(j);
+  while(loop.unwind(j < 0)) { j = j + 1; }
+
+  std::stringstream out;
+  out << j.get_value().get_expr();
+  EXPECT_EQ("(([J]<0)?((([J]+1)<0)?([J]+2):([J]+1)):[J])", out.str());
+}
+
+TEST(MultiPathFunctionalTest, LoopWithSimplificationsOnNaryExpr) {
+  se::Int j = se::any_int("J");
+  j = j + 2;
+
+  se::Loop loop(2u);
+  loop.track(j);
+  while(loop.unwind(j < 0)) { j = j + 1; }
+
+  std::stringstream out;
+  out << j.get_value().get_expr();
+  EXPECT_EQ("((([J]+2)<0)?((([J]+3)<0)?([J]+4):([J]+3)):([J]+2))", out.str());
+}
+
+TEST(MultiPathFunctionalTest, IfThenElseWithSimplificationsOnAnyExpr) {
+  se::Int j = se::any_int("J");
+
+  se::If branch(j < 0);
+  branch.track(j);
+  if (branch.begin_then()) { j = j + 2 + 3; }
+  if (branch.begin_else()) { j = j + 1 + 1 + 2; }
+  branch.end();
+
+  std::stringstream out;
+  out << j.get_value().get_expr();
+  EXPECT_EQ("(([J]<0)?([J]+5):([J]+4))", out.str());
+}
+
+TEST(MultiPathFunctionalTest, IfThenElseWithSimplificationsOnNaryExpr) {
+  se::Int j = se::any_int("J");
+  j = j + 2;
+
+  se::If branch(j < 0);
+  branch.track(j);
+  if (branch.begin_then()) { j = j + 2 + 3; }
+  if (branch.begin_else()) { j = j + 1 + 2; }
+  branch.end();
+
+  std::stringstream out;
+  out << j.get_value().get_expr();
+  EXPECT_EQ("((([J]+2)<0)?([J]+7):([J]+5))", out.str());
+}
+
 TEST(MultiPathFunctionalTest, IfThenElseWithConstantAssignment) {
   se::Int j = se::any_int("J");
 

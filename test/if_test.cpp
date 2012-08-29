@@ -661,21 +661,21 @@ TEST(IfTest, VersionAfterThenElseWithExtraVar) {
 
   EXPECT_EQ(VZERO + 2, i.get_version());
 
-  // Even though j is unmodified, its expression is reset. That's OK.
-  EXPECT_EQ(VZERO + 1, j.get_version());
+  // j has not been modified inside the "then" branch.
+  EXPECT_EQ(VZERO, j.get_version());
 
   i = i + 2;
 
   EXPECT_EQ(VZERO + 3, i.get_version());
-  EXPECT_EQ(VZERO + 1, j.get_version());
+  EXPECT_EQ(VZERO, j.get_version());
 
   branch.end();
 
   // version increase due to join operation
   EXPECT_EQ(VZERO + 4, i.get_version());
 
-  // Even though j was not modified, its expression has been reset. That's OK.
-  EXPECT_EQ(VZERO + 1, j.get_version());
+  // j has been neither modified inside the "then" nor "else" branch.
+  EXPECT_EQ(VZERO, j.get_version());
 }
 
 TEST(IfTest, ThenElseWithExtraVar) {
