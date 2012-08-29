@@ -1,3 +1,4 @@
+#include <sstream>
 #include "gtest/gtest.h"
 #include "sequential-se.h"
 
@@ -804,3 +805,179 @@ TEST(VarTest, CreateVarName) {
   EXPECT_EQ("Var_3", create_var_name());
 }
 
+TEST(VarTest, UnstashTrueConcreteVar) {
+  Int var = 3;
+  EXPECT_EQ(VZERO, var.get_version());
+  EXPECT_EQ(3, var);
+
+  var.stash();
+  EXPECT_EQ(VZERO, var.get_version());
+
+  var = 5;
+  EXPECT_EQ(VZERO + 1, var.get_version());
+  EXPECT_EQ(5, var);
+
+  var.unstash(true);
+
+  EXPECT_EQ(VZERO + 2, var.get_version());
+  EXPECT_EQ(3, var);
+}
+
+TEST(VarTest, UnstashTrueSymbolicVarWithAnyExpr) {
+  Int var = any_int("A");
+  EXPECT_EQ(VZERO, var.get_version());
+
+  std::stringstream out_before;
+  out_before << var.get_value().get_expr();
+  EXPECT_EQ("[A]", out_before.str());
+
+  var.stash();
+  EXPECT_EQ(VZERO, var.get_version());
+
+  var = var + 1;
+  EXPECT_EQ(VZERO + 1, var.get_version());
+
+  std::stringstream out_modified;
+  out_modified << var.get_value().get_expr();
+  EXPECT_EQ("([A]+1)", out_modified.str());
+
+  var.unstash(true);
+
+  EXPECT_EQ(VZERO + 2, var.get_version());
+
+  std::stringstream out_unstash;
+  out_unstash << var.get_value().get_expr();
+  EXPECT_EQ("[A]", out_unstash.str());
+}
+
+TEST(VarTest, UnstashTrueSymbolicVarWithNaryExpr) {
+  Int var = any_int("A");
+  var = var + 1;
+  EXPECT_EQ(VZERO + 1, var.get_version());
+
+  std::stringstream out_before;
+  out_before << var.get_value().get_expr();
+  EXPECT_EQ("([A]+1)", out_before.str());
+
+  var.stash();
+  EXPECT_EQ(VZERO + 1, var.get_version());
+
+  var = var + 3;
+  EXPECT_EQ(VZERO + 2, var.get_version());
+
+  std::stringstream out_modified;
+  out_modified << var.get_value().get_expr();
+  EXPECT_EQ("([A]+4)", out_modified.str());
+
+  var.unstash(true);
+
+  EXPECT_EQ(VZERO + 3, var.get_version());
+
+  std::stringstream out_unstash;
+  out_unstash << var.get_value().get_expr();
+  EXPECT_EQ("([A]+1)", out_unstash.str());
+}
+
+TEST(VarTest, UnstashTrueWithoutChanges) {
+    Int var = 3;
+    EXPECT_EQ(VZERO, var.get_version());
+    EXPECT_EQ(3, var);
+
+    var.stash();
+    EXPECT_EQ(VZERO, var.get_version());
+
+    var.unstash(true);
+
+    EXPECT_EQ(VZERO, var.get_version());
+    EXPECT_EQ(3, var);
+}
+
+TEST(VarTest, UnstashFalseConcreteVar) {
+  Int var = 3;
+  EXPECT_EQ(VZERO, var.get_version());
+  EXPECT_EQ(3, var);
+
+  var.stash();
+  EXPECT_EQ(VZERO, var.get_version());
+
+  var = 5;
+  EXPECT_EQ(VZERO + 1, var.get_version());
+  EXPECT_EQ(5, var);
+
+  var.unstash(false);
+
+  // since the flag is false, the version number is not incremented.
+  EXPECT_EQ(VZERO + 1, var.get_version());
+  EXPECT_EQ(5, var);
+}
+
+TEST(VarTest, UnstashFalseSymbolicVarWithAnyExpr) {
+  Int var = any_int("A");
+  EXPECT_EQ(VZERO, var.get_version());
+
+  std::stringstream out_before;
+  out_before << var.get_value().get_expr();
+  EXPECT_EQ("[A]", out_before.str());
+
+  var.stash();
+  EXPECT_EQ(VZERO, var.get_version());
+
+  var = var + 1;
+  EXPECT_EQ(VZERO + 1, var.get_version());
+
+  std::stringstream out_modified;
+  out_modified << var.get_value().get_expr();
+  EXPECT_EQ("([A]+1)", out_modified.str());
+
+  var.unstash(false);
+
+  // since the flag is false, the version number is not incremented.
+  EXPECT_EQ(VZERO + 1, var.get_version());
+
+  std::stringstream out_unstash;
+  out_unstash << var.get_value().get_expr();
+  EXPECT_EQ("([A]+1)", out_unstash.str());
+}
+
+TEST(VarTest, UnstashFalseSymbolicVarWithNaryExpr) {
+  Int var = any_int("A");
+  var = var + 1;
+  EXPECT_EQ(VZERO + 1, var.get_version());
+
+  std::stringstream out_before;
+  out_before << var.get_value().get_expr();
+  EXPECT_EQ("([A]+1)", out_before.str());
+
+  var.stash();
+  EXPECT_EQ(VZERO + 1, var.get_version());
+
+  var = var + 3;
+  EXPECT_EQ(VZERO + 2, var.get_version());
+
+  std::stringstream out_modified;
+  out_modified << var.get_value().get_expr();
+  EXPECT_EQ("([A]+4)", out_modified.str());
+
+  var.unstash(false);
+
+  // since the flag is false, the version number is not incremented.
+  EXPECT_EQ(VZERO + 2, var.get_version());
+
+  std::stringstream out_unstash;
+  out_unstash << var.get_value().get_expr();
+  EXPECT_EQ("([A]+4)", out_unstash.str());
+}
+
+TEST(VarTest, UnstashFalseWithoutChanges) {
+    Int var = 3;
+    EXPECT_EQ(VZERO, var.get_version());
+    EXPECT_EQ(3, var);
+
+    var.stash();
+    EXPECT_EQ(VZERO, var.get_version());
+
+    var.unstash(false);
+
+    EXPECT_EQ(VZERO, var.get_version());
+    EXPECT_EQ(3, var);
+}

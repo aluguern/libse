@@ -5,6 +5,7 @@
 #ifndef VAR_H_
 #define VAR_H_
 
+#include <stack>
 #include <string>
 #include <sstream>
 #include <cstdint>
@@ -41,6 +42,13 @@ const Version VZERO = 0LL;
 // is incremented by one. These version numbers are never modified based on the
 // version information of another GenericVar object. This makes the version
 // information applicable for dynamic single assignment (DSA) forms.
+//
+// Except from this versioning information, the internal state of a variable
+// can be saved and restored with stash() and unstash(true), respectively.
+// It is a programmer error to call unstash(bool) more times than stash().
+// To conserve resources, every stash() call should be matched with a
+// corresponding unstash(bool) call (note that the flag value is irrelevant
+// for resource deallocation purposes)
 //
 // Finally, each implementation of the GenericVar interface must take type
 // casting into account. These type casts should be explicit in symbolic
@@ -82,6 +90,23 @@ public:
   // The return value is a NULL pointer if and only if is_symbolic() is false.
   virtual const SharedExpr get_expr() const = 0;
 
+  // stash() saves the internal state of this variable. All version information
+  // remains unaffected by this call.
+  virtual void stash() = 0;
+
+  // unstash(true) restores the most recently stashed internal variable state.
+  // It also deallocates all the resources which stored this internal state.
+  // The variable's version number is incremented by one if and only if it has
+  // been modified since the most recent stash() call.
+  //
+  // In contrast, unstash(false) only deallocates any resources acquired by the
+  // most recent stash() call - the internal variable state remains unaffected.
+  // Thus, the versioning information never changes when the flag is false.
+  //
+  // Regardless of the flag value, it is a programmer error to call
+  // unstash(bool) more times than stash() has been invoked.
+  virtual void unstash(bool) = 0;
+
   // Every interface needs a public virtual destructor.
   virtual ~GenericVar() {}
 };
@@ -117,6 +142,10 @@ private:
   // Version number that never decreases; initially, it is VZERO. With each
   // assignment operation, the version number is incremented by one.
   Version version;
+
+  // stack to stash() and unstash() the internal state of this Var<T> object.
+  struct State { const Value<T> value; const bool cast; Version version; };
+  std::stack<State> stack;
 
 public:
 
@@ -206,6 +235,19 @@ public:
   const SharedExpr get_expr() const { return value.get_expr(); }
   void set_expr(const SharedExpr& expr) { version++; value.set_expr(expr); }
 
+  void stash() { stack.push(State{ value, cast, version }); }
+  void unstash(bool restore) {
+    if (restore) {
+      const State& state = stack.top();
+      if (version != state.version) {
+        cast = state.cast;
+        value = state.value;
+        version++;
+      }
+    }
+
+    stack.pop();
+  }
 };
 
 typedef Var<bool> Bool;
