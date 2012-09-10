@@ -53,6 +53,7 @@ lib_libse_la_SOURCES = \
   src/var.cpp \
   src/if.cpp \
   src/loop.cpp \
+  src/tester.cpp \
   src/tracer.cpp
 
 pkginclude_HEADERS = \
@@ -64,6 +65,7 @@ pkginclude_HEADERS = \
   include/if.h \
   include/loop.h \
   include/sequential-se.h \
+  include/tester.h \
   include/tracer.h
 
 # Build rules for functional and unit tests.
@@ -100,6 +102,7 @@ test_se_SOURCES = \
   test/version_test.cpp \
   test/tracer_test.cpp \
   test/simplify_test.cpp \
+  test/tester_functional_test.cpp \
   test/single_path_functional_test.cpp \
   test/multi_path_functional_test.cpp
 
