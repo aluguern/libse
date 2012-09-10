@@ -34,10 +34,9 @@ TEST(InterpreterTest, EqualityUnsat) {
   const SharedExpr not_equality = SharedExpr(new UnaryExpr(NOT, equality));
   
   SpInterpreter sp_interpreter;
-  z3::solver solver(sp_interpreter.context);
-  solver.add(not_equality->walk(&sp_interpreter));
+  sp_interpreter.solver.add(not_equality->walk(&sp_interpreter));
 
-  EXPECT_EQ(z3::unsat, solver.check());
+  EXPECT_EQ(z3::unsat, sp_interpreter.solver.check());
 }
 
 TEST(InterpreterTest, EqualitySat) {
@@ -47,10 +46,9 @@ TEST(InterpreterTest, EqualitySat) {
   const SharedExpr not_equality = SharedExpr(new UnaryExpr(NOT, equality));
   
   SpInterpreter sp_interpreter;
-  z3::solver solver(sp_interpreter.context);
-  solver.add(not_equality->walk(&sp_interpreter));
+  sp_interpreter.solver.add(not_equality->walk(&sp_interpreter));
 
-  EXPECT_EQ(z3::sat, solver.check());
+  EXPECT_EQ(z3::sat, sp_interpreter.solver.check());
 }
 
 TEST(InterpreterTest, SpInterpreterSatTernaryEquivalence) {
@@ -63,16 +61,15 @@ TEST(InterpreterTest, SpInterpreterSatTernaryEquivalence) {
   const SharedExpr ternary = SharedExpr(new TernaryExpr(neg, c, d));
 
   SpInterpreter sp_interpreter;
-  z3::solver solver(sp_interpreter.context);
   z3::expr e = sp_interpreter.context.int_const("E");
 
-  solver.add((e == ternary->walk(&sp_interpreter)) != 
+  sp_interpreter.solver.add((e == ternary->walk(&sp_interpreter)) != 
                 ((!(a->walk(&sp_interpreter) < 5) && e == c->walk(&sp_interpreter)) ||
                     ((a->walk(&sp_interpreter) < 5) && e == d->walk(&sp_interpreter))));
 
   // Proves that [e == ((!(a < 5)) ? c : d)] is equivalent to
   // [(!(a < 5) && e == c) || ((a < 5) && e == d)].
-  EXPECT_EQ(z3::unsat, solver.check());
+  EXPECT_EQ(z3::unsat, sp_interpreter.solver.check());
 }
 
 TEST(InterpreterTest, SpInterpreterUnsatTernaryEquivalence) {
@@ -85,16 +82,15 @@ TEST(InterpreterTest, SpInterpreterUnsatTernaryEquivalence) {
   const SharedExpr ternary = SharedExpr(new TernaryExpr(neg, c, d));
 
   SpInterpreter sp_interpreter;
-  z3::solver solver(sp_interpreter.context);
   z3::expr e = sp_interpreter.context.int_const("E");
 
-  solver.add((e == ternary->walk(&sp_interpreter)) != 
+  sp_interpreter.solver.add((e == ternary->walk(&sp_interpreter)) != 
                 ((!(a->walk(&sp_interpreter) < 5) && e == c->walk(&sp_interpreter)) ||
                     ((a->walk(&sp_interpreter) < 5) && e == (d->walk(&sp_interpreter) + 1))));
 
   // Disproves that [e == ((!(a < 5)) ? c : d)] is equivalent to
   // [(!(a < 5) && e == c) || ((a < 5) && e == (d + 1))].
-  EXPECT_EQ(z3::sat, solver.check());
+  EXPECT_EQ(z3::sat, sp_interpreter.solver.check());
 }
 
 TEST(InterpreterTest, SpInterpreterWithSatNaryExprAsBinaryExpr) {
@@ -103,14 +99,13 @@ TEST(InterpreterTest, SpInterpreterWithSatNaryExprAsBinaryExpr) {
   const SharedExpr lss = SharedExpr(new NaryExpr(LSS, OperatorTraits<LSS>::attr, a, b));
   
   SpInterpreter sp_interpreter;
-  z3::solver solver(sp_interpreter.context);
-  solver.add(lss->walk(&sp_interpreter));
+  sp_interpreter.solver.add(lss->walk(&sp_interpreter));
 
-  solver.check();
-  EXPECT_EQ(z3::sat, solver.check());
+  sp_interpreter.solver.check();
+  EXPECT_EQ(z3::sat, sp_interpreter.solver.check());
 
   std::stringstream out;
-  out << solver.get_model();
+  out << sp_interpreter.solver.get_model();
 
   EXPECT_EQ("(define-fun A () Int\n  (- 3))", out.str());
 }
@@ -122,11 +117,10 @@ TEST(InterpreterTest, SpInterpreterWithUnsatNaryExprAsBinaryExpr) {
   const SharedExpr neg = SharedExpr(new UnaryExpr(NOT, lss));
   
   SpInterpreter sp_interpreter;
-  z3::solver solver(sp_interpreter.context);
-  solver.add(lss->walk(&sp_interpreter));
-  solver.add(neg->walk(&sp_interpreter));
+  sp_interpreter.solver.add(lss->walk(&sp_interpreter));
+  sp_interpreter.solver.add(neg->walk(&sp_interpreter));
 
-  EXPECT_EQ(z3::unsat, solver.check());
+  EXPECT_EQ(z3::unsat, sp_interpreter.solver.check());
 }
 
 TEST(InterpreterTest, SpInterpreterWithSatTernaryExpr) {
@@ -138,10 +132,9 @@ TEST(InterpreterTest, SpInterpreterWithSatTernaryExpr) {
   const SharedExpr ternary = SharedExpr(new TernaryExpr(lss, neg, taut));
   
   SpInterpreter sp_interpreter;
-  z3::solver solver(sp_interpreter.context);
-  solver.add(ternary->walk(&sp_interpreter));
+  sp_interpreter.solver.add(ternary->walk(&sp_interpreter));
 
-  EXPECT_EQ(z3::sat, solver.check());
+  EXPECT_EQ(z3::sat, sp_interpreter.solver.check());
 }
 
 TEST(InterpreterTest, SpInterpreterWithUnsatTernaryExpr) {
@@ -153,10 +146,9 @@ TEST(InterpreterTest, SpInterpreterWithUnsatTernaryExpr) {
   const SharedExpr ternary = SharedExpr(new TernaryExpr(lss, neg, falsum));
   
   SpInterpreter sp_interpreter;
-  z3::solver solver(sp_interpreter.context);
-  solver.add(ternary->walk(&sp_interpreter));
+  sp_interpreter.solver.add(ternary->walk(&sp_interpreter));
 
-  EXPECT_EQ(z3::unsat, solver.check());
+  EXPECT_EQ(z3::unsat, sp_interpreter.solver.check());
 }
 
 TEST(InterpreterTest, SpInterpreterWithTrueNaryExpr) {
@@ -166,9 +158,8 @@ TEST(InterpreterTest, SpInterpreterWithTrueNaryExpr) {
   SpInterpreter sp_interpreter;
   EXPECT_NO_THROW(sp_interpreter.visit(true_nary));
 
-  z3::solver solver(sp_interpreter.context);
-  solver.add(true_nary.walk(&sp_interpreter));
-  EXPECT_EQ(z3::sat, solver.check());
+  sp_interpreter.solver.add(true_nary.walk(&sp_interpreter));
+  EXPECT_EQ(z3::sat, sp_interpreter.solver.check());
 }
 
 TEST(InterpreterTest, SpInterpreterWithFalseNaryExpr) {
@@ -178,9 +169,8 @@ TEST(InterpreterTest, SpInterpreterWithFalseNaryExpr) {
   SpInterpreter sp_interpreter;
   EXPECT_NO_THROW(sp_interpreter.visit(false_nary));
 
-  z3::solver solver(sp_interpreter.context);
-  solver.add(false_nary.walk(&sp_interpreter));
-  EXPECT_EQ(z3::unsat, solver.check());
+  sp_interpreter.solver.add(false_nary.walk(&sp_interpreter));
+  EXPECT_EQ(z3::unsat, sp_interpreter.solver.check());
 }
 
 TEST(InterpreterTest, SpInterpreterWithNaryExprThrows) {
@@ -203,10 +193,9 @@ TEST(InterpreterTest, SpInterpreterWithUnsatNaryExpr) {
   nary.append_expr(c);
 
   SpInterpreter sp_interpreter;
-  z3::solver solver(sp_interpreter.context);
-  solver.add(sp_interpreter.visit(nary) != (a->walk(&sp_interpreter) + 8));
+  sp_interpreter.solver.add(sp_interpreter.visit(nary) != (a->walk(&sp_interpreter) + 8));
 
-  EXPECT_EQ(z3::unsat, solver.check());
+  EXPECT_EQ(z3::unsat, sp_interpreter.solver.check());
 }
 
 TEST(InterpreterTest, SpInterpreterWithSatNaryExpr) {
@@ -219,13 +208,12 @@ TEST(InterpreterTest, SpInterpreterWithSatNaryExpr) {
   nary.append_expr(c);
 
   SpInterpreter sp_interpreter;
-  z3::solver solver(sp_interpreter.context);
-  solver.add(sp_interpreter.visit(nary) == 12);
+  sp_interpreter.solver.add(sp_interpreter.visit(nary) == 12);
 
-  EXPECT_EQ(z3::sat, solver.check());
+  EXPECT_EQ(z3::sat, sp_interpreter.solver.check());
 
   std::stringstream out;
-  out << solver.get_model();
+  out << sp_interpreter.solver.get_model();
 
   EXPECT_EQ("(define-fun A () Int\n  4)", out.str());
 }

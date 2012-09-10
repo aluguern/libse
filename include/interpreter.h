@@ -139,10 +139,11 @@ BINARY_OP_DEF(<, LSS_2)
 
 public:
 
-  // C++ API to Z3 Theorem Prover context
+  // C++ API to Z3 Theorem Prover
   z3::context context;
-
-  SpInterpreter() : context(),
+  z3::solver solver;
+  
+  SpInterpreter() : context(), solver(context),
     unary_operators{&SpInterpreter::NOT_1},
     binary_operators{&SpInterpreter::ADD_2, &SpInterpreter::LAND_2,
                      &SpInterpreter::LOR_2, &SpInterpreter::EQL_2,

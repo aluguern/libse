@@ -13,11 +13,10 @@ TEST(MultiPathFunctionalTest, SafeWithIfThenElse) {
   branch.end();
 
   se::SpInterpreter sp_interpreter;
-  z3::solver solver(sp_interpreter.context);
   se::Bool vc = (j < 0) || !(j < 2);
-  solver.add(vc.get_expr()->walk(&sp_interpreter));
+  sp_interpreter.solver.add(vc.get_expr()->walk(&sp_interpreter));
 
-  EXPECT_EQ(z3::unsat, solver.check());
+  EXPECT_EQ(z3::unsat, sp_interpreter.solver.check());
 }
 
 TEST(MultiPathFunctionalTest, UnsafeWithIfThenElse) {
@@ -30,11 +29,10 @@ TEST(MultiPathFunctionalTest, UnsafeWithIfThenElse) {
   branch.end();
 
   se::SpInterpreter sp_interpreter;
-  z3::solver solver(sp_interpreter.context);
   se::Bool vc = !(j < 1);
-  solver.add(vc.get_expr()->walk(&sp_interpreter));
+  sp_interpreter.solver.add(vc.get_expr()->walk(&sp_interpreter));
 
-  EXPECT_EQ(z3::sat, solver.check());
+  EXPECT_EQ(z3::sat, sp_interpreter.solver.check());
 }
 
 TEST(MultiPathFunctionalTest, SafeWithIfThen) {
@@ -52,10 +50,9 @@ TEST(MultiPathFunctionalTest, SafeWithIfThen) {
   if_1.end();
 
   se::SpInterpreter sp_interpreter;
-  z3::solver solver(sp_interpreter.context);
-  solver.add((j < MAX).get_expr()->walk(&sp_interpreter));
+  sp_interpreter.solver.add((j < MAX).get_expr()->walk(&sp_interpreter));
 
-  EXPECT_EQ(z3::unsat, solver.check());
+  EXPECT_EQ(z3::unsat, sp_interpreter.solver.check());
 }
 
 TEST(MultiPathFunctionalTest, UnsafeWithIfThen) {
@@ -68,10 +65,9 @@ TEST(MultiPathFunctionalTest, UnsafeWithIfThen) {
   branch.end();
 
   se::SpInterpreter sp_interpreter;
-  z3::solver solver(sp_interpreter.context);
-  solver.add((j < MAX).get_expr()->walk(&sp_interpreter));
+  sp_interpreter.solver.add((j < MAX).get_expr()->walk(&sp_interpreter));
 
-  EXPECT_EQ(z3::sat, solver.check());
+  EXPECT_EQ(z3::sat, sp_interpreter.solver.check());
 }
 
 TEST(MultiPathFunctionalTest, SafeWithLoop) {
@@ -88,10 +84,9 @@ TEST(MultiPathFunctionalTest, SafeWithLoop) {
   while(if_then_1.unwind(j < MAX)) { j = j + MAX; }
 
   se::SpInterpreter sp_interpreter;
-  z3::solver solver(sp_interpreter.context);
-  solver.add((j < MAX).get_expr()->walk(&sp_interpreter));
+  sp_interpreter.solver.add((j < MAX).get_expr()->walk(&sp_interpreter));
 
-  EXPECT_EQ(z3::unsat, solver.check());
+  EXPECT_EQ(z3::unsat, sp_interpreter.solver.check());
 }
 
 TEST(MultiPathFunctionalTest, UnsafeWithLoop) {
@@ -104,10 +99,9 @@ TEST(MultiPathFunctionalTest, UnsafeWithLoop) {
   while(if_then_1.unwind(j < MAX)) { j = j + MAX; }
 
   se::SpInterpreter sp_interpreter;
-  z3::solver solver(sp_interpreter.context);
-  solver.add((j < MAX).get_expr()->walk(&sp_interpreter));
+  sp_interpreter.solver.add((j < MAX).get_expr()->walk(&sp_interpreter));
 
-  EXPECT_EQ(z3::sat, solver.check());
+  EXPECT_EQ(z3::sat, sp_interpreter.solver.check());
 }
 
 TEST(MultiPathFunctionalTest, Cast) {
