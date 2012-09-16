@@ -30,7 +30,7 @@ TEST(InterpreterTest, UnsupportedShortIntValue) {
 TEST(InterpreterTest, EqualityUnsat) {
   const SharedExpr a = SharedExpr(new AnyExpr<int>("A"));
   const SharedExpr b = SharedExpr(new AnyExpr<int>("A"));
-  const SharedExpr equality = SharedExpr(new NaryExpr(EQL, OperatorTraits<EQL>::attr, a, b));
+  const SharedExpr equality = SharedExpr(new NaryExpr(EQL, OperatorInfo<EQL>::attr, a, b));
   const SharedExpr not_equality = SharedExpr(new UnaryExpr(NOT, equality));
   
   SpInterpreter sp_interpreter;
@@ -42,7 +42,7 @@ TEST(InterpreterTest, EqualityUnsat) {
 TEST(InterpreterTest, EqualitySat) {
   const SharedExpr a = SharedExpr(new AnyExpr<int>("A"));
   const SharedExpr b = SharedExpr(new AnyExpr<int>("B"));
-  const SharedExpr equality = SharedExpr(new NaryExpr(EQL, OperatorTraits<EQL>::attr, a, b));
+  const SharedExpr equality = SharedExpr(new NaryExpr(EQL, OperatorInfo<EQL>::attr, a, b));
   const SharedExpr not_equality = SharedExpr(new UnaryExpr(NOT, equality));
   
   SpInterpreter sp_interpreter;
@@ -54,11 +54,11 @@ TEST(InterpreterTest, EqualitySat) {
 TEST(InterpreterTest, SpInterpreterSatTernaryEquivalence) {
   const SharedExpr a = SharedExpr(new AnyExpr<int>("A"));
   const SharedExpr five = SharedExpr(new ValueExpr<int>(5));
-  const SharedExpr lss = SharedExpr(new NaryExpr(LSS, OperatorTraits<LSS>::attr, a, five));
+  const SharedExpr lss = SharedExpr(new NaryExpr(LSS, OperatorInfo<LSS>::attr, a, five));
   const SharedExpr neg = SharedExpr(new UnaryExpr(NOT, lss));
   const SharedExpr c = SharedExpr(new AnyExpr<int>("C"));
   const SharedExpr d = SharedExpr(new AnyExpr<int>("D"));
-  const SharedExpr ternary = SharedExpr(new TernaryExpr(neg, c, d));
+  const SharedExpr ternary = SharedExpr(new IfThenElseExpr(neg, c, d));
 
   SpInterpreter sp_interpreter;
   z3::expr e = sp_interpreter.context.int_const("E");
@@ -75,11 +75,11 @@ TEST(InterpreterTest, SpInterpreterSatTernaryEquivalence) {
 TEST(InterpreterTest, SpInterpreterUnsatTernaryEquivalence) {
   const SharedExpr a = SharedExpr(new AnyExpr<int>("A"));
   const SharedExpr five = SharedExpr(new ValueExpr<int>(5));
-  const SharedExpr lss = SharedExpr(new NaryExpr(LSS, OperatorTraits<LSS>::attr, a, five));
+  const SharedExpr lss = SharedExpr(new NaryExpr(LSS, OperatorInfo<LSS>::attr, a, five));
   const SharedExpr neg = SharedExpr(new UnaryExpr(NOT, lss));
   const SharedExpr c = SharedExpr(new AnyExpr<int>("C"));
   const SharedExpr d = SharedExpr(new AnyExpr<int>("D"));
-  const SharedExpr ternary = SharedExpr(new TernaryExpr(neg, c, d));
+  const SharedExpr ternary = SharedExpr(new IfThenElseExpr(neg, c, d));
 
   SpInterpreter sp_interpreter;
   z3::expr e = sp_interpreter.context.int_const("E");
@@ -96,7 +96,7 @@ TEST(InterpreterTest, SpInterpreterUnsatTernaryEquivalence) {
 TEST(InterpreterTest, SpInterpreterWithSatNaryExprAsBinaryExpr) {
   const SharedExpr a = SharedExpr(new AnyExpr<int>("A"));
   const SharedExpr b = SharedExpr(new ValueExpr<int>(-2));
-  const SharedExpr lss = SharedExpr(new NaryExpr(LSS, OperatorTraits<LSS>::attr, a, b));
+  const SharedExpr lss = SharedExpr(new NaryExpr(LSS, OperatorInfo<LSS>::attr, a, b));
   
   SpInterpreter sp_interpreter;
   sp_interpreter.solver.add(lss->walk(&sp_interpreter));
@@ -113,7 +113,7 @@ TEST(InterpreterTest, SpInterpreterWithSatNaryExprAsBinaryExpr) {
 TEST(InterpreterTest, SpInterpreterWithUnsatNaryExprAsBinaryExpr) {
   const SharedExpr a = SharedExpr(new AnyExpr<int>("A"));
   const SharedExpr b = SharedExpr(new ValueExpr<int>(5));
-  const SharedExpr lss = SharedExpr(new NaryExpr(LSS, OperatorTraits<LSS>::attr, a, b));
+  const SharedExpr lss = SharedExpr(new NaryExpr(LSS, OperatorInfo<LSS>::attr, a, b));
   const SharedExpr neg = SharedExpr(new UnaryExpr(NOT, lss));
   
   SpInterpreter sp_interpreter;
@@ -123,13 +123,13 @@ TEST(InterpreterTest, SpInterpreterWithUnsatNaryExprAsBinaryExpr) {
   EXPECT_EQ(z3::unsat, sp_interpreter.solver.check());
 }
 
-TEST(InterpreterTest, SpInterpreterWithSatTernaryExpr) {
+TEST(InterpreterTest, SpInterpreterWithSatIfThenElseExpr) {
   const SharedExpr a = SharedExpr(new AnyExpr<int>("A"));
   const SharedExpr b = SharedExpr(new ValueExpr<int>(5));
-  const SharedExpr lss = SharedExpr(new NaryExpr(LSS, OperatorTraits<LSS>::attr, a, b));
+  const SharedExpr lss = SharedExpr(new NaryExpr(LSS, OperatorInfo<LSS>::attr, a, b));
   const SharedExpr neg = SharedExpr(new UnaryExpr(NOT, lss));
   const SharedExpr taut = SharedExpr(new ValueExpr<bool>(true));
-  const SharedExpr ternary = SharedExpr(new TernaryExpr(lss, neg, taut));
+  const SharedExpr ternary = SharedExpr(new IfThenElseExpr(lss, neg, taut));
   
   SpInterpreter sp_interpreter;
   sp_interpreter.solver.add(ternary->walk(&sp_interpreter));
@@ -137,13 +137,13 @@ TEST(InterpreterTest, SpInterpreterWithSatTernaryExpr) {
   EXPECT_EQ(z3::sat, sp_interpreter.solver.check());
 }
 
-TEST(InterpreterTest, SpInterpreterWithUnsatTernaryExpr) {
+TEST(InterpreterTest, SpInterpreterWithUnsatIfThenElseExpr) {
   const SharedExpr a = SharedExpr(new AnyExpr<int>("A"));
   const SharedExpr b = SharedExpr(new ValueExpr<int>(5));
-  const SharedExpr lss = SharedExpr(new NaryExpr(LSS, OperatorTraits<LSS>::attr, a, b));
+  const SharedExpr lss = SharedExpr(new NaryExpr(LSS, OperatorInfo<LSS>::attr, a, b));
   const SharedExpr neg = SharedExpr(new UnaryExpr(NOT, lss));
   const SharedExpr falsum = SharedExpr(new ValueExpr<bool>(false));
-  const SharedExpr ternary = SharedExpr(new TernaryExpr(lss, neg, falsum));
+  const SharedExpr ternary = SharedExpr(new IfThenElseExpr(lss, neg, falsum));
   
   SpInterpreter sp_interpreter;
   sp_interpreter.solver.add(ternary->walk(&sp_interpreter));
@@ -153,7 +153,7 @@ TEST(InterpreterTest, SpInterpreterWithUnsatTernaryExpr) {
 
 TEST(InterpreterTest, SpInterpreterWithTrueNaryExpr) {
   const SharedExpr true_expr = SharedExpr(new ValueExpr<bool>(true));
-  NaryExpr true_nary = NaryExpr(LOR, OperatorTraits<LOR>::attr, true_expr);
+  NaryExpr true_nary = NaryExpr(LOR, OperatorInfo<LOR>::attr, true_expr);
 
   SpInterpreter sp_interpreter;
   EXPECT_NO_THROW(sp_interpreter.visit(true_nary));
@@ -164,7 +164,7 @@ TEST(InterpreterTest, SpInterpreterWithTrueNaryExpr) {
 
 TEST(InterpreterTest, SpInterpreterWithFalseNaryExpr) {
   const SharedExpr false_expr = SharedExpr(new ValueExpr<bool>(false));
-  NaryExpr false_nary = NaryExpr(LOR, OperatorTraits<LOR>::attr, false_expr);
+  NaryExpr false_nary = NaryExpr(LOR, OperatorInfo<LOR>::attr, false_expr);
 
   SpInterpreter sp_interpreter;
   EXPECT_NO_THROW(sp_interpreter.visit(false_nary));
@@ -174,12 +174,12 @@ TEST(InterpreterTest, SpInterpreterWithFalseNaryExpr) {
 }
 
 TEST(InterpreterTest, SpInterpreterWithNaryExprThrows) {
-  NaryExpr nary = NaryExpr(ADD, OperatorTraits<ADD>::attr);
+  NaryExpr nary = NaryExpr(ADD, OperatorInfo<ADD>::attr);
   SpInterpreter sp_interpreter;
   EXPECT_THROW(sp_interpreter.visit(nary), InterpreterException);
 
   const SharedExpr a = SharedExpr(new AnyExpr<int>("A"));
-  nary.append_expr(a);
+  nary.append_operand(a);
   EXPECT_NO_THROW(sp_interpreter.visit(nary));
 }
 
@@ -187,10 +187,10 @@ TEST(InterpreterTest, SpInterpreterWithUnsatNaryExpr) {
   const SharedExpr a = SharedExpr(new AnyExpr<int>("A"));
   const SharedExpr b = SharedExpr(new ValueExpr<int>(5));
   const SharedExpr c = SharedExpr(new ValueExpr<int>(3));
-  NaryExpr nary = NaryExpr(ADD, OperatorTraits<ADD>::attr);
-  nary.append_expr(a);
-  nary.append_expr(b);
-  nary.append_expr(c);
+  NaryExpr nary = NaryExpr(ADD, OperatorInfo<ADD>::attr);
+  nary.append_operand(a);
+  nary.append_operand(b);
+  nary.append_operand(c);
 
   SpInterpreter sp_interpreter;
   sp_interpreter.solver.add(sp_interpreter.visit(nary) != (a->walk(&sp_interpreter) + 8));
@@ -202,10 +202,10 @@ TEST(InterpreterTest, SpInterpreterWithSatNaryExpr) {
   const SharedExpr a = SharedExpr(new AnyExpr<int>("A"));
   const SharedExpr b = SharedExpr(new ValueExpr<int>(5));
   const SharedExpr c = SharedExpr(new ValueExpr<int>(3));
-  NaryExpr nary = NaryExpr(ADD, OperatorTraits<ADD>::attr);
-  nary.append_expr(a);
-  nary.append_expr(b);
-  nary.append_expr(c);
+  NaryExpr nary = NaryExpr(ADD, OperatorInfo<ADD>::attr);
+  nary.append_operand(a);
+  nary.append_operand(b);
+  nary.append_operand(c);
 
   SpInterpreter sp_interpreter;
   sp_interpreter.solver.add(sp_interpreter.visit(nary) == 12);

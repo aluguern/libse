@@ -44,33 +44,33 @@ TEST(ValueTest, Types) {
   const Value<char> b = Value<char>(3);
   const Value<int> c = Value<int>(5);
 
-  EXPECT_EQ(BOOL, a.get_type());
-  EXPECT_EQ(CHAR, b.get_type());
-  EXPECT_EQ(INT, c.get_type());
+  EXPECT_EQ(BOOL, a.type());
+  EXPECT_EQ(CHAR, b.type());
+  EXPECT_EQ(INT, c.type());
 }
 
 TEST(ValueTest, ValueConstructorWithExpression) {
   const SharedExpr expr = SharedExpr(new ValueExpr<char>(5));
   const Value<char> a = Value<char>(5, expr);
 
-  EXPECT_EQ(CHAR, a.get_type());
-  EXPECT_EQ(5, a.get_value());
+  EXPECT_EQ(CHAR, a.type());
+  EXPECT_EQ(5, a.value());
   EXPECT_TRUE(a.is_symbolic());
 }
 
 TEST(ValueTest, ValueConstructorWithoutExpression) {
   const Value<char> a = Value<char>(5);
 
-  EXPECT_EQ(CHAR, a.get_type());
-  EXPECT_EQ(5, a.get_value());
+  EXPECT_EQ(CHAR, a.type());
+  EXPECT_EQ(5, a.value());
   EXPECT_FALSE(a.is_symbolic());
 }
 
 TEST(ValueTest, ValueConstructorWithNullExpression) {
   const Value<char> a = Value<char>(5, SharedExpr());
 
-  EXPECT_EQ(CHAR, a.get_type());
-  EXPECT_EQ(5, a.get_value());
+  EXPECT_EQ(CHAR, a.type());
+  EXPECT_EQ(5, a.value());
   EXPECT_FALSE(a.is_symbolic());
 }
 
@@ -78,8 +78,8 @@ TEST(ValueTest, ValueCopyConstructorWithoutExpression) {
   const Value<char> a = Value<char>(5);
   const Value<char> b = a;
 
-  EXPECT_EQ(CHAR, b.get_type());
-  EXPECT_EQ(5, b.get_value());
+  EXPECT_EQ(CHAR, b.type());
+  EXPECT_EQ(5, b.value());
   EXPECT_FALSE(b.is_symbolic());
 }
 
@@ -87,8 +87,8 @@ TEST(ValueTest, ValueCopyConstructorWithoutExpressionButCast) {
   const Value<char> a = Value<char>(5);
   const Value<int> b = a;
 
-  EXPECT_EQ(INT, b.get_type());
-  EXPECT_EQ(5, b.get_value());
+  EXPECT_EQ(INT, b.type());
+  EXPECT_EQ(5, b.value());
   EXPECT_FALSE(b.is_symbolic());
 }
 
@@ -97,9 +97,9 @@ TEST(ValueTest, ValueCopyConstructorWithExpression) {
   const Value<char> a = Value<char>(5, expr);
   const Value<char> b = a;
 
-  EXPECT_EQ(CHAR, b.get_type());
-  EXPECT_EQ(5, b.get_value());
-  EXPECT_EQ(expr, b.get_expr());
+  EXPECT_EQ(CHAR, b.type());
+  EXPECT_EQ(5, b.value());
+  EXPECT_EQ(expr, b.expr());
   EXPECT_TRUE(b.is_symbolic());
 }
 
@@ -108,9 +108,9 @@ TEST(ValueTest, ValueCopyConstructorWithExpressionAndCast) {
   const Value<char> a = Value<char>(5, expr);
   const Value<int> b = a;
 
-  EXPECT_EQ(INT, b.get_type());
-  EXPECT_EQ(5, b.get_value());
-  EXPECT_NE(expr, b.get_expr());
+  EXPECT_EQ(INT, b.type());
+  EXPECT_EQ(5, b.value());
+  EXPECT_NE(expr, b.expr());
   EXPECT_TRUE(b.is_symbolic());
 }
 
@@ -118,8 +118,8 @@ TEST(ValueTest, ValueCopyConstructorWithNullExpression) {
   const Value<char> a = Value<char>(5, SharedExpr());
   const Value<char> b = a;
 
-  EXPECT_EQ(CHAR, b.get_type());
-  EXPECT_EQ(5, b.get_value());
+  EXPECT_EQ(CHAR, b.type());
+  EXPECT_EQ(5, b.value());
   EXPECT_FALSE(b.is_symbolic());
 }
 
@@ -127,8 +127,8 @@ TEST(ValueTest, ValueCopyConstructorWithNullExpressionAndCast) {
   const Value<char> a = Value<char>(5, SharedExpr());
   const Value<int> b = a;
 
-  EXPECT_EQ(INT, b.get_type());
-  EXPECT_EQ(5, b.get_value());
+  EXPECT_EQ(INT, b.type());
+  EXPECT_EQ(5, b.value());
   EXPECT_FALSE(b.is_symbolic());
 }
 
@@ -139,9 +139,9 @@ TEST(ValueTest, ValueAssignmentWithoutExpressionButCast) {
   b = a;
 
   // Typing information is immutable
-  EXPECT_EQ(CHAR, b.get_type());
+  EXPECT_EQ(CHAR, b.type());
 
-  EXPECT_EQ(5, b.get_value());
+  EXPECT_EQ(5, b.value());
   EXPECT_FALSE(b.is_symbolic());
 }
 
@@ -153,10 +153,10 @@ TEST(ValueTest, ValueAssignmentWithExpressionAndCast) {
   b = a;
 
   // Typing information is immutable
-  EXPECT_EQ(CHAR, b.get_type());
+  EXPECT_EQ(CHAR, b.type());
 
-  EXPECT_EQ(5, b.get_value());
-  EXPECT_NE(expr, b.get_expr());
+  EXPECT_EQ(5, b.value());
+  EXPECT_NE(expr, b.expr());
   EXPECT_TRUE(b.is_symbolic());
 }
 
@@ -167,10 +167,10 @@ TEST(ValueTest, ValueAssignmentWithExpressionAndWithoutCast) {
 
   b = a;
 
-  EXPECT_EQ(INT, b.get_type());
+  EXPECT_EQ(INT, b.type());
 
-  EXPECT_EQ(5, b.get_value());
-  EXPECT_EQ(expr, b.get_expr());
+  EXPECT_EQ(5, b.value());
+  EXPECT_EQ(expr, b.expr());
   EXPECT_TRUE(b.is_symbolic());
 }
 
@@ -181,9 +181,9 @@ TEST(ValueTest, ValueAssignmentWithNullExpressionAndCast) {
   b = a;
 
   // Typing information is immutable
-  EXPECT_EQ(CHAR, b.get_type());
+  EXPECT_EQ(CHAR, b.type());
 
-  EXPECT_EQ(5, b.get_value());
+  EXPECT_EQ(5, b.value());
   EXPECT_FALSE(b.is_symbolic());
 }
 
@@ -193,8 +193,8 @@ TEST(ValueTest, ValueAssignmentWithNullExpressionAndWithoutCast) {
 
   b = a;
 
-  EXPECT_EQ(INT, b.get_type());
-  EXPECT_EQ(5, b.get_value());
+  EXPECT_EQ(INT, b.type());
+  EXPECT_EQ(5, b.value());
   EXPECT_FALSE(b.is_symbolic());
 }
 
@@ -208,116 +208,116 @@ const Value<T> reflect_with_expr(const T value) {
 TEST(ValueTest, AddWithoutExpression) {
   const Value<char>& a = make_value<char>(2);
   const Value<int>& b = make_value<int>(5);
-  const GenericValue& c = a + b;
-  const GenericValue& d = b + a;
+  const AbstractValue& c = a + b;
+  const AbstractValue& d = b + a;
 
-  EXPECT_EQ(INT, c.get_type());
-  EXPECT_EQ(INT, d.get_type());
+  EXPECT_EQ(INT, c.type());
+  EXPECT_EQ(INT, d.type());
 
   EXPECT_FALSE(c.is_symbolic());
   EXPECT_FALSE(d.is_symbolic());
 
-  EXPECT_EQ(7, (a + b).get_value());
-  EXPECT_EQ(7, (b + a).get_value());
+  EXPECT_EQ(7, (a + b).value());
+  EXPECT_EQ(7, (b + a).value());
 }
 
 TEST(ValueTest, AddWithExpression) {
   const Value<int>& a = reflect_with_expr<int>(2);
   const Value<int>& b = make_value<int>(5);
-  const GenericValue& c = a + b;
-  const GenericValue& d = b + a;
+  const AbstractValue& c = a + b;
+  const AbstractValue& d = b + a;
 
-  EXPECT_EQ(INT, c.get_type());
-  EXPECT_EQ(INT, d.get_type());
+  EXPECT_EQ(INT, c.type());
+  EXPECT_EQ(INT, d.type());
 
   EXPECT_TRUE(c.is_symbolic());
   EXPECT_TRUE(d.is_symbolic());
 
-  EXPECT_EQ(7, (a + b).get_value());
-  EXPECT_EQ(7, (b + a).get_value());
+  EXPECT_EQ(7, (a + b).value());
+  EXPECT_EQ(7, (b + a).value());
 
   std::stringstream out;
-  out << c.get_expr();
+  out << c.expr();
   EXPECT_EQ("(2+5)", out.str());
 }
 
 TEST(ValueTest, LessThanWithoutExpression) {
   const Value<char>& a = make_value<char>(2);
   const Value<int>& b = make_value<int>(5);
-  const GenericValue& c = a < b;
-  const GenericValue& d = b < a;
+  const AbstractValue& c = a < b;
+  const AbstractValue& d = b < a;
 
-  EXPECT_EQ(BOOL, c.get_type());
-  EXPECT_EQ(BOOL, d.get_type());
+  EXPECT_EQ(BOOL, c.type());
+  EXPECT_EQ(BOOL, d.type());
 
   EXPECT_FALSE(c.is_symbolic());
   EXPECT_FALSE(d.is_symbolic());
 
-  EXPECT_TRUE((a < b).get_value());
-  EXPECT_FALSE((b < a).get_value());
+  EXPECT_TRUE((a < b).value());
+  EXPECT_FALSE((b < a).value());
 }
 
 TEST(ValueTest, LessThanWithExpression) {
   const Value<int>& a = reflect_with_expr<int>(2);
   const Value<int>& b = make_value<int>(5);
-  const GenericValue& c = a < b;
-  const GenericValue& d = b < a;
+  const AbstractValue& c = a < b;
+  const AbstractValue& d = b < a;
 
-  EXPECT_EQ(BOOL, c.get_type());
-  EXPECT_EQ(BOOL, d.get_type());
+  EXPECT_EQ(BOOL, c.type());
+  EXPECT_EQ(BOOL, d.type());
 
   EXPECT_TRUE(c.is_symbolic());
   EXPECT_TRUE(d.is_symbolic());
 
-  EXPECT_TRUE((a < b).get_value());
-  EXPECT_FALSE((b < a).get_value());
+  EXPECT_TRUE((a < b).value());
+  EXPECT_FALSE((b < a).value());
 
   std::stringstream out;
-  out << c.get_expr();
+  out << c.expr();
   EXPECT_EQ("(2<5)", out.str());
 }
 
 TEST(ValueTest, NotTrueWithoutExpression) {
   const Value<bool>& a = make_value<bool>(true);
-  const GenericValue& b = !a;
+  const AbstractValue& b = !a;
 
-  EXPECT_EQ(BOOL, b.get_type());
+  EXPECT_EQ(BOOL, b.type());
   EXPECT_FALSE(b.is_symbolic());
-  EXPECT_FALSE((!a).get_value());
+  EXPECT_FALSE((!a).value());
 }
 
 TEST(ValueTest, NotFalseWithoutExpression) {
   const Value<bool>& a = make_value<bool>(false);
-  const GenericValue& b = !a;
+  const AbstractValue& b = !a;
 
-  EXPECT_EQ(BOOL, b.get_type());
+  EXPECT_EQ(BOOL, b.type());
   EXPECT_FALSE(b.is_symbolic());
-  EXPECT_TRUE((!a).get_value());
+  EXPECT_TRUE((!a).value());
 }
 
 TEST(ValueTest, NotTrueWithExpression) {
   const Value<bool>& a = reflect_with_expr<bool>(true);
-  const GenericValue& b = !a;
+  const AbstractValue& b = !a;
 
-  EXPECT_EQ(BOOL, b.get_type());
+  EXPECT_EQ(BOOL, b.type());
   EXPECT_TRUE(b.is_symbolic());
-  EXPECT_FALSE((!a).get_value());
+  EXPECT_FALSE((!a).value());
 
   std::stringstream out;
-  out << b.get_expr();
+  out << b.expr();
   EXPECT_EQ("(!1)", out.str());
 }
 
 TEST(ValueTest, NotFalseWithExpression) {
   const Value<bool>& a = reflect_with_expr<bool>(false);
-  const GenericValue& b = !a;
+  const AbstractValue& b = !a;
 
-  EXPECT_EQ(BOOL, b.get_type());
+  EXPECT_EQ(BOOL, b.type());
   EXPECT_TRUE(b.is_symbolic());
-  EXPECT_TRUE((!a).get_value());
+  EXPECT_TRUE((!a).value());
 
   std::stringstream out;
-  out << b.get_expr();
+  out << b.expr();
   EXPECT_EQ("(!0)", out.str());
 }
 
@@ -336,12 +336,12 @@ TEST(ValueTest, SetSymbolicName) {
   a.set_symbolic(name);
 
   std::stringstream out;
-  out << a.get_expr();
+  out << a.expr();
   EXPECT_EQ("[Var_0:5]", out.str());
 
   name.clear();
   std::stringstream after_clear;
-  after_clear << a.get_expr();
+  after_clear << a.expr();
   EXPECT_EQ("[Var_0:5]", after_clear.str());
 }
 
@@ -351,40 +351,40 @@ TEST(ValueTest, SetSymbolicTwiceWithValue) {
   a.set_symbolic("A");
 
   std::stringstream out;
-  out << a.get_expr();
+  out << a.expr();
   EXPECT_EQ("[A:5]", out.str());
 
   EXPECT_TRUE(a.is_symbolic());
-  const SharedExpr& expr = a.get_expr();
+  const SharedExpr& expr = a.expr();
 
   a.set_symbolic("__A");
   EXPECT_TRUE(a.is_symbolic());
 
-  EXPECT_NE(expr, a.get_expr());
+  EXPECT_NE(expr, a.expr());
   
   std::stringstream __out;
-  __out << a.get_expr();
+  __out << a.expr();
   EXPECT_EQ("[__A:5]", __out.str());
 }
 
 // Reset a value's symbolic expression to a new AnyExpr<T> object.
 TEST(ValueTest, SetSymbolicTwiceWithAny) {
-  Value<int> a = any_int("A");
+  Value<int> a = any<int>("A");
 
   std::stringstream out;
-  out << a.get_expr();
+  out << a.expr();
   EXPECT_EQ("[A]", out.str());
 
   EXPECT_TRUE(a.is_symbolic());
-  const SharedExpr& expr = a.get_expr();
+  const SharedExpr& expr = a.expr();
 
   a.set_symbolic("__A");
   EXPECT_TRUE(a.is_symbolic());
 
-  EXPECT_NE(expr, a.get_expr());
+  EXPECT_NE(expr, a.expr());
   
   std::stringstream __out;
-  __out << a.get_expr();
+  __out << a.expr();
   EXPECT_EQ("[__A]", __out.str());
 }
 
@@ -399,7 +399,7 @@ TEST(ValueTest, NativeBitPrecision) {
   const Value<int>& c = a + b;
 
   // But C++ guarantees type promotion
-  EXPECT_EQ(INT, (a + b).get_type());
+  EXPECT_EQ(INT, (a + b).type());
 
   int v = c;
   EXPECT_EQ(z, v);
@@ -409,10 +409,10 @@ TEST(ValueTest, TypePromotion) {
   // C++ guarantees that a variable of type char is in the range [-128, 127].
   const Value<char>& a = make_value<char>(127);
   const Value<int>& b = make_value<int>(256);
-  const GenericValue& c = a + b;
+  const AbstractValue& c = a + b;
 
   // C++ guarantees type promotion
-  EXPECT_EQ(INT, c.get_type());
+  EXPECT_EQ(INT, c.type());
 
   int v = a + b;
   int w = b + a;
@@ -475,7 +475,7 @@ TEST(ValueTest, InitialAndSetAuxValue) {
 
   Value<int> d(a);
   EXPECT_TRUE(d.has_aux_value());
-  EXPECT_EQ(3, d.get_aux_value());
+  EXPECT_EQ(3, d.aux_value());
   d.set_aux_value(4);
   EXPECT_TRUE(d.has_aux_value());
 
@@ -498,7 +498,7 @@ TEST(ValueTest, InitialAndSetSameAuxValue) {
 
   Value<int> d(a);
   EXPECT_TRUE(d.has_aux_value());
-  EXPECT_EQ(2, d.get_aux_value());
+  EXPECT_EQ(2, d.aux_value());
   d.set_aux_value(2);
   EXPECT_TRUE(d.has_aux_value());
 
@@ -534,26 +534,26 @@ TEST(ValueTest, AssignmentOperatorWithoutAuxValue) {
   EXPECT_FALSE(a.has_aux_value());
 }
 
-TEST(ValueTest, ConvSupport) {
-  EXPECT_TRUE(Value<int>(2).has_conv_support());
-  EXPECT_TRUE(Value<int>(2, SharedExpr(new AnyExpr<int>("A"))).has_conv_support());
-  EXPECT_FALSE(Value<int>("A").has_conv_support());
-  EXPECT_FALSE(Value<int>(Value<int>("A")).has_conv_support());
+TEST(ValueTest, IsConcrete) {
+  EXPECT_TRUE(Value<int>(2).is_concrete());
+  EXPECT_TRUE(Value<int>(2, SharedExpr(new AnyExpr<int>("A"))).is_concrete());
+  EXPECT_FALSE(Value<int>("A").is_concrete());
+  EXPECT_FALSE(Value<int>(Value<int>("A")).is_concrete());
 }
 
-TEST(ValueTest, AssignmentWithConvSupport) {
+TEST(ValueTest, AssignmentWithConcreteValue) {
   Value<int> a(2);
   Value<int> b("A");
 
   a = b;
-  EXPECT_TRUE(a.has_conv_support());
+  EXPECT_TRUE(a.is_concrete());
 }
 
-TEST(ValueTest, AssignmentWithoutConvSupport) {
+TEST(ValueTest, AssignmentNonConcreteValue) {
   Value<int> a(2);
   Value<int> b("A");
 
   b = a;
-  EXPECT_FALSE(b.has_conv_support());
+  EXPECT_FALSE(b.is_concrete());
 }
 

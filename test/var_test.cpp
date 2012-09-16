@@ -6,49 +6,49 @@ using namespace se;
 
 TEST(VarTest, BoolTrue) {
   Bool var = true;
-  EXPECT_EQ(BOOL, var.get_type());
+  EXPECT_EQ(BOOL, var.type());
   EXPECT_TRUE(var);
 }
 
 TEST(VarTest, BoolFalse) {
   Bool var = false;
-  EXPECT_EQ(BOOL, var.get_type());
+  EXPECT_EQ(BOOL, var.type());
   EXPECT_FALSE(var);
 }
 
 TEST(VarTest, Char) {
   Char var = 3;
-  EXPECT_EQ(CHAR, var.get_type());
+  EXPECT_EQ(CHAR, var.type());
   EXPECT_EQ(3, var);
 }
 
 TEST(VarTest, Int) {
   Int var = 258;
-  EXPECT_EQ(INT, var.get_type());
+  EXPECT_EQ(INT, var.type());
   EXPECT_EQ(258, var);
 }
 
 TEST(VarTest, ConstBoolTrue) {
   const Bool var = true;
-  EXPECT_EQ(BOOL, var.get_type());
+  EXPECT_EQ(BOOL, var.type());
   EXPECT_TRUE(var);
 }
 
 TEST(VarTest, ConstBoolFalse) {
   const Bool var = false;
-  EXPECT_EQ(BOOL, var.get_type());
+  EXPECT_EQ(BOOL, var.type());
   EXPECT_FALSE(var);
 }
 
 TEST(VarTest, ConstChar) {
   const Char var = 3;
-  EXPECT_EQ(CHAR, var.get_type());
+  EXPECT_EQ(CHAR, var.type());
   EXPECT_EQ(3, var);
 }
 
 TEST(VarTest, ConstInt) {
   const Int var = 258;
-  EXPECT_EQ(INT, var.get_type());
+  EXPECT_EQ(INT, var.type());
   EXPECT_EQ(258, var);
 }
 
@@ -57,11 +57,11 @@ TEST(VarTest, DowncastWithCopyConversionConstructor) {
   Char b = a;
 
   EXPECT_EQ(2, b);
-  EXPECT_EQ(CHAR, b.get_type());
+  EXPECT_EQ(CHAR, b.type());
   EXPECT_TRUE(b.is_cast());
 
-  EXPECT_EQ(VZERO, a.get_version());
-  EXPECT_EQ(VZERO, b.get_version());
+  EXPECT_EQ(VZERO, a.version());
+  EXPECT_EQ(VZERO, b.version());
 }
 
 TEST(VarTest, TransitiveDowncastWithCopyConversionConstructor) {
@@ -70,12 +70,12 @@ TEST(VarTest, TransitiveDowncastWithCopyConversionConstructor) {
   Int c = b;
 
   EXPECT_EQ(2, c);
-  EXPECT_EQ(INT, c.get_type());
+  EXPECT_EQ(INT, c.type());
   EXPECT_TRUE(c.is_cast());
 
-  EXPECT_EQ(VZERO, a.get_version());
-  EXPECT_EQ(VZERO, b.get_version());
-  EXPECT_EQ(VZERO, c.get_version());
+  EXPECT_EQ(VZERO, a.version());
+  EXPECT_EQ(VZERO, b.version());
+  EXPECT_EQ(VZERO, c.version());
 }
 
 TEST(VarTest, TransitiveDowncastWithCopyConstructor) {
@@ -84,12 +84,12 @@ TEST(VarTest, TransitiveDowncastWithCopyConstructor) {
   Char c = b;
 
   EXPECT_EQ(2, c);
-  EXPECT_EQ(CHAR, c.get_type());
+  EXPECT_EQ(CHAR, c.type());
   EXPECT_TRUE(c.is_cast());
 
-  EXPECT_EQ(VZERO, a.get_version());
-  EXPECT_EQ(VZERO, b.get_version());
-  EXPECT_EQ(VZERO, c.get_version());
+  EXPECT_EQ(VZERO, a.version());
+  EXPECT_EQ(VZERO, b.version());
+  EXPECT_EQ(VZERO, c.version());
 }
 
 TEST(VarTest, DowncastWithAssignmentOperator) {
@@ -100,11 +100,11 @@ TEST(VarTest, DowncastWithAssignmentOperator) {
   b = a;
 
   EXPECT_EQ(2, b);
-  EXPECT_EQ(CHAR, b.get_type());
+  EXPECT_EQ(CHAR, b.type());
   EXPECT_TRUE(b.is_cast());
 
-  EXPECT_EQ(VZERO, a.get_version());
-  EXPECT_EQ(VZERO + 1, b.get_version());
+  EXPECT_EQ(VZERO, a.version());
+  EXPECT_EQ(VZERO + 1, b.version());
 }
 
 TEST(VarTest, DowncastWithPointerAssignment) {
@@ -114,18 +114,18 @@ TEST(VarTest, DowncastWithPointerAssignment) {
   a = make_value<int>(2);
 
   EXPECT_EQ(2, a);
-  EXPECT_EQ(CHAR, a.get_type());
+  EXPECT_EQ(CHAR, a.type());
   EXPECT_TRUE(a.is_cast());
-  EXPECT_EQ(VZERO + 1, a.get_version());
+  EXPECT_EQ(VZERO + 1, a.version());
 }
 
 TEST(VarTest, DowncastWithPointerConstructor) {
   Char a = make_value<int>(2);
 
   EXPECT_EQ(2, a);
-  EXPECT_EQ(CHAR, a.get_type());
+  EXPECT_EQ(CHAR, a.type());
   EXPECT_TRUE(a.is_cast());
-  EXPECT_EQ(VZERO, a.get_version());
+  EXPECT_EQ(VZERO, a.version());
 }
 
 TEST(VarTest, TransitiveDowncastWithAssignmentOperatorAndCopyConversionConstructor) {
@@ -136,12 +136,12 @@ TEST(VarTest, TransitiveDowncastWithAssignmentOperatorAndCopyConversionConstruct
   c = b;
 
   EXPECT_EQ(2, c);
-  EXPECT_EQ(INT, c.get_type());
+  EXPECT_EQ(INT, c.type());
   EXPECT_TRUE(c.is_cast());
 
-  EXPECT_EQ(VZERO, a.get_version());
-  EXPECT_EQ(VZERO, b.get_version());
-  EXPECT_EQ(VZERO + 1, c.get_version());
+  EXPECT_EQ(VZERO, a.version());
+  EXPECT_EQ(VZERO, b.version());
+  EXPECT_EQ(VZERO + 1, c.version());
 }
 
 TEST(VarTest, TransitiveDowncastWithAssignmentOperator) {
@@ -152,12 +152,12 @@ TEST(VarTest, TransitiveDowncastWithAssignmentOperator) {
   c = b;
 
   EXPECT_EQ(2, c);
-  EXPECT_EQ(CHAR, c.get_type());
+  EXPECT_EQ(CHAR, c.type());
   EXPECT_TRUE(c.is_cast());
 
-  EXPECT_EQ(VZERO, a.get_version());
-  EXPECT_EQ(VZERO, b.get_version());
-  EXPECT_EQ(VZERO + 1, c.get_version());
+  EXPECT_EQ(VZERO, a.version());
+  EXPECT_EQ(VZERO, b.version());
+  EXPECT_EQ(VZERO + 1, c.version());
 }
 
 TEST(VarTest, UpcastWithCopyConversionConstructor) {
@@ -165,11 +165,11 @@ TEST(VarTest, UpcastWithCopyConversionConstructor) {
   Int b = a;
 
   EXPECT_EQ(2, b);
-  EXPECT_EQ(INT, b.get_type());
+  EXPECT_EQ(INT, b.type());
   EXPECT_TRUE(b.is_cast());
 
-  EXPECT_EQ(VZERO, a.get_version());
-  EXPECT_EQ(VZERO, b.get_version());
+  EXPECT_EQ(VZERO, a.version());
+  EXPECT_EQ(VZERO, b.version());
 }
 
 TEST(VarTest, TransitiveUpcastWithCopyConversionConstructor) {
@@ -178,12 +178,12 @@ TEST(VarTest, TransitiveUpcastWithCopyConversionConstructor) {
   Char c = b;
 
   EXPECT_EQ(2, c);
-  EXPECT_EQ(CHAR, c.get_type());
+  EXPECT_EQ(CHAR, c.type());
   EXPECT_TRUE(c.is_cast());
 
-  EXPECT_EQ(VZERO, a.get_version());
-  EXPECT_EQ(VZERO, b.get_version());
-  EXPECT_EQ(VZERO, c.get_version());
+  EXPECT_EQ(VZERO, a.version());
+  EXPECT_EQ(VZERO, b.version());
+  EXPECT_EQ(VZERO, c.version());
 }
 
 TEST(VarTest, TransitiveUpcastWithCopyConstructor) {
@@ -192,12 +192,12 @@ TEST(VarTest, TransitiveUpcastWithCopyConstructor) {
   Int c = b;
 
   EXPECT_EQ(2, c);
-  EXPECT_EQ(INT, c.get_type());
+  EXPECT_EQ(INT, c.type());
   EXPECT_TRUE(c.is_cast());
 
-  EXPECT_EQ(VZERO, a.get_version());
-  EXPECT_EQ(VZERO, b.get_version());
-  EXPECT_EQ(VZERO, c.get_version());
+  EXPECT_EQ(VZERO, a.version());
+  EXPECT_EQ(VZERO, b.version());
+  EXPECT_EQ(VZERO, c.version());
 }
 
 TEST(VarTest, UpcastWithAssignmentOperator) {
@@ -208,11 +208,11 @@ TEST(VarTest, UpcastWithAssignmentOperator) {
   b = a;
 
   EXPECT_EQ(2, b);
-  EXPECT_EQ(INT, b.get_type());
+  EXPECT_EQ(INT, b.type());
   EXPECT_TRUE(b.is_cast());
 
-  EXPECT_EQ(VZERO, a.get_version());
-  EXPECT_EQ(VZERO + 1, b.get_version());
+  EXPECT_EQ(VZERO, a.version());
+  EXPECT_EQ(VZERO + 1, b.version());
 }
 
 TEST(VarTest, UpcastWithPointerAssignment) {
@@ -222,18 +222,18 @@ TEST(VarTest, UpcastWithPointerAssignment) {
   a = make_value<char>(2);
 
   EXPECT_EQ(2, a);
-  EXPECT_EQ(INT, a.get_type());
+  EXPECT_EQ(INT, a.type());
   EXPECT_TRUE(a.is_cast());
-  EXPECT_EQ(VZERO + 1, a.get_version());
+  EXPECT_EQ(VZERO + 1, a.version());
 }
 
 TEST(VarTest, UpcastWithPointerConstructor) {
   Int a = make_value<char>(2);
 
   EXPECT_EQ(2, a);
-  EXPECT_EQ(INT, a.get_type());
+  EXPECT_EQ(INT, a.type());
   EXPECT_TRUE(a.is_cast());
-  EXPECT_EQ(VZERO, a.get_version());
+  EXPECT_EQ(VZERO, a.version());
 }
 
 TEST(VarTest, TransitiveUpcastWithAssignmentOperatorAndCopyConversionConstructor) {
@@ -244,12 +244,12 @@ TEST(VarTest, TransitiveUpcastWithAssignmentOperatorAndCopyConversionConstructor
   c = b;
 
   EXPECT_EQ(2, c);
-  EXPECT_EQ(CHAR, c.get_type());
+  EXPECT_EQ(CHAR, c.type());
   EXPECT_TRUE(c.is_cast());
 
-  EXPECT_EQ(VZERO, a.get_version());
-  EXPECT_EQ(VZERO, b.get_version());
-  EXPECT_EQ(VZERO + 1, c.get_version());
+  EXPECT_EQ(VZERO, a.version());
+  EXPECT_EQ(VZERO, b.version());
+  EXPECT_EQ(VZERO + 1, c.version());
 }
 
 TEST(VarTest, TransitiveUpcastWithAssignmentOperator) {
@@ -260,18 +260,18 @@ TEST(VarTest, TransitiveUpcastWithAssignmentOperator) {
   c = b;
 
   EXPECT_EQ(2, c);
-  EXPECT_EQ(INT, c.get_type());
+  EXPECT_EQ(INT, c.type());
   EXPECT_TRUE(c.is_cast());
 
-  EXPECT_EQ(VZERO, a.get_version());
-  EXPECT_EQ(VZERO, b.get_version());
-  EXPECT_EQ(VZERO + 1, c.get_version());
+  EXPECT_EQ(VZERO, a.version());
+  EXPECT_EQ(VZERO, b.version());
+  EXPECT_EQ(VZERO + 1, c.version());
 }
 
 TEST(VarTest, NotSymbolicVar) {
   Char var = 3;
   EXPECT_FALSE(var.is_symbolic());
-  EXPECT_EQ(VZERO, var.get_version());
+  EXPECT_EQ(VZERO, var.version());
 }
 
 TEST(VarTest, SetSymbolic) {
@@ -279,7 +279,7 @@ TEST(VarTest, SetSymbolic) {
 
   set_symbolic(var);
   EXPECT_TRUE(var.is_symbolic());
-  EXPECT_EQ(VZERO, var.get_version());
+  EXPECT_EQ(VZERO, var.version());
 }
 
 TEST(VarTest, SetSymbolicName) {
@@ -291,12 +291,12 @@ TEST(VarTest, SetSymbolicName) {
   EXPECT_TRUE(var.is_symbolic());
 
   std::stringstream out;
-  out << var.get_value().get_expr();
+  out << var.value().expr();
   EXPECT_EQ("[Var_0:A]", out.str());
 
   name.clear();
   std::stringstream after_clear;
-  after_clear << var.get_value().get_expr();
+  after_clear << var.value().expr();
   EXPECT_EQ("[Var_0:A]", after_clear.str());
 }
 
@@ -317,10 +317,10 @@ TEST(VarTest, SelfAssignmentOperator) {
 
   a = a;
 
-  EXPECT_EQ(INT, a.get_type());
+  EXPECT_EQ(INT, a.type());
   EXPECT_EQ(3, a);
 
-  EXPECT_EQ(VZERO, a.get_version());
+  EXPECT_EQ(VZERO, a.version());
 }
 
 TEST(VarTest, NotSymbolicAssignmentOperator) {
@@ -334,8 +334,8 @@ TEST(VarTest, NotSymbolicAssignmentOperator) {
   EXPECT_FALSE(a.is_symbolic());
   EXPECT_FALSE(b.is_symbolic());
 
-  EXPECT_EQ(VZERO, a.get_version());
-  EXPECT_EQ(VZERO + 1, b.get_version());
+  EXPECT_EQ(VZERO, a.version());
+  EXPECT_EQ(VZERO + 1, b.version());
 }
 
 TEST(VarTest, NotSymbolicAssignmentOperatorDeep) {
@@ -350,8 +350,8 @@ TEST(VarTest, NotSymbolicAssignmentOperatorDeep) {
   EXPECT_FALSE(a.is_symbolic());
   EXPECT_FALSE(b.is_symbolic());
 
-  EXPECT_EQ(VZERO, a.get_version());
-  EXPECT_EQ(VZERO + 2, b.get_version());
+  EXPECT_EQ(VZERO, a.version());
+  EXPECT_EQ(VZERO + 2, b.version());
 }
 
 TEST(VarTest, NotSymbolicAssignmentOperatorWithCast) {
@@ -361,15 +361,15 @@ TEST(VarTest, NotSymbolicAssignmentOperatorWithCast) {
   b = a;
 
   // Typing information is immutable
-  EXPECT_EQ(CHAR, b.get_type());
+  EXPECT_EQ(CHAR, b.type());
 
   EXPECT_EQ(3, a);
   EXPECT_EQ(3, b);
   EXPECT_FALSE(a.is_symbolic());
   EXPECT_FALSE(b.is_symbolic());
 
-  EXPECT_EQ(VZERO, a.get_version());
-  EXPECT_EQ(VZERO + 1, b.get_version());
+  EXPECT_EQ(VZERO, a.version());
+  EXPECT_EQ(VZERO + 1, b.version());
 }
 
 TEST(VarTest, NotSymbolicAssignmentOperatorDeepWithCast) {
@@ -383,10 +383,10 @@ TEST(VarTest, NotSymbolicAssignmentOperatorDeepWithCast) {
   EXPECT_EQ(5, b);
   EXPECT_FALSE(a.is_symbolic());
   EXPECT_FALSE(b.is_symbolic());
-  EXPECT_EQ(CHAR, b.get_type());
+  EXPECT_EQ(CHAR, b.type());
 
-  EXPECT_EQ(VZERO, a.get_version());
-  EXPECT_EQ(VZERO + 2, b.get_version());
+  EXPECT_EQ(VZERO, a.version());
+  EXPECT_EQ(VZERO + 2, b.version());
 }
 
 TEST(VarTest, NotSymbolicConstructorWithCast) {
@@ -397,10 +397,10 @@ TEST(VarTest, NotSymbolicConstructorWithCast) {
   EXPECT_EQ(5, b);
   EXPECT_FALSE(a.is_symbolic());
   EXPECT_FALSE(b.is_symbolic());
-  EXPECT_EQ(CHAR, b.get_type());
+  EXPECT_EQ(CHAR, b.type());
 
-  EXPECT_EQ(VZERO, a.get_version());
-  EXPECT_EQ(VZERO, b.get_version());
+  EXPECT_EQ(VZERO, a.version());
+  EXPECT_EQ(VZERO, b.version());
 }
 
 TEST(VarTest, SymbolicConstructorWithCast) {
@@ -414,11 +414,11 @@ TEST(VarTest, SymbolicConstructorWithCast) {
   EXPECT_EQ(5, b);
   EXPECT_TRUE(a.is_symbolic());
   EXPECT_TRUE(b.is_symbolic());
-  EXPECT_EQ(CHAR, b.get_type());
-  EXPECT_NE(value_ref.get_expr(), b.get_value().get_expr());
+  EXPECT_EQ(CHAR, b.type());
+  EXPECT_NE(value_ref.expr(), b.value().expr());
 
-  EXPECT_EQ(VZERO, a.get_version());
-  EXPECT_EQ(VZERO, b.get_version());
+  EXPECT_EQ(VZERO, a.version());
+  EXPECT_EQ(VZERO, b.version());
 }
 
 TEST(VarTest, NotSymbolicConstructor) {
@@ -430,8 +430,8 @@ TEST(VarTest, NotSymbolicConstructor) {
   EXPECT_FALSE(a.is_symbolic());
   EXPECT_FALSE(b.is_symbolic());
 
-  EXPECT_EQ(VZERO, a.get_version());
-  EXPECT_EQ(VZERO, b.get_version());
+  EXPECT_EQ(VZERO, a.version());
+  EXPECT_EQ(VZERO, b.version());
 }
 
 TEST(VarTest, SymbolicConstructor) {
@@ -446,10 +446,10 @@ TEST(VarTest, SymbolicConstructor) {
   EXPECT_TRUE(a.is_symbolic());
   EXPECT_TRUE(b.is_symbolic());
   // These are not equal due to a partial NaryExpr.
-  // EXPECT_EQ(value_ref.get_expr(), b.get_value().get_expr());
+  // EXPECT_EQ(value_ref.expr(), b.value().expr());
 
-  EXPECT_EQ(VZERO, a.get_version());
-  EXPECT_EQ(VZERO, b.get_version());
+  EXPECT_EQ(VZERO, a.version());
+  EXPECT_EQ(VZERO, b.version());
 }
 
 TEST(VarTest, SymbolicAssignmentOperator) {
@@ -465,8 +465,8 @@ TEST(VarTest, SymbolicAssignmentOperator) {
   EXPECT_EQ(2, a);
   EXPECT_EQ(2, b);
 
-  EXPECT_EQ(VZERO, a.get_version());
-  EXPECT_EQ(VZERO + 1, b.get_version());
+  EXPECT_EQ(VZERO, a.version());
+  EXPECT_EQ(VZERO + 1, b.version());
 }
 
 TEST(VarTest, SymbolicAssignmentOperatorDeep) {
@@ -482,8 +482,8 @@ TEST(VarTest, SymbolicAssignmentOperatorDeep) {
   EXPECT_EQ(2, a);
   EXPECT_EQ(5, b);
 
-  EXPECT_EQ(VZERO, a.get_version());
-  EXPECT_EQ(VZERO + 2, b.get_version());
+  EXPECT_EQ(VZERO, a.version());
+  EXPECT_EQ(VZERO + 2, b.version());
 }
 
 TEST(VarTest, SymbolicAssignmentOperatorWithCast) {
@@ -497,13 +497,13 @@ TEST(VarTest, SymbolicAssignmentOperatorWithCast) {
   EXPECT_TRUE(b.is_symbolic());
 
   // Typing information is immutable
-  EXPECT_EQ(CHAR, b.get_type());
+  EXPECT_EQ(CHAR, b.type());
 
   EXPECT_EQ(2, a);
   EXPECT_EQ(2, b);
 
-  EXPECT_EQ(VZERO, a.get_version());
-  EXPECT_EQ(VZERO + 1, b.get_version());
+  EXPECT_EQ(VZERO, a.version());
+  EXPECT_EQ(VZERO + 1, b.version());
 }
 
 TEST(VarTest, SymbolicAssignmentOperatorDeepWithCast) {
@@ -519,8 +519,8 @@ TEST(VarTest, SymbolicAssignmentOperatorDeepWithCast) {
   EXPECT_EQ(2, a);
   EXPECT_EQ(5, b);
 
-  EXPECT_EQ(VZERO, a.get_version());
-  EXPECT_EQ(VZERO + 2, b.get_version());
+  EXPECT_EQ(VZERO, a.version());
+  EXPECT_EQ(VZERO + 2, b.version());
 }
 
 TEST(VarTest, NotSymbolicConstructorAndAssignment) {
@@ -536,8 +536,8 @@ TEST(VarTest, NotSymbolicConstructorAndAssignment) {
   EXPECT_EQ(2, a);
   EXPECT_EQ(5, b);
 
-  EXPECT_EQ(VZERO, a.get_version());
-  EXPECT_EQ(VZERO + 2, b.get_version());
+  EXPECT_EQ(VZERO, a.version());
+  EXPECT_EQ(VZERO + 2, b.version());
 }
 
 
@@ -551,10 +551,10 @@ TEST(VarTest, AddChars) {
   EXPECT_EQ(5, c);
   EXPECT_EQ(5, d);
 
-  EXPECT_EQ(VZERO, a.get_version());
-  EXPECT_EQ(VZERO, b.get_version());
-  EXPECT_EQ(VZERO, c.get_version());
-  EXPECT_EQ(VZERO, d.get_version());
+  EXPECT_EQ(VZERO, a.version());
+  EXPECT_EQ(VZERO, b.version());
+  EXPECT_EQ(VZERO, c.version());
+  EXPECT_EQ(VZERO, d.version());
 }
 
 TEST(VarTest, AddInts) {
@@ -566,10 +566,10 @@ TEST(VarTest, AddInts) {
   EXPECT_EQ(512, c);
   EXPECT_EQ(512, d);
 
-  EXPECT_EQ(VZERO, a.get_version());
-  EXPECT_EQ(VZERO, b.get_version());
-  EXPECT_EQ(VZERO, c.get_version());
-  EXPECT_EQ(VZERO, d.get_version());
+  EXPECT_EQ(VZERO, a.version());
+  EXPECT_EQ(VZERO, b.version());
+  EXPECT_EQ(VZERO, c.version());
+  EXPECT_EQ(VZERO, d.version());
 }
 
 TEST(VarTest, AddCharAndInt) {
@@ -577,8 +577,8 @@ TEST(VarTest, AddCharAndInt) {
   Int b = 5;
 
   // C++ guarantees type promotion
-  EXPECT_EQ(INT, (a + b).get_type());
-  EXPECT_EQ(INT, (b + a).get_type());
+  EXPECT_EQ(INT, (a + b).type());
+  EXPECT_EQ(INT, (b + a).type());
 
   Int c = a + b;
   Int d = b + a;
@@ -586,10 +586,10 @@ TEST(VarTest, AddCharAndInt) {
   EXPECT_EQ(8, c);
   EXPECT_EQ(8, d);
 
-  EXPECT_EQ(VZERO, a.get_version());
-  EXPECT_EQ(VZERO, b.get_version());
-  EXPECT_EQ(VZERO, c.get_version());
-  EXPECT_EQ(VZERO, d.get_version());
+  EXPECT_EQ(VZERO, a.version());
+  EXPECT_EQ(VZERO, b.version());
+  EXPECT_EQ(VZERO, c.version());
+  EXPECT_EQ(VZERO, d.version());
 }
 
 TEST(VarTest, AddCharAndReflectValue) {
@@ -599,8 +599,8 @@ TEST(VarTest, AddCharAndReflectValue) {
   const Value<int>& d = a + b;
 
   // C++ guarantees type promotion
-  EXPECT_EQ(INT, (c + d).get_type());
-  EXPECT_EQ(INT, (d + c).get_type());
+  EXPECT_EQ(INT, (c + d).type());
+  EXPECT_EQ(INT, (d + c).type());
 
   Int e = c + d;
   Int f = d + c;
@@ -608,20 +608,20 @@ TEST(VarTest, AddCharAndReflectValue) {
   EXPECT_EQ(9, e);
   EXPECT_EQ(9, f);
 
-  EXPECT_EQ(VZERO, a.get_version());
-  EXPECT_EQ(VZERO, b.get_version());
-  EXPECT_EQ(VZERO, c.get_version());
+  EXPECT_EQ(VZERO, a.version());
+  EXPECT_EQ(VZERO, b.version());
+  EXPECT_EQ(VZERO, c.version());
 
-  EXPECT_EQ(VZERO, e.get_version());
-  EXPECT_EQ(VZERO, f.get_version());
+  EXPECT_EQ(VZERO, e.version());
+  EXPECT_EQ(VZERO, f.version());
 }
 
 TEST(VarTest, AddCharAndConstant) {
   Char a = 2;
 
   // C++ guarantees type promotion
-  EXPECT_EQ(INT, (a + 3).get_type());
-  EXPECT_EQ(INT, (3 + a).get_type());
+  EXPECT_EQ(INT, (a + 3).type());
+  EXPECT_EQ(INT, (3 + a).type());
 
   Int b = a + 3;
   Int c = 3 + a;
@@ -629,9 +629,9 @@ TEST(VarTest, AddCharAndConstant) {
   EXPECT_EQ(5, b);
   EXPECT_EQ(5, c);
 
-  EXPECT_EQ(VZERO, a.get_version());
-  EXPECT_EQ(VZERO, b.get_version());
-  EXPECT_EQ(VZERO, c.get_version());
+  EXPECT_EQ(VZERO, a.version());
+  EXPECT_EQ(VZERO, b.version());
+  EXPECT_EQ(VZERO, c.version());
 }
 
 TEST(VarTest, AddReflectValueAndConstant) {
@@ -639,12 +639,12 @@ TEST(VarTest, AddReflectValueAndConstant) {
   Int b = 3;
 
   // C++ guarantees type promotion
-  EXPECT_EQ(INT, (a + b + 4).get_type());
-  EXPECT_EQ(INT, (b + a + 4).get_type());
-  EXPECT_EQ(INT, (a + 4 + b).get_type());
-  EXPECT_EQ(INT, (b + 4 + a).get_type());
-  EXPECT_EQ(INT, (4 + a + b).get_type());
-  EXPECT_EQ(INT, (4 + b + a).get_type());
+  EXPECT_EQ(INT, (a + b + 4).type());
+  EXPECT_EQ(INT, (b + a + 4).type());
+  EXPECT_EQ(INT, (a + 4 + b).type());
+  EXPECT_EQ(INT, (b + 4 + a).type());
+  EXPECT_EQ(INT, (4 + a + b).type());
+  EXPECT_EQ(INT, (4 + b + a).type());
 
   Int c = a + b + 4;
   Int d = b + a + 4;
@@ -660,14 +660,14 @@ TEST(VarTest, AddReflectValueAndConstant) {
   EXPECT_EQ(9, g);
   EXPECT_EQ(9, h);
 
-  EXPECT_EQ(VZERO, a.get_version());
-  EXPECT_EQ(VZERO, b.get_version());
-  EXPECT_EQ(VZERO, c.get_version());
-  EXPECT_EQ(VZERO, d.get_version());
-  EXPECT_EQ(VZERO, e.get_version());
-  EXPECT_EQ(VZERO, f.get_version());
-  EXPECT_EQ(VZERO, g.get_version());
-  EXPECT_EQ(VZERO, h.get_version());
+  EXPECT_EQ(VZERO, a.version());
+  EXPECT_EQ(VZERO, b.version());
+  EXPECT_EQ(VZERO, c.version());
+  EXPECT_EQ(VZERO, d.version());
+  EXPECT_EQ(VZERO, e.version());
+  EXPECT_EQ(VZERO, f.version());
+  EXPECT_EQ(VZERO, g.version());
+  EXPECT_EQ(VZERO, h.version());
 }
 
 
@@ -678,12 +678,12 @@ TEST(VarTest, AddCharWithConstantAndReflectValue) {
   const Value<char>& d = a + b;
 
   // C++ guarantees type promotion
-  EXPECT_EQ(INT, (c + d + 5).get_type());
-  EXPECT_EQ(INT, (d + c + 5).get_type());
-  EXPECT_EQ(INT, (c + 5 + d).get_type());
-  EXPECT_EQ(INT, (d + 5 + c).get_type());
-  EXPECT_EQ(INT, (5 + c + d).get_type());
-  EXPECT_EQ(INT, (5 + d + c).get_type());
+  EXPECT_EQ(INT, (c + d + 5).type());
+  EXPECT_EQ(INT, (d + c + 5).type());
+  EXPECT_EQ(INT, (c + 5 + d).type());
+  EXPECT_EQ(INT, (d + 5 + c).type());
+  EXPECT_EQ(INT, (5 + c + d).type());
+  EXPECT_EQ(INT, (5 + d + c).type());
 
   Int e = c + d + 5;
   Int f = d + c + 5;
@@ -699,16 +699,16 @@ TEST(VarTest, AddCharWithConstantAndReflectValue) {
   EXPECT_EQ(14, i);
   EXPECT_EQ(14, j);
 
-  EXPECT_EQ(VZERO, a.get_version());
-  EXPECT_EQ(VZERO, b.get_version());
-  EXPECT_EQ(VZERO, c.get_version());
+  EXPECT_EQ(VZERO, a.version());
+  EXPECT_EQ(VZERO, b.version());
+  EXPECT_EQ(VZERO, c.version());
 
-  EXPECT_EQ(VZERO, e.get_version());
-  EXPECT_EQ(VZERO, f.get_version());
-  EXPECT_EQ(VZERO, g.get_version());
-  EXPECT_EQ(VZERO, h.get_version());
-  EXPECT_EQ(VZERO, i.get_version());
-  EXPECT_EQ(VZERO, j.get_version());
+  EXPECT_EQ(VZERO, e.version());
+  EXPECT_EQ(VZERO, f.version());
+  EXPECT_EQ(VZERO, g.version());
+  EXPECT_EQ(VZERO, h.version());
+  EXPECT_EQ(VZERO, i.version());
+  EXPECT_EQ(VZERO, j.version());
 }
 
 TEST(VarTest, LessChars) {
@@ -721,10 +721,10 @@ TEST(VarTest, LessChars) {
   EXPECT_TRUE(c);
   EXPECT_FALSE(d);
 
-  EXPECT_EQ(VZERO, a.get_version());
-  EXPECT_EQ(VZERO, b.get_version());
-  EXPECT_EQ(VZERO, c.get_version());
-  EXPECT_EQ(VZERO, d.get_version());
+  EXPECT_EQ(VZERO, a.version());
+  EXPECT_EQ(VZERO, b.version());
+  EXPECT_EQ(VZERO, c.version());
+  EXPECT_EQ(VZERO, d.version());
 }
 
 TEST(VarTest, LessCharWithConstantAndReflectValue) {
@@ -742,22 +742,22 @@ TEST(VarTest, LessCharWithConstantAndReflectValue) {
   EXPECT_FALSE(f);
   EXPECT_TRUE(g);
 
-  EXPECT_EQ(VZERO, a.get_version());
-  EXPECT_EQ(VZERO, b.get_version());
+  EXPECT_EQ(VZERO, a.version());
+  EXPECT_EQ(VZERO, b.version());
 
-  EXPECT_EQ(VZERO, d.get_version());
-  EXPECT_EQ(VZERO, e.get_version());
-  EXPECT_EQ(VZERO, f.get_version());
-  EXPECT_EQ(VZERO, g.get_version());
+  EXPECT_EQ(VZERO, d.version());
+  EXPECT_EQ(VZERO, e.version());
+  EXPECT_EQ(VZERO, f.version());
+  EXPECT_EQ(VZERO, g.version());
 }
 
 TEST(VarTest, GetVersionAfterCopy) {
   Int a = 2;
   a = a + 1;
-  EXPECT_EQ(VZERO + 1, a.get_version());
+  EXPECT_EQ(VZERO + 1, a.version());
 
   Int b = a;
-  EXPECT_EQ(VZERO, b.get_version());
+  EXPECT_EQ(VZERO, b.version());
 }
 
 TEST(VarTest, GetVersionAfterAssignment) {
@@ -766,10 +766,10 @@ TEST(VarTest, GetVersionAfterAssignment) {
 
   a = a + 1;
   a = a + 1;
-  EXPECT_EQ(VZERO + 2, a.get_version());
+  EXPECT_EQ(VZERO + 2, a.version());
 
   b = a;
-  EXPECT_EQ(VZERO + 1, b.get_version());
+  EXPECT_EQ(VZERO + 1, b.version());
 }
 
 TEST(VarTest, GetVersionAfterConversion) {
@@ -779,205 +779,205 @@ TEST(VarTest, GetVersionAfterConversion) {
   a = a + 1;
   a = a + 1;
   a = a + 1;
-  EXPECT_EQ(VZERO + 3, a.get_version());
+  EXPECT_EQ(VZERO + 3, a.version());
 
   b = a;
-  EXPECT_EQ(VZERO + 1, b.get_version());
+  EXPECT_EQ(VZERO + 1, b.version());
 }
 
 TEST(VarTest, GetVersionAfterSetExpr) {
   Int a = 2;
   a.set_expr(SharedExpr());
-  EXPECT_EQ(VZERO + 1, a.get_version());
+  EXPECT_EQ(VZERO + 1, a.version());
 }
 
 TEST(VarTest, CreateVarName) {
   reset_var_seq();
-  EXPECT_EQ("Var_0", create_var_name());
-  EXPECT_EQ("Var_1", create_var_name());
-  EXPECT_EQ("Var_2", create_var_name());
-  EXPECT_EQ("Var_3", create_var_name());
+  EXPECT_EQ("Var_0", create_identifier());
+  EXPECT_EQ("Var_1", create_identifier());
+  EXPECT_EQ("Var_2", create_identifier());
+  EXPECT_EQ("Var_3", create_identifier());
 
   reset_var_seq();
-  EXPECT_EQ("Var_0", create_var_name());
-  EXPECT_EQ("Var_1", create_var_name());
-  EXPECT_EQ("Var_2", create_var_name());
-  EXPECT_EQ("Var_3", create_var_name());
+  EXPECT_EQ("Var_0", create_identifier());
+  EXPECT_EQ("Var_1", create_identifier());
+  EXPECT_EQ("Var_2", create_identifier());
+  EXPECT_EQ("Var_3", create_identifier());
 }
 
 TEST(VarTest, UnstashTrueConcreteVar) {
   Int var = 3;
-  EXPECT_EQ(VZERO, var.get_version());
+  EXPECT_EQ(VZERO, var.version());
   EXPECT_EQ(3, var);
 
   var.stash();
-  EXPECT_EQ(VZERO, var.get_version());
+  EXPECT_EQ(VZERO, var.version());
 
   var = 5;
-  EXPECT_EQ(VZERO + 1, var.get_version());
+  EXPECT_EQ(VZERO + 1, var.version());
   EXPECT_EQ(5, var);
 
   var.unstash(true);
 
-  EXPECT_EQ(VZERO + 2, var.get_version());
+  EXPECT_EQ(VZERO + 2, var.version());
   EXPECT_EQ(3, var);
 }
 
 TEST(VarTest, UnstashTrueSymbolicVarWithAnyExpr) {
-  Int var = any_int("A");
-  EXPECT_EQ(VZERO, var.get_version());
+  Int var = any<int>("A");
+  EXPECT_EQ(VZERO, var.version());
 
   std::stringstream out_before;
-  out_before << var.get_value().get_expr();
+  out_before << var.value().expr();
   EXPECT_EQ("[A]", out_before.str());
 
   var.stash();
-  EXPECT_EQ(VZERO, var.get_version());
+  EXPECT_EQ(VZERO, var.version());
 
   var = var + 1;
-  EXPECT_EQ(VZERO + 1, var.get_version());
+  EXPECT_EQ(VZERO + 1, var.version());
 
   std::stringstream out_modified;
-  out_modified << var.get_value().get_expr();
+  out_modified << var.value().expr();
   EXPECT_EQ("([A]+1)", out_modified.str());
 
   var.unstash(true);
 
-  EXPECT_EQ(VZERO + 2, var.get_version());
+  EXPECT_EQ(VZERO + 2, var.version());
 
   std::stringstream out_unstash;
-  out_unstash << var.get_value().get_expr();
+  out_unstash << var.value().expr();
   EXPECT_EQ("[A]", out_unstash.str());
 }
 
 TEST(VarTest, UnstashTrueSymbolicVarWithNaryExpr) {
-  Int var = any_int("A");
+  Int var = any<int>("A");
   var = var + 1;
-  EXPECT_EQ(VZERO + 1, var.get_version());
+  EXPECT_EQ(VZERO + 1, var.version());
 
   std::stringstream out_before;
-  out_before << var.get_value().get_expr();
+  out_before << var.value().expr();
   EXPECT_EQ("([A]+1)", out_before.str());
 
   var.stash();
-  EXPECT_EQ(VZERO + 1, var.get_version());
+  EXPECT_EQ(VZERO + 1, var.version());
 
   var = var + 3;
-  EXPECT_EQ(VZERO + 2, var.get_version());
+  EXPECT_EQ(VZERO + 2, var.version());
 
   std::stringstream out_modified;
-  out_modified << var.get_value().get_expr();
+  out_modified << var.value().expr();
   EXPECT_EQ("([A]+4)", out_modified.str());
 
   var.unstash(true);
 
-  EXPECT_EQ(VZERO + 3, var.get_version());
+  EXPECT_EQ(VZERO + 3, var.version());
 
   std::stringstream out_unstash;
-  out_unstash << var.get_value().get_expr();
+  out_unstash << var.value().expr();
   EXPECT_EQ("([A]+1)", out_unstash.str());
 }
 
 TEST(VarTest, UnstashTrueWithoutChanges) {
     Int var = 3;
-    EXPECT_EQ(VZERO, var.get_version());
+    EXPECT_EQ(VZERO, var.version());
     EXPECT_EQ(3, var);
 
     var.stash();
-    EXPECT_EQ(VZERO, var.get_version());
+    EXPECT_EQ(VZERO, var.version());
 
     var.unstash(true);
 
-    EXPECT_EQ(VZERO, var.get_version());
+    EXPECT_EQ(VZERO, var.version());
     EXPECT_EQ(3, var);
 }
 
 TEST(VarTest, UnstashFalseConcreteVar) {
   Int var = 3;
-  EXPECT_EQ(VZERO, var.get_version());
+  EXPECT_EQ(VZERO, var.version());
   EXPECT_EQ(3, var);
 
   var.stash();
-  EXPECT_EQ(VZERO, var.get_version());
+  EXPECT_EQ(VZERO, var.version());
 
   var = 5;
-  EXPECT_EQ(VZERO + 1, var.get_version());
+  EXPECT_EQ(VZERO + 1, var.version());
   EXPECT_EQ(5, var);
 
   var.unstash(false);
 
   // since the flag is false, the version number is not incremented.
-  EXPECT_EQ(VZERO + 1, var.get_version());
+  EXPECT_EQ(VZERO + 1, var.version());
   EXPECT_EQ(5, var);
 }
 
 TEST(VarTest, UnstashFalseSymbolicVarWithAnyExpr) {
-  Int var = any_int("A");
-  EXPECT_EQ(VZERO, var.get_version());
+  Int var = any<int>("A");
+  EXPECT_EQ(VZERO, var.version());
 
   std::stringstream out_before;
-  out_before << var.get_value().get_expr();
+  out_before << var.value().expr();
   EXPECT_EQ("[A]", out_before.str());
 
   var.stash();
-  EXPECT_EQ(VZERO, var.get_version());
+  EXPECT_EQ(VZERO, var.version());
 
   var = var + 1;
-  EXPECT_EQ(VZERO + 1, var.get_version());
+  EXPECT_EQ(VZERO + 1, var.version());
 
   std::stringstream out_modified;
-  out_modified << var.get_value().get_expr();
+  out_modified << var.value().expr();
   EXPECT_EQ("([A]+1)", out_modified.str());
 
   var.unstash(false);
 
   // since the flag is false, the version number is not incremented.
-  EXPECT_EQ(VZERO + 1, var.get_version());
+  EXPECT_EQ(VZERO + 1, var.version());
 
   std::stringstream out_unstash;
-  out_unstash << var.get_value().get_expr();
+  out_unstash << var.value().expr();
   EXPECT_EQ("([A]+1)", out_unstash.str());
 }
 
 TEST(VarTest, UnstashFalseSymbolicVarWithNaryExpr) {
-  Int var = any_int("A");
+  Int var = any<int>("A");
   var = var + 1;
-  EXPECT_EQ(VZERO + 1, var.get_version());
+  EXPECT_EQ(VZERO + 1, var.version());
 
   std::stringstream out_before;
-  out_before << var.get_value().get_expr();
+  out_before << var.value().expr();
   EXPECT_EQ("([A]+1)", out_before.str());
 
   var.stash();
-  EXPECT_EQ(VZERO + 1, var.get_version());
+  EXPECT_EQ(VZERO + 1, var.version());
 
   var = var + 3;
-  EXPECT_EQ(VZERO + 2, var.get_version());
+  EXPECT_EQ(VZERO + 2, var.version());
 
   std::stringstream out_modified;
-  out_modified << var.get_value().get_expr();
+  out_modified << var.value().expr();
   EXPECT_EQ("([A]+4)", out_modified.str());
 
   var.unstash(false);
 
   // since the flag is false, the version number is not incremented.
-  EXPECT_EQ(VZERO + 2, var.get_version());
+  EXPECT_EQ(VZERO + 2, var.version());
 
   std::stringstream out_unstash;
-  out_unstash << var.get_value().get_expr();
+  out_unstash << var.value().expr();
   EXPECT_EQ("([A]+4)", out_unstash.str());
 }
 
 TEST(VarTest, UnstashFalseWithoutChanges) {
     Int var = 3;
-    EXPECT_EQ(VZERO, var.get_version());
+    EXPECT_EQ(VZERO, var.version());
     EXPECT_EQ(3, var);
 
     var.stash();
-    EXPECT_EQ(VZERO, var.get_version());
+    EXPECT_EQ(VZERO, var.version());
 
     var.unstash(false);
 
-    EXPECT_EQ(VZERO, var.get_version());
+    EXPECT_EQ(VZERO, var.version());
     EXPECT_EQ(3, var);
 }

@@ -10,9 +10,15 @@
 
 namespace se {
 
+/*! \file tracer.h */
+
+/// Path constraint manager
+
+/// Manager for path constraints in single-path (i.e. DART-style) symbolic
+/// execution. This is also known as concolic execution.
 class Tracer {
 private:
-  std::list<SharedExpr> path_constraints;
+  std::list<SharedExpr> m_path_constraints;
 
 public:
   void reset();

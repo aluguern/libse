@@ -10,7 +10,7 @@ int main(void) {
   // slow down analysis with console I/O to compare against CBMC
   int i = 0;
 
-  Int k = any_int("K");
+  Int k = any<int>("K");
 
   Loop loop(N);
   loop.track(k);

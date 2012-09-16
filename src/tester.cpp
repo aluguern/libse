@@ -8,24 +8,24 @@
 namespace se {
 
 bool tester::If::test_then() {
-  pop = true;
-  solver.push();
-  solver.add(se::If::cond.get_expr()->walk(sp_interpreter_ptr));
-  if (solver.check() == z3::sat) {
-    generator_ptr->generate(solver.get_model());
+  m_pop = true;
+  m_solver.push();
+  m_solver.add(se::If::cond.expr()->walk(m_sp_interpreter_ptr));
+  if (m_solver.check() == z3::sat) {
+    m_generator_ptr->generate(m_solver.get_model());
   }
-  return solver.check() == z3::sat;
+  return m_solver.check() == z3::sat;
 }
 
 bool tester::If::test_else() {
-  pop = true;
-  solver.push();
+  m_pop = true;
+  m_solver.push();
   const Value<bool>& not_cond = !se::If::cond;
-  solver.add(not_cond.get_expr()->walk(sp_interpreter_ptr));
-  if (solver.check() == z3::sat) {
-    generator_ptr->generate(solver.get_model());
+  m_solver.add(not_cond.expr()->walk(m_sp_interpreter_ptr));
+  if (m_solver.check() == z3::sat) {
+    m_generator_ptr->generate(m_solver.get_model());
   }
-  return solver.check() == z3::sat;
+  return m_solver.check() == z3::sat;
 }
 
 bool tester::If::begin_then() {
@@ -37,7 +37,7 @@ bool tester::If::begin_then() {
 }
 
 bool tester::If::begin_else() {
-  if (pop) { solver.pop(); pop = false; }
+  if (m_pop) { m_solver.pop(); m_pop = false; }
 
   if (se::If::begin_else()) {
     return test_else();
@@ -47,30 +47,30 @@ bool tester::If::begin_else() {
 }
 
 void tester::If::end() {
-  if (pop) { solver.pop(); pop = false; }
+  if (m_pop) { m_solver.pop(); m_pop = false; }
   if (!is_if_then_else()) { test_else(); }
   se::If::end();
 }
 
 bool tester::Loop::unwind(const Value<bool>& cond) {
-  if (!init) { solver.pop(); }
-  init = false;
+  if (!m_init) { m_solver.pop(); }
+  m_init = false;
 
-  solver.push();
+  m_solver.push();
   const Value<bool>& not_cond = !cond;
-  solver.add(not_cond.get_expr()->walk(sp_interpreter_ptr));
-  if (solver.check() == z3::sat) {
-    generator_ptr->generate(solver.get_model());
+  m_solver.add(not_cond.expr()->walk(m_sp_interpreter_ptr));
+  if (m_solver.check() == z3::sat) {
+    m_generator_ptr->generate(m_solver.get_model());
   }
 
-  solver.pop();
-  solver.push();
-  solver.add(cond.get_expr()->walk(sp_interpreter_ptr));
-  if (solver.check() == z3::unsat) {
+  m_solver.pop();
+  m_solver.push();
+  m_solver.add(cond.expr()->walk(m_sp_interpreter_ptr));
+  if (m_solver.check() == z3::unsat) {
     return false;
   }
 
-  generator_ptr->generate(solver.get_model());
+  m_generator_ptr->generate(m_solver.get_model());
 
   return se::Loop::unwind(cond);
 }

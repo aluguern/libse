@@ -15,18 +15,18 @@ void reset_tracer() {
   reset_var_seq();
 }
 
-std::string create_var_name() {
+std::string create_identifier() {
   sstream << SymbolicVarPrefix;
   sstream << var_seq;
   var_seq++;
 
-  std::string name = sstream.str();
+  std::string identifier = sstream.str();
 
   // reset buffer
   sstream.clear();
   sstream.str("");
 
-  return name;
+  return identifier;
 }
 
 }

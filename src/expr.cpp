@@ -13,44 +13,44 @@ const Operator NARY_END = LSS;
 
 std::ostream& CastExpr::write(std::ostream& out) const {
   out << LPAR << LPAR;
-  out << types[type];
+  out << types[m_type];
   out << RPAR << LPAR;
-  out << expr;
+  out << m_operand;
   out << RPAR << RPAR;
   return out;
 }
 
 std::ostream& UnaryExpr::write(std::ostream& out) const {
   out << LPAR;
-  out << operators[op];
-  out << expr;
+  out << operators[m_op];
+  out << m_operand;
   out << RPAR;
   return out;
 }
 
-std::ostream& TernaryExpr::write(std::ostream& out) const {
+std::ostream& IfThenElseExpr::write(std::ostream& out) const {
   out << LPAR;
-  out << cond_expr;
+  out << m_cond_expr;
   out << QUERY;
-  out << then_expr;
+  out << m_then_expr;
   out << COLON;
-  out << else_expr;
+  out << m_else_expr;
   out << RPAR;
   return out;
 }
 
 std::ostream& NaryExpr::write(std::ostream& out) const {
   out << LPAR;
-  std::list<SharedExpr>::const_iterator iter = exprs.cbegin();
+  std::list<SharedExpr>::const_iterator iter = m_operands.cbegin();
 
-  if(iter == exprs.cend()) {
+  if(iter == m_operands.cend()) {
     out << RPAR;
     return out;
   }
 
   out << *iter;
-  for(iter++; iter != exprs.cend(); iter++) {
-    out << operators[op];
+  for(iter++; iter != m_operands.cend(); iter++) {
+    out << operators[m_op];
     out << *iter;
   }
   out << RPAR;

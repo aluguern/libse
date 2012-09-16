@@ -10,11 +10,25 @@
 #include "if.h"
 #include "loop.h"
 
+/// \mainpage
+/// An extensible symbolic execution library for C++ code
+///
+/// The library caters for both single-path and multi-path symbolic execution,
+/// i.e. DART-style, KLEE-style and CBMC-style symbolic execution.
+///
+/// Symbolic variables are encapsulated as se::Var whose value can be
+/// inspected through se::Value.
+///
+/// Multi-path symbolic execution requires the source annotation of the program
+/// under test with se::Loop and se::If.  
+///
+/// A prototype of a new automated test generator can be found in se::tester.
+
 // Internal function to guide the type inference of template functions that
 // overload built-in operators such as addition, multiplication etc.
 template<typename T>
 static inline const se::Value<T>& __filter(const se::Var<T>& var) {
-  return var.get_value();
+  return var.value();
 }
 
 // Internal function to guide the type inference of template functions that
@@ -29,13 +43,13 @@ static inline const se::Value<T>& __filter(const se::Value<T>& value) {
 // caller to ensure that another NaryExpr modifier is invoked.
 #define PARTIAL_EXPR(opname, expr) \
   se::SharedExpr(new se::NaryExpr(se::opname,\
-    se::OperatorTraits<se::opname>::attr, (expr)))
+    se::OperatorInfo<se::opname>::attr, (expr)))
 
 // BINARY_EXPR is a strictly internal macro that instantiates a new binary
 // expression for the given binary operator enum value and operands.
 #define BINARY_EXPR(opname, x_expr, y_expr) \
   se::SharedExpr(new se::NaryExpr(se::opname,\
-    se::OperatorTraits<se::opname>::attr, (x_expr), (y_expr)))
+    se::OperatorInfo<se::opname>::attr, (x_expr), (y_expr)))
 
 // OVERLOAD_BINARY_OPERATOR(op, opname) is a macro that uses templates and the
 // statically overloaded and inlined __filter functions to implement a custom
@@ -48,36 +62,36 @@ static inline const se::Value<T>& __filter(const se::Value<T>& value) {
 #define OVERLOAD_BINARY_OPERATOR(op, opname) \
   template<typename X, typename Y>\
   const auto operator op(const X& x, const Y& y) ->\
-    decltype(se::make_value(__filter(x).get_value() op __filter(y).get_value())) {\
+    decltype(se::make_value(__filter(x).value() op __filter(y).value())) {\
     \
     const auto __x = __filter(x);\
     const auto __y = __filter(y);\
-    auto result = se::make_value(__x.get_value() op __y.get_value());\
+    auto result = se::make_value(__x.value() op __y.value());\
     if(__x.is_symbolic() || __y.is_symbolic()) {\
-      result.set_expr(BINARY_EXPR(opname, __x.get_expr(), __y.get_expr()));\
+      result.set_expr(BINARY_EXPR(opname, __x.expr(), __y.expr()));\
     }\
     return result;\
   }\
   template<typename X>\
   const auto operator op(const X& x, const int y) ->\
-    decltype(se::make_value(__filter(x).get_value() op y)) {\
+    decltype(se::make_value(__filter(x).value() op y)) {\
     \
     const auto __x = __filter(x);\
-    auto result = se::make_value(__x.get_value() op y);\
+    auto result = se::make_value(__x.value() op y);\
     \
     if(__x.is_symbolic()) {\
-      se::OperatorAttr attr = se::OperatorTraits<se::opname>::attr;\
-      se::SharedExpr raw_expr = __x.se::GenericValue::get_expr();\
+      se::OperatorAttr attr = se::OperatorInfo<se::opname>::attr;\
+      se::SharedExpr raw_expr = __x.se::AbstractValue::expr();\
       if(se::get_associative_attr(attr) && se::get_commutative_attr(attr) && se::get_identity_attr(attr)) {\
         bool create_partial_nary_expr = false;\
-        auto kind = raw_expr->get_kind();\
+        auto kind = raw_expr->kind();\
         if(kind == se::ANY_EXPR || kind == se::VALUE_EXPR) {\
           create_partial_nary_expr = true;\
         } else if(kind == se::NARY_EXPR) {\
           auto nary_expr = std::dynamic_pointer_cast<se::NaryExpr>(raw_expr);\
-          if(nary_expr->get_attr() == attr) {\
+          if(nary_expr->attr() == attr) {\
             if(nary_expr->is_partial()) {\
-              result.set_aux_value(__x.get_aux_value() op y);\
+              result.set_aux_value(__x.aux_value() op y);\
               result.set_expr(raw_expr);\
               return result;\
             } else {\
@@ -86,25 +100,25 @@ static inline const se::Value<T>& __filter(const se::Value<T>& value) {
           }\
         }\
         if(create_partial_nary_expr) {\
-          /* __x.get_value() must act as the identity element of op. */\
+          /* __x.value() must act as the identity element of op. */\
           result.set_aux_value(y);\
           result.set_expr(PARTIAL_EXPR(opname, raw_expr));\
           return result;\
         }\
       }\
       \
-      result.set_expr(BINARY_EXPR(opname, __x.get_expr(), se::Value<int>(y).get_expr()));\
+      result.set_expr(BINARY_EXPR(opname, __x.expr(), se::Value<int>(y).expr()));\
     }\
     return result;\
   }\
   template<typename Y>\
   const auto operator op(const int x, const Y& y) ->\
-    decltype(se::make_value(x op __filter(y).get_value())) {\
+    decltype(se::make_value(x op __filter(y).value())) {\
     \
     const auto __y = __filter(y);\
-    auto result = se::make_value(x op __y.get_value());\
+    auto result = se::make_value(x op __y.value());\
     if(__y.is_symbolic()) {\
-      result.set_expr(BINARY_EXPR(opname, se::Value<int>(x).get_expr(), __y.get_expr()));\
+      result.set_expr(BINARY_EXPR(opname, se::Value<int>(x).expr(), __y.expr()));\
     }\
     return result;\
   }\
@@ -123,12 +137,12 @@ OVERLOAD_BINARY_OPERATOR(<, LSS)
 #define OVERLOAD_UNARY_OPERATOR(op, opname) \
   template<typename T>\
   const auto operator op(const T& x) ->\
-    decltype(se::make_value(op __filter(x).get_value())) {\
+    decltype(se::make_value(op __filter(x).value())) {\
     \
     const auto __x = __filter(x);\
-    auto result = se::make_value(op __x.get_value());\
+    auto result = se::make_value(op __x.value());\
     if(__x.is_symbolic()) {\
-      result.set_expr(se::SharedExpr(new se::UnaryExpr(se::opname, __x.get_expr())));\
+      result.set_expr(se::SharedExpr(new se::UnaryExpr(se::opname, __x.expr())));\
     }\
     return result;\
   }\

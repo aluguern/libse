@@ -9,7 +9,7 @@ TEST(TesterFunctionalTest, IfThen) {
   se::tester::TestGeneratorPtr generator_ptr(new se::tester::TestCaseStream(&out));
 
   int MAX = 5;
-  se::Int i = se::any_int("I");
+  se::Int i = se::any<int>("I");
 
   se::tester::If branch(i == 3, sp_interpreter, generator_ptr);
   branch.track(i);
@@ -25,12 +25,12 @@ TEST(TesterFunctionalTest, IfThenElse) {
   se::tester::TestGeneratorPtr generator_ptr(new se::tester::TestCaseStream(&out));
 
   int MAX = 3;
-  se::Int j = se::any_int("J");
+  se::Int j = se::any<int>("J");
 
   se::tester::If branch(j < 0, sp_interpreter, generator_ptr);
   branch.track(j);
   if (branch.begin_then()) { j = j + MAX; }
-  if (branch.begin_else()) { j = j + se::any_int("A");}
+  if (branch.begin_else()) { j = j + se::any<int>("A");}
   branch.end();
 
   EXPECT_EQ("[(define-fun J () Int\n  (- 1))]\n[(define-fun J () Int\n  0)]\n", out.str());
@@ -41,8 +41,8 @@ TEST(TesterFunctionalTest, SeveralIfThenElseWithMultipleVars) {
   std::stringstream out;
   se::tester::TestGeneratorPtr generator_ptr(new se::tester::TestCaseStream(&out));
 
-  se::Int x = se::any_int("X");
-  se::Int y = se::any_int("Y");
+  se::Int x = se::any<int>("X");
+  se::Int y = se::any<int>("Y");
 
   se::tester::If branch_0(x < 0, sp_interpreter, generator_ptr);
   branch_0.track(x);
@@ -71,7 +71,7 @@ TEST(TesterFunctionalTest, Loop) {
   std::stringstream out;
   se::tester::TestGeneratorPtr generator_ptr(new se::tester::TestCaseStream(&out));
 
-  se::Int p = se::any_int("P");
+  se::Int p = se::any<int>("P");
 
   se::tester::Loop loop(2, sp_interpreter, generator_ptr);
   loop.track(p);
@@ -92,8 +92,8 @@ TEST(TesterFunctionalTest, NestedIfThenElse) {
   std::stringstream out;
   se::tester::TestGeneratorPtr generator_ptr(new se::tester::TestCaseStream(&out));
 
-  se::Int p = se::any_int("P");
-  se::Int q = se::any_int("Q");
+  se::Int p = se::any<int>("P");
+  se::Int q = se::any<int>("Q");
   se::Bool r = true;
 
   se::tester::If outer_branch(p < 5, sp_interpreter, generator_ptr);

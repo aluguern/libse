@@ -22,27 +22,27 @@ TEST(ExprTest, OperatorsOrder) {
 
 TEST(ExprTest, GetKind) {
   AnyExpr<char> a("A");
-  EXPECT_EQ(ANY_EXPR, a.get_kind());
+  EXPECT_EQ(ANY_EXPR, a.kind());
 
   ValueExpr<char> b('b');
-  EXPECT_EQ(VALUE_EXPR, b.get_kind());
+  EXPECT_EQ(VALUE_EXPR, b.kind());
 
   CastExpr c(INT, SharedExpr(new AnyExpr<char>("X")));
-  EXPECT_EQ(CAST_EXPR, c.get_kind());
+  EXPECT_EQ(CAST_EXPR, c.kind());
 
   UnaryExpr d(ADD, SharedExpr(new AnyExpr<char>("X")));
-  EXPECT_EQ(UNARY_EXPR, d.get_kind());
+  EXPECT_EQ(UNARY_EXPR, d.kind());
 
-  TernaryExpr e(SharedExpr(new AnyExpr<bool>("X")), SharedExpr(new AnyExpr<char>("Y")), SharedExpr(new AnyExpr<char>("Z")));
-  EXPECT_EQ(TERNARY_EXPR, e.get_kind());
+  IfThenElseExpr e(SharedExpr(new AnyExpr<bool>("X")), SharedExpr(new AnyExpr<char>("Y")), SharedExpr(new AnyExpr<char>("Z")));
+  EXPECT_EQ(ITE_EXPR, e.kind());
 
-  NaryExpr f(ADD, OperatorTraits<ADD>::attr);
-  EXPECT_EQ(NARY_EXPR, f.get_kind());
+  NaryExpr f(ADD, OperatorInfo<ADD>::attr);
+  EXPECT_EQ(NARY_EXPR, f.kind());
 }
 
 TEST(ExprTest, GetNameOnAnyExpr) {
   AnyExpr<char> a("That rabbit's dynamite!");
-  EXPECT_EQ("That rabbit's dynamite!", a.get_name());
+  EXPECT_EQ("That rabbit's dynamite!", a.identifier());
 }
 
 TEST(ExprTest, ValueExprWithoutName) {
@@ -58,8 +58,8 @@ TEST(ExprTest, GetValueOnValueExpr) {
   ValueExpr<char> a('A');
   ValueExpr<int> b(8);
 
-  EXPECT_EQ('A', a.get_value());
-  EXPECT_EQ(8, b.get_value());
+  EXPECT_EQ('A', a.value());
+  EXPECT_EQ(8, b.value());
 }
 
 TEST(ExprTest, ValueExprWithName) {
@@ -81,16 +81,16 @@ TEST(ExprTest, AnyExpr) {
 }
 
 TEST(ExprTest, NaryExprAppendAndPrepend) {
-  NaryExpr a = NaryExpr(ADD, OperatorTraits<ADD>::attr);
-  a.append_expr(SharedExpr(new AnyExpr<short>("A")));
-  a.append_expr(SharedExpr(new AnyExpr<short>("B")));
+  NaryExpr a = NaryExpr(ADD, OperatorInfo<ADD>::attr);
+  a.append_operand(SharedExpr(new AnyExpr<short>("A")));
+  a.append_operand(SharedExpr(new AnyExpr<short>("B")));
 
   std::stringstream append_out;
   a.write(append_out);
 
   EXPECT_EQ("([A]+[B])", append_out.str());
 
-  a.prepend_expr(SharedExpr(new AnyExpr<short>("C")));
+  a.prepend_operand(SharedExpr(new AnyExpr<short>("C")));
 
   std::stringstream prepend_out;
   a.write(prepend_out);
@@ -99,11 +99,11 @@ TEST(ExprTest, NaryExprAppendAndPrepend) {
 }
 
 TEST(ExprTest, NaryExprPrependAndAppend) {
-  NaryExpr a = NaryExpr(ADD, OperatorTraits<ADD>::attr);
-  a.prepend_expr(SharedExpr(new ValueExpr<int>(3, "C")));
-  a.append_expr(SharedExpr(new AnyExpr<short>("A")));
-  a.prepend_expr(SharedExpr(new CastExpr(INT, SharedExpr(new ValueExpr<short>(7)))));
-  a.append_expr(SharedExpr(new AnyExpr<short>("B")));
+  NaryExpr a = NaryExpr(ADD, OperatorInfo<ADD>::attr);
+  a.prepend_operand(SharedExpr(new ValueExpr<int>(3, "C")));
+  a.append_operand(SharedExpr(new AnyExpr<short>("A")));
+  a.prepend_operand(SharedExpr(new CastExpr(INT, SharedExpr(new ValueExpr<short>(7)))));
+  a.append_operand(SharedExpr(new AnyExpr<short>("B")));
 
   std::stringstream out;
   a.write(out);
@@ -113,22 +113,22 @@ TEST(ExprTest, NaryExprPrependAndAppend) {
 
 TEST(ExprTest, AddAttr) {
   OperatorAttr expected_attr = LASSOC_ATTR | RASSOC_ATTR | COMM_ATTR | HAS_ID_ELEMENT_ATTR;
-  OperatorAttr actual_attr = OperatorTraits<ADD>::attr;
+  OperatorAttr actual_attr = OperatorInfo<ADD>::attr;
   EXPECT_EQ(expected_attr, actual_attr);
 }
 
 TEST(ExprTest, LssAttr) {
   OperatorAttr expected_attr = CLEAR_ATTR;
-  OperatorAttr actual_attr = OperatorTraits<LSS>::attr;
+  OperatorAttr actual_attr = OperatorInfo<LSS>::attr;
   EXPECT_EQ(expected_attr, actual_attr);
 }
 
 TEST(ExprTest, GetAttr) {
-  NaryExpr a(ADD, OperatorTraits<ADD>::attr);
+  NaryExpr a(ADD, OperatorInfo<ADD>::attr);
   EXPECT_TRUE(a.is_commutative());
   EXPECT_TRUE(a.is_associative());
 
-  NaryExpr b(LSS, OperatorTraits<LSS>::attr);
+  NaryExpr b(LSS, OperatorInfo<LSS>::attr);
   EXPECT_FALSE(b.is_commutative());
   EXPECT_FALSE(b.is_associative());
 
@@ -154,25 +154,25 @@ TEST(ExprTest, GetAttr) {
 }
 
 TEST(ExprTest, AttrFunctions) {
-  EXPECT_TRUE(get_commutative_attr(OperatorTraits<ADD>::attr));
-  EXPECT_TRUE(get_associative_attr(OperatorTraits<ADD>::attr));
-  EXPECT_TRUE(get_identity_attr(OperatorTraits<ADD>::attr));
+  EXPECT_TRUE(get_commutative_attr(OperatorInfo<ADD>::attr));
+  EXPECT_TRUE(get_associative_attr(OperatorInfo<ADD>::attr));
+  EXPECT_TRUE(get_identity_attr(OperatorInfo<ADD>::attr));
 
-  EXPECT_TRUE(get_commutative_attr(OperatorTraits<LAND>::attr));
-  EXPECT_TRUE(get_associative_attr(OperatorTraits<LAND>::attr));
-  EXPECT_TRUE(get_identity_attr(OperatorTraits<LAND>::attr));
+  EXPECT_TRUE(get_commutative_attr(OperatorInfo<LAND>::attr));
+  EXPECT_TRUE(get_associative_attr(OperatorInfo<LAND>::attr));
+  EXPECT_TRUE(get_identity_attr(OperatorInfo<LAND>::attr));
 
-  EXPECT_TRUE(get_commutative_attr(OperatorTraits<LOR>::attr));
-  EXPECT_TRUE(get_associative_attr(OperatorTraits<LOR>::attr));
-  EXPECT_TRUE(get_identity_attr(OperatorTraits<LOR>::attr));
+  EXPECT_TRUE(get_commutative_attr(OperatorInfo<LOR>::attr));
+  EXPECT_TRUE(get_associative_attr(OperatorInfo<LOR>::attr));
+  EXPECT_TRUE(get_identity_attr(OperatorInfo<LOR>::attr));
 
-  EXPECT_TRUE(get_commutative_attr(OperatorTraits<EQL>::attr));
-  EXPECT_TRUE(get_associative_attr(OperatorTraits<EQL>::attr));
-  EXPECT_FALSE(get_identity_attr(OperatorTraits<EQL>::attr));
+  EXPECT_TRUE(get_commutative_attr(OperatorInfo<EQL>::attr));
+  EXPECT_TRUE(get_associative_attr(OperatorInfo<EQL>::attr));
+  EXPECT_FALSE(get_identity_attr(OperatorInfo<EQL>::attr));
 
-  EXPECT_FALSE(get_commutative_attr(OperatorTraits<LSS>::attr));
-  EXPECT_FALSE(get_associative_attr(OperatorTraits<LSS>::attr));
-  EXPECT_FALSE(get_identity_attr(OperatorTraits<LSS>::attr));
+  EXPECT_FALSE(get_commutative_attr(OperatorInfo<LSS>::attr));
+  EXPECT_FALSE(get_associative_attr(OperatorInfo<LSS>::attr));
+  EXPECT_FALSE(get_identity_attr(OperatorInfo<LSS>::attr));
 
   EXPECT_TRUE(get_commutative_attr(COMM_ATTR));
   EXPECT_FALSE(get_associative_attr(COMM_ATTR));
@@ -200,27 +200,27 @@ TEST(ExprTest, GetAndSetOnUnaryExpr) {
   const SharedExpr b = SharedExpr(new AnyExpr<short>("B"));
   UnaryExpr c(NOT, a);
   
-  EXPECT_EQ(a, c.get_expr());
-  c.set_expr(b);
-  EXPECT_EQ(b, c.get_expr());
+  EXPECT_EQ(a, c.operand());
+  c.set_operand(b);
+  EXPECT_EQ(b, c.operand());
 }
 
 TEST(ExprTest, NaryExprAsBinaryExpr) {
   const SharedExpr a = SharedExpr(new AnyExpr<short>("A"));
   const SharedExpr b = SharedExpr(new AnyExpr<short>("B"));
   const SharedExpr c = SharedExpr(new AnyExpr<short>("C"));
-  NaryExpr d(ADD, OperatorTraits<ADD>::attr, a, b);
+  NaryExpr d(ADD, OperatorInfo<ADD>::attr, a, b);
   
-  EXPECT_EQ(2, d.get_exprs().size());
+  EXPECT_EQ(2, d.operands().size());
 
   std::stringstream binary_out;
   d.write(binary_out);
 
   EXPECT_EQ("([A]+[B])", binary_out.str());
 
-  d.append_expr(c);
+  d.append_operand(c);
 
-  EXPECT_EQ(3, d.get_exprs().size());
+  EXPECT_EQ(3, d.operands().size());
 
   std::stringstream nary_out;
   d.write(nary_out);
@@ -229,9 +229,9 @@ TEST(ExprTest, NaryExprAsBinaryExpr) {
 }
 
 TEST(ExprTest, NaryExprWriteEmpty) {
-  NaryExpr a(ADD, OperatorTraits<ADD>::attr);
+  NaryExpr a(ADD, OperatorInfo<ADD>::attr);
 
-  EXPECT_EQ(0, a.get_exprs().size());
+  EXPECT_EQ(0, a.operands().size());
 
   std::stringstream out;
   a.write(out);
@@ -243,21 +243,21 @@ TEST(ExprTest, NaryExpr) {
   const SharedExpr a = SharedExpr(new AnyExpr<short>("A"));
   const SharedExpr b = SharedExpr(new AnyExpr<short>("B"));
   const SharedExpr c = SharedExpr(new AnyExpr<short>("C"));
-  NaryExpr d(ADD, OperatorTraits<ADD>::attr);
+  NaryExpr d(ADD, OperatorInfo<ADD>::attr);
 
-  d.append_expr(a);
-  d.append_expr(b);
+  d.append_operand(a);
+  d.append_operand(b);
   
-  EXPECT_EQ(2, d.get_exprs().size());
+  EXPECT_EQ(2, d.operands().size());
 
   std::stringstream binary_out;
   d.write(binary_out);
 
   EXPECT_EQ("([A]+[B])", binary_out.str());
 
-  d.append_expr(c);
+  d.append_operand(c);
 
-  EXPECT_EQ(3, d.get_exprs().size());
+  EXPECT_EQ(3, d.operands().size());
 
   std::stringstream nary_out;
   d.write(nary_out);
@@ -265,31 +265,31 @@ TEST(ExprTest, NaryExpr) {
   EXPECT_EQ("([A]+[B]+[C])", nary_out.str());
 }
 
-TEST(ExprTest, GetAndSetOnTernaryExpr) {
+TEST(ExprTest, GetAndSetOnIfThenElseExpr) {
   const SharedExpr a = SharedExpr(new AnyExpr<short>("A"));
   const SharedExpr b = SharedExpr(new AnyExpr<short>("B"));
   const SharedExpr c = SharedExpr(new AnyExpr<short>("C"));
-  TernaryExpr d(a, b, c);
+  IfThenElseExpr d(a, b, c);
   
-  EXPECT_EQ(a, d.get_cond_expr());
-  EXPECT_EQ(b, d.get_then_expr());
-  EXPECT_EQ(c, d.get_else_expr());
+  EXPECT_EQ(a, d.cond_expr());
+  EXPECT_EQ(b, d.then_expr());
+  EXPECT_EQ(c, d.else_expr());
 
   d.set_cond_expr(c);
   d.set_then_expr(a);
   d.set_else_expr(b);
 
-  EXPECT_EQ(c, d.get_cond_expr());
-  EXPECT_EQ(a, d.get_then_expr());
-  EXPECT_EQ(b, d.get_else_expr());
+  EXPECT_EQ(c, d.cond_expr());
+  EXPECT_EQ(a, d.then_expr());
+  EXPECT_EQ(b, d.else_expr());
 }
 
 TEST(ExprTest, WriteTreeWithoutCast) {
   const SharedExpr a = SharedExpr(new ValueExpr<short>(7));
   const SharedExpr b = SharedExpr(new ValueExpr<int>(3, "Var_1"));
   const SharedExpr neg = SharedExpr(new UnaryExpr(NOT, a));
-  const SharedExpr add = SharedExpr(new NaryExpr(ADD, OperatorTraits<ADD>::attr, a, b));
-  const SharedExpr lss = SharedExpr(new NaryExpr(LSS, OperatorTraits<LSS>::attr, add, neg));
+  const SharedExpr add = SharedExpr(new NaryExpr(ADD, OperatorInfo<ADD>::attr, a, b));
+  const SharedExpr lss = SharedExpr(new NaryExpr(LSS, OperatorInfo<LSS>::attr, add, neg));
 
   std::stringstream out;
   out << lss;
@@ -302,8 +302,8 @@ TEST(ExprTest, WriteTreeWithCast) {
   const SharedExpr cast = SharedExpr(new CastExpr(INT, a));
   const SharedExpr b = SharedExpr(new ValueExpr<int>(3, "Var_1"));
   const SharedExpr neg = SharedExpr(new UnaryExpr(NOT, cast));
-  const SharedExpr add = SharedExpr(new NaryExpr(ADD, OperatorTraits<ADD>::attr, a, b));
-  const SharedExpr lss = SharedExpr(new NaryExpr(LSS, OperatorTraits<LSS>::attr, add, neg));
+  const SharedExpr add = SharedExpr(new NaryExpr(ADD, OperatorInfo<ADD>::attr, a, b));
+  const SharedExpr lss = SharedExpr(new NaryExpr(LSS, OperatorInfo<LSS>::attr, add, neg));
 
   std::stringstream out;
   out << lss;
@@ -315,9 +315,9 @@ TEST(ExprTest, WriteTreeWithTernary) {
   const SharedExpr a = SharedExpr(new ValueExpr<short>(7));
   const SharedExpr b = SharedExpr(new ValueExpr<int>(3, "Var_1"));
   const SharedExpr c = SharedExpr(new ValueExpr<int>(5, "Var_2"));
-  const SharedExpr d = SharedExpr(new NaryExpr(ADD, OperatorTraits<ADD>::attr, b, c));
-  const SharedExpr lss = SharedExpr(new NaryExpr(LSS, OperatorTraits<LSS>::attr, a, b));
-  const SharedExpr ifThenElse = SharedExpr(new TernaryExpr(lss, d, a));
+  const SharedExpr d = SharedExpr(new NaryExpr(ADD, OperatorInfo<ADD>::attr, b, c));
+  const SharedExpr lss = SharedExpr(new NaryExpr(LSS, OperatorInfo<LSS>::attr, a, b));
+  const SharedExpr ifThenElse = SharedExpr(new IfThenElseExpr(lss, d, a));
 
   std::stringstream out;
   out << ifThenElse;
@@ -328,12 +328,12 @@ TEST(ExprTest, WriteTreeWithTernary) {
 TEST(ExprTest, WriteTreeWithEveryTypeOfExpr) {
   const SharedExpr a = SharedExpr(new AnyExpr<int>("A"));
   const SharedExpr b = SharedExpr(new ValueExpr<short>(5));
-  const SharedExpr lss = SharedExpr(new NaryExpr(LSS, OperatorTraits<LSS>::attr, a, b));
+  const SharedExpr lss = SharedExpr(new NaryExpr(LSS, OperatorInfo<LSS>::attr, a, b));
   const SharedExpr neg = SharedExpr(new UnaryExpr(NOT, lss));
   const SharedExpr c = SharedExpr(new AnyExpr<int>("C"));
   const SharedExpr cast = SharedExpr(new CastExpr(CHAR, c));
   const SharedExpr d = SharedExpr(new AnyExpr<int>("D"));
-  const SharedExpr ternary = SharedExpr(new TernaryExpr(neg, cast, d));
+  const SharedExpr ternary = SharedExpr(new IfThenElseExpr(neg, cast, d));
 
   std::stringstream out;
   out << ternary;

@@ -13,8 +13,8 @@ Tracer& tracer() {
 
 // Macro to define a function which has been declared with ANY_DECL.
 #define ANY_DEF(type) \
-Value<type> any_##type(const std::string& name) {\
-  return Value<type>(name);\
+Value<type> any_##type(const std::string& identifier) {\
+  return Value<type>(identifier);\
 }
 
 ANY_DEF(bool)
