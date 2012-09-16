@@ -35,6 +35,13 @@ Note that "make install" may require superuser privileges.
 For advanced usage information on other configure options refer to the
 Autoconf documentation: http://www.gnu.org/software/autoconf/
 
+== Documentation ==
+
+If Doxygen is installed, then the class documentation can be generated
+with the following command:
+
+  $ make doc
+
 == Troubleshooting ==
 
 Since the library uses advanced C++11 language features, older compiler

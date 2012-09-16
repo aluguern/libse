@@ -8,6 +8,13 @@ AUTOMAKE_OPTIONS = foreign
 # Always include gtest in distributions.
 DIST_SUBDIRS = gtest
 
+if HAVE_DOXYGEN
+
+doc:
+	$(DOXYGEN) $(top_srcdir)/doc/Doxyfile
+
+endif
+
 # The following local target definition is copied from the Protobuf project:
 #   Build gtest before we build our tests. We don't add gtest to SUBDIRS
 #   because then "make check" would also build and run all of gtest's own tests,
@@ -27,7 +34,7 @@ bench: all
 	time -p -o bench/LOG -a bench/for_loop
 	time -p -o bench/LOG -a bench/while_loop
 
-.PHONY: bench
+.PHONY: bench doc
 
 # The following local target definition is copied from the Protobuf project:
 #   We would like to clean gtest when "make clean" is invoked. But we have to
