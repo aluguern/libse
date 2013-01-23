@@ -5,7 +5,9 @@ features to create an extensible native symbolic execution framework.
 Native symbolic execution targets lightweight symbolic execution by
 leveraging CPU architecture optimizations.
 
-Libse is distributed under a BSD-style license.
+Libse is distributed under a [BSD-style license][bsd-license].
+
+[bsd-license]: https://raw.github.com/ahorn/libse/master/LICENSE
 
 ## Requirements
 
