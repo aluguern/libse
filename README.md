@@ -10,7 +10,7 @@ Libse is distributed under a BSD-style license.
 ## Requirements
 
 You need to compile the [Z3 theorem prover][z3]. Its source code is available
-under the Microsoft Research License Agreement:
+under the [Microsoft Research License Agreement][msr-la]:
 
     $ git clone https://git01.codeplex.com/z3
 
@@ -18,6 +18,7 @@ See the `z3/README` file for instructions on how to compile the Z3 source code
 with any of the following compilers: Visual Studio, g++ or clang++.
 
 [z3]: http://z3.codeplex.com/
+[msr-la]: http://z3.codeplex.com/license
 
 ## Installation
 
