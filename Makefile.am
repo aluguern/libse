@@ -49,7 +49,7 @@ clean-local:
 	  cd gtest && $(MAKE) $(AM_MAKEFLAGS) clean; \
 	fi
 
-dist_doc_DATA = README
+dist_doc_DATA = README.md
 
 # Build rules for libraries.
 lib_LTLIBRARIES = lib/libse.la
