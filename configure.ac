@@ -11,8 +11,8 @@ AC_CONFIG_FILES([Makefile])
 AC_CONFIG_SUBDIRS([gtest])
 
 # Search for SMT and SAT solver libraries
-CXXFLAGS="$CXXFLAGS -Isolvers/z3/include"
-LDFLAGS="$LDFLAGS -Lsolvers/z3/lib"
+CXXFLAGS="$CXXFLAGS -Isolvers/z3/src/api -Isolvers/z3/src/api/c++" 
+LDFLAGS="$LDFLAGS -Lsolvers/z3/build"
 
 AC_SEARCH_LIBS([Z3_mk_config], [z3], , AC_MSG_ERROR([Unable to find Z3 theorem prover]))
 

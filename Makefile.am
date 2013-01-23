@@ -81,7 +81,8 @@ pkginclude_HEADERS = \
 # TESTS -- Programs run automatically by "make check"
 # check_PROGRAMS -- Programs built by "make check" but not necessarily run
 
-tests_library_path = $(srcdir)/solvers/z3/lib
+# See README in Z3 source code for installation instructions
+tests_library_path = $(srcdir)/solvers/z3/build
 
 TESTS_ENVIRONMENT = \
   LIBPATH=$(tests_library_path):$$LIBPATH \
