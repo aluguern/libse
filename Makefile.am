@@ -66,6 +66,8 @@ lib_libse_la_SOURCES = \
 pkginclude_HEADERS = \
   include/value.h \
   include/expr.h \
+  include/eval.h \
+  include/instr.h \
   include/visitor.h \
   include/interpreter.h \
   include/var.h \
@@ -102,6 +104,8 @@ test_se_SOURCES = \
   test/value_test.cpp \
   test/any_test.cpp \
   test/expr_test.cpp \
+  test/eval_test.cpp \
+  test/instr_test.cpp \
   test/visitor_test.cpp \
   test/interpreter_test.cpp \
   test/var_test.cpp \
