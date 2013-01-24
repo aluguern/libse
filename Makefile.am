@@ -55,6 +55,7 @@ dist_doc_DATA = README.md
 lib_LTLIBRARIES = lib/libse.la
 
 lib_libse_la_SOURCES = \
+  src/op.cpp \
   src/expr.cpp \
   src/value.cpp \
   src/var.cpp \
@@ -64,6 +65,7 @@ lib_libse_la_SOURCES = \
   src/tracer.cpp
 
 pkginclude_HEADERS = \
+  include/op.h \
   include/value.h \
   include/expr.h \
   include/eval.h \
@@ -101,6 +103,7 @@ TESTS = test/se
 check_PROGRAMS = test/se
 
 test_se_SOURCES = \
+  test/op_test.cpp \
   test/value_test.cpp \
   test/any_test.cpp \
   test/expr_test.cpp \

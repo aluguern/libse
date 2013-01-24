@@ -6,11 +6,6 @@
 
 namespace se {
 
-const Operator UNARY_BEGIN = NOT;
-const Operator UNARY_END = ADD;
-const Operator NARY_BEGIN = ADD;
-const Operator NARY_END = LSS;
-
 std::ostream& CastExpr::write(std::ostream& out) const {
   out << LPAR << LPAR;
   out << types[m_type];

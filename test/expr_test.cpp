@@ -13,13 +13,6 @@ TEST(ExprTest, OperatorsStringConversion) {
   EXPECT_EQ("<", operators[LSS]);
 }
 
-TEST(ExprTest, OperatorsOrder) {
-  EXPECT_EQ(NOT + 1, ADD);
-  EXPECT_EQ(ADD + 1, LAND);
-  EXPECT_EQ(LOR + 1, EQL);
-  EXPECT_EQ(EQL + 1, LSS);
-}
-
 TEST(ExprTest, GetKind) {
   AnyExpr<char> a("A");
   EXPECT_EQ(ANY_EXPR, a.kind());
@@ -111,18 +104,6 @@ TEST(ExprTest, NaryExprPrependAndAppend) {
   EXPECT_EQ("(((int)(7))+[C:3]+[A]+[B])", out.str());
 }
 
-TEST(ExprTest, AddAttr) {
-  OperatorAttr expected_attr = LASSOC_ATTR | RASSOC_ATTR | COMM_ATTR | HAS_ID_ELEMENT_ATTR;
-  OperatorAttr actual_attr = OperatorInfo<ADD>::attr;
-  EXPECT_EQ(expected_attr, actual_attr);
-}
-
-TEST(ExprTest, LssAttr) {
-  OperatorAttr expected_attr = CLEAR_ATTR;
-  OperatorAttr actual_attr = OperatorInfo<LSS>::attr;
-  EXPECT_EQ(expected_attr, actual_attr);
-}
-
 TEST(ExprTest, GetAttr) {
   NaryExpr a(ADD, OperatorInfo<ADD>::attr);
   EXPECT_TRUE(a.is_commutative());
@@ -151,48 +132,6 @@ TEST(ExprTest, GetAttr) {
   NaryExpr g(LSS, CLEAR_ATTR);
   EXPECT_FALSE(g.is_commutative());
   EXPECT_FALSE(g.is_associative());
-}
-
-TEST(ExprTest, AttrFunctions) {
-  EXPECT_TRUE(get_commutative_attr(OperatorInfo<ADD>::attr));
-  EXPECT_TRUE(get_associative_attr(OperatorInfo<ADD>::attr));
-  EXPECT_TRUE(get_identity_attr(OperatorInfo<ADD>::attr));
-
-  EXPECT_TRUE(get_commutative_attr(OperatorInfo<LAND>::attr));
-  EXPECT_TRUE(get_associative_attr(OperatorInfo<LAND>::attr));
-  EXPECT_TRUE(get_identity_attr(OperatorInfo<LAND>::attr));
-
-  EXPECT_TRUE(get_commutative_attr(OperatorInfo<LOR>::attr));
-  EXPECT_TRUE(get_associative_attr(OperatorInfo<LOR>::attr));
-  EXPECT_TRUE(get_identity_attr(OperatorInfo<LOR>::attr));
-
-  EXPECT_TRUE(get_commutative_attr(OperatorInfo<EQL>::attr));
-  EXPECT_TRUE(get_associative_attr(OperatorInfo<EQL>::attr));
-  EXPECT_FALSE(get_identity_attr(OperatorInfo<EQL>::attr));
-
-  EXPECT_FALSE(get_commutative_attr(OperatorInfo<LSS>::attr));
-  EXPECT_FALSE(get_associative_attr(OperatorInfo<LSS>::attr));
-  EXPECT_FALSE(get_identity_attr(OperatorInfo<LSS>::attr));
-
-  EXPECT_TRUE(get_commutative_attr(COMM_ATTR));
-  EXPECT_FALSE(get_associative_attr(COMM_ATTR));
-  EXPECT_FALSE(get_identity_attr(COMM_ATTR));
-
-  EXPECT_FALSE(get_commutative_attr(LASSOC_ATTR));
-  EXPECT_FALSE(get_associative_attr(LASSOC_ATTR));
-  EXPECT_FALSE(get_identity_attr(LASSOC_ATTR));
-
-  EXPECT_FALSE(get_commutative_attr(RASSOC_ATTR));
-  EXPECT_FALSE(get_associative_attr(RASSOC_ATTR));
-  EXPECT_FALSE(get_identity_attr(RASSOC_ATTR));
-
-  EXPECT_FALSE(get_commutative_attr(LASSOC_ATTR | RASSOC_ATTR));
-  EXPECT_TRUE(get_associative_attr(LASSOC_ATTR | RASSOC_ATTR));
-  EXPECT_FALSE(get_identity_attr(LASSOC_ATTR | RASSOC_ATTR));
-
-  EXPECT_FALSE(get_commutative_attr(CLEAR_ATTR));
-  EXPECT_FALSE(get_associative_attr(CLEAR_ATTR));
-  EXPECT_FALSE(get_identity_attr(CLEAR_ATTR));
 }
 
 TEST(ExprTest, GetAndSetOnUnaryExpr) {
@@ -340,12 +279,3 @@ TEST(ExprTest, WriteTreeWithEveryTypeOfExpr) {
 
   EXPECT_EQ("((!([A]<5))?((char)([C])):[D])", out.str());
 }
-
-// See diagram in include/expr.h
-TEST(ExprTest, OperatorEnumLayout) {
-  EXPECT_EQ(NOT, UNARY_BEGIN);
-  EXPECT_EQ(ADD, UNARY_END);
-  EXPECT_EQ(ADD, NARY_BEGIN);
-  EXPECT_EQ(LSS, NARY_END);
-}
-

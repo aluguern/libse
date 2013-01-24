@@ -35,20 +35,16 @@ public:
   template<typename T, typename U>
   static void exec(const T& larg, int rarg, U& result) {
     if(larg.is_symbolic()) {
-      OperatorAttr attr = OperatorInfo<op>::attr;
       SharedExpr raw_expr = larg.AbstractValue::expr();
 
-      if(get_associative_attr(attr) &&
-         get_commutative_attr(attr) &&
-         get_identity_attr(attr)) {
-
+      if(OperatorInfo<op>::is_commutative_monoid()) {
         bool create_partial_nary_expr = false;
         auto kind = raw_expr->kind();
         if(kind == ANY_EXPR || kind == VALUE_EXPR) {
           create_partial_nary_expr = true;
         } else if(kind == NARY_EXPR) {
           auto nary_expr = std::dynamic_pointer_cast<NaryExpr>(raw_expr);
-          if(nary_expr->attr() == attr) {
+          if(nary_expr->attr() == OperatorInfo<op>::attr) {
             if(nary_expr->is_partial()) {
               const auto new_aggregate = 
                 Eval<op>::eval(larg.aux_value(), rarg, result.value());
