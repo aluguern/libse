@@ -47,8 +47,8 @@ public:
           if(nary_expr->attr() == OperatorInfo<op>::attr) {
             if(nary_expr->is_partial()) {
               const auto new_aggregate = 
-                Eval<op>::eval(larg.aux_value(), rarg, result.value());
-              result.set_aux_value(new_aggregate);
+                Eval<op>::eval(larg.aggregate(), rarg, result.data());
+              result.set_aggregate(new_aggregate);
               result.set_expr(raw_expr);
               return;
             } else {
@@ -57,8 +57,8 @@ public:
           }
         }
         if(create_partial_nary_expr) {
-          /* larg.value() must act as the identity element of op. */
-          result.set_aux_value(rarg);
+          /* larg.data() must act as the identity element of op. */
+          result.set_aggregate(rarg);
           result.set_expr(PARTIAL_EXPR(op, raw_expr));
           return;
         }

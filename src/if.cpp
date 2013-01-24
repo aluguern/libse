@@ -18,7 +18,7 @@ bool If::begin_then() {
     }
     return true;
   } else {
-    return cond.value();
+    return cond.data();
   }
 }
 
@@ -36,7 +36,7 @@ bool If::begin_else() {
     }
     return true;
   } else {
-    return !cond.value();
+    return !cond.data();
   }
 }
 

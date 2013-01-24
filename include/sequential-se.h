@@ -50,29 +50,29 @@ static inline const se::Value<T>& __value(const se::Value<T>& value) {
 #define OVERLOAD_BINARY_OPERATOR(op, opname) \
   template<typename T, typename U>\
   const auto operator op(const T& larg, const U& rarg) ->\
-    decltype(se::make_value(__value(larg).value() op __value(rarg).value())) {\
+    decltype(se::make_value(__value(larg).data() op __value(rarg).data())) {\
     \
     const auto larg_value = __value(larg);\
     const auto rarg_value = __value(rarg);\
-    auto ret = se::make_value(larg_value.value() op rarg_value.value());\
+    auto ret = se::make_value(larg_value.data() op rarg_value.data());\
     se::Instr<se::opname>::exec(larg_value, rarg_value, ret);\
     return ret;\
   }\
   template<typename T>\
   const auto operator op(const T& larg, const int rarg) ->\
-    decltype(se::make_value(__value(larg).value() op rarg)) {\
+    decltype(se::make_value(__value(larg).data() op rarg)) {\
     \
     const auto larg_value = __value(larg);\
-    auto ret = se::make_value(larg_value.value() op rarg);\
+    auto ret = se::make_value(larg_value.data() op rarg);\
     se::Instr<se::opname>::exec(larg_value, rarg, ret);\
     return ret;\
   }\
   template<typename T>\
   const auto operator op(const int larg, const T& rarg) ->\
-    decltype(se::make_value(larg op __value(rarg).value())) {\
+    decltype(se::make_value(larg op __value(rarg).data())) {\
     \
     const auto rarg_value = __value(rarg);\
-    auto ret = se::make_value(larg op rarg_value.value());\
+    auto ret = se::make_value(larg op rarg_value.data());\
     se::Instr<se::opname>::exec(larg, rarg_value, ret);\
     return ret;\
   }
@@ -91,10 +91,10 @@ OVERLOAD_BINARY_OPERATOR(<, LSS)
 #define OVERLOAD_UNARY_OPERATOR(op, opname) \
   template<typename T>\
   const auto operator op(const T& arg) ->\
-    decltype(se::make_value(op __value(arg).value())) {\
+    decltype(se::make_value(op __value(arg).data())) {\
     \
     const auto arg_value = __value(arg);\
-    auto ret = se::make_value(op arg_value.value());\
+    auto ret = se::make_value(op arg_value.data());\
     se::Instr<se::opname>::exec(arg_value, ret);\
     return ret;\
   }

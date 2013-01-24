@@ -340,7 +340,7 @@ public:
 ///
 /// It is possible to have NaryExpr objects with fewer than two operands.
 /// These nary expressions are said to be \ref is_partial() "partial".
-/// Partial nary expression play an important role in \ref Value::aux_value()
+/// Partial nary expression play an important role in \ref Value::aggregate()
 /// "constant propagation". Due to \ref SharedExpr "sharing of subexpressions",
 /// any expression simplifications should occur before inserting the expression
 /// into the DAG.

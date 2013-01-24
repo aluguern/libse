@@ -18,19 +18,19 @@ TEST(SimplifyTest, UpdateConcolicVariableWithRHSConstant) {
   se::Int var = 3;
 
   EXPECT_TRUE(var.value().is_concrete());
-  EXPECT_FALSE(var.value().has_aux_value());
+  EXPECT_FALSE(var.value().has_aggregate());
 
   se::set_symbolic(var);
 
   EXPECT_TRUE(var.value().is_concrete());
-  EXPECT_FALSE(var.value().has_aux_value());
+  EXPECT_FALSE(var.value().has_aggregate());
 
   var = var + 2;
 
   EXPECT_TRUE(var.value().is_concrete());
-  EXPECT_TRUE(var.value().has_aux_value());
-  EXPECT_EQ(5, var.value().value());
-  EXPECT_EQ(2, var.value().aux_value());
+  EXPECT_TRUE(var.value().has_aggregate());
+  EXPECT_EQ(5, var.value().data());
+  EXPECT_EQ(2, var.value().aggregate());
 
   std::stringstream out_0;
   out_0 << var.expr();
@@ -39,9 +39,9 @@ TEST(SimplifyTest, UpdateConcolicVariableWithRHSConstant) {
   var = var + 7;
 
   EXPECT_TRUE(var.value().is_concrete());
-  EXPECT_TRUE(var.value().has_aux_value());
-  EXPECT_EQ(12, var.value().value());
-  EXPECT_EQ(9, var.value().aux_value());
+  EXPECT_TRUE(var.value().has_aggregate());
+  EXPECT_EQ(12, var.value().data());
+  EXPECT_EQ(9, var.value().aggregate());
 
   std::stringstream out_1;
   out_1 << var.expr();
@@ -52,13 +52,13 @@ TEST(SimplifyTest, UpdateSymbolicVariableWithRHSConstant) {
   se::Int var = se::any<int>("A");
 
   EXPECT_FALSE(var.value().is_concrete());
-  EXPECT_FALSE(var.value().has_aux_value());
+  EXPECT_FALSE(var.value().has_aggregate());
 
   var = var + 2;
 
   EXPECT_FALSE(var.value().is_concrete());
-  EXPECT_TRUE(var.value().has_aux_value());
-  EXPECT_EQ(2, var.value().aux_value());
+  EXPECT_TRUE(var.value().has_aggregate());
+  EXPECT_EQ(2, var.value().aggregate());
 
   std::stringstream out_0;
   out_0 << var.expr();
@@ -67,8 +67,8 @@ TEST(SimplifyTest, UpdateSymbolicVariableWithRHSConstant) {
   var = var + 7;
 
   EXPECT_FALSE(var.value().is_concrete());
-  EXPECT_TRUE(var.value().has_aux_value());
-  EXPECT_EQ(9, var.value().aux_value());
+  EXPECT_TRUE(var.value().has_aggregate());
+  EXPECT_EQ(9, var.value().aggregate());
 
   std::stringstream out_1;
   out_1 << var.expr();
@@ -81,13 +81,13 @@ TEST(SimplifyTest, ValueWithRHSConstant) {
   se::Int var = se::any<int>("A");
 
   EXPECT_FALSE(var.value().is_concrete());
-  EXPECT_FALSE(var.value().has_aux_value());
+  EXPECT_FALSE(var.value().has_aggregate());
 
   se::Value<int> value = var + 2 + 3;
 
   EXPECT_TRUE(value.is_concrete());
-  EXPECT_TRUE(value.has_aux_value());
-  EXPECT_EQ(5, value.aux_value());
+  EXPECT_TRUE(value.has_aggregate());
+  EXPECT_EQ(5, value.aggregate());
 
   std::stringstream out;
   out << value.expr();
@@ -98,8 +98,8 @@ TEST(SimplifyTest, ValueWithRHSConstant) {
   // even though RHS has concrete value it must not propagate
   EXPECT_FALSE(var.value().is_concrete());
 
-  EXPECT_TRUE(var.value().has_aux_value());
-  EXPECT_EQ(5, var.value().aux_value());
+  EXPECT_TRUE(var.value().has_aggregate());
+  EXPECT_EQ(5, var.value().aggregate());
 }
 
 TEST(SimplifyTest, DifferentOperatorsWithRHSConstants) {

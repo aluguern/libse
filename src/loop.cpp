@@ -22,7 +22,7 @@ bool Loop::unwind(const Value<bool>& cond) {
     }
     return unwind_flag;
   } else {
-    return cond.value();
+    return cond.data();
   }
 }
 

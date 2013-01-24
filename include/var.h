@@ -161,11 +161,11 @@ public:
 /// type() is \ref INT. In contrast, `y` is an integer variable with only
 /// concrete data (e.g. 7). However, `y` can become symbolic later in the
 /// symbolic execution of the program under test (e.g. last assignment). Due to
-/// \ref Value::aux_value() "constant propagation", `y`'s final Var<T>::expr()
+/// \ref Value::aggregate() "constant propagation", `y`'s final Var<T>::expr()
 /// is of the form "x + 8".
 ///
 /// The concrete data and/or symbolic expression of a variable can be accessed
-/// through value(). See the AbstractVar and Value class documentation for more
+/// through data(). See the AbstractVar and Value class documentation for more
 /// details.
 ///
 /// The following table summarizes common mechanisms to create a variable:
@@ -186,7 +186,7 @@ private:
   // Concrete and/or symbolic value of type T
   Value<T> m_value;
 
-  // true if and only if the value is the result of an up or downcast.
+  // true if and only if m_value's data is the result of an up or downcast.
   // If the variable is symbolic and cast is true, then its expression is
   // also going to have a CastExpr for the required type cast.
   bool m_cast;
@@ -202,8 +202,7 @@ private:
 public:
 
   /// Concrete variable
-  Var(const T concrete_data) : m_value(concrete_data), m_cast(false),
-                               m_version(VZERO) {}
+  Var(const T data) : m_value(data), m_cast(false), m_version(VZERO) {}
 
   /// Variable based on another (symbolic/concrete) value of the same type
   Var(const Value<T>& value) : m_value(value), m_cast(false),
@@ -269,7 +268,7 @@ public:
        // TODO: log possibility of incomplete analysis
     }
 
-    return m_value.value();
+    return m_value.data();
   }
 
   /// Replace the value and propagate cast information

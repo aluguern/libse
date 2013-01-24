@@ -54,7 +54,7 @@ TEST(ValueTest, ValueConstructorWithExpression) {
   const Value<char> a = Value<char>(5, expr);
 
   EXPECT_EQ(CHAR, a.type());
-  EXPECT_EQ(5, a.value());
+  EXPECT_EQ(5, a.data());
   EXPECT_TRUE(a.is_symbolic());
 }
 
@@ -62,7 +62,7 @@ TEST(ValueTest, ValueConstructorWithoutExpression) {
   const Value<char> a = Value<char>(5);
 
   EXPECT_EQ(CHAR, a.type());
-  EXPECT_EQ(5, a.value());
+  EXPECT_EQ(5, a.data());
   EXPECT_FALSE(a.is_symbolic());
 }
 
@@ -70,7 +70,7 @@ TEST(ValueTest, ValueConstructorWithNullExpression) {
   const Value<char> a = Value<char>(5, SharedExpr());
 
   EXPECT_EQ(CHAR, a.type());
-  EXPECT_EQ(5, a.value());
+  EXPECT_EQ(5, a.data());
   EXPECT_FALSE(a.is_symbolic());
 }
 
@@ -79,7 +79,7 @@ TEST(ValueTest, ValueCopyConstructorWithoutExpression) {
   const Value<char> b = a;
 
   EXPECT_EQ(CHAR, b.type());
-  EXPECT_EQ(5, b.value());
+  EXPECT_EQ(5, b.data());
   EXPECT_FALSE(b.is_symbolic());
 }
 
@@ -88,7 +88,7 @@ TEST(ValueTest, ValueCopyConstructorWithoutExpressionButCast) {
   const Value<int> b = a;
 
   EXPECT_EQ(INT, b.type());
-  EXPECT_EQ(5, b.value());
+  EXPECT_EQ(5, b.data());
   EXPECT_FALSE(b.is_symbolic());
 }
 
@@ -98,7 +98,7 @@ TEST(ValueTest, ValueCopyConstructorWithExpression) {
   const Value<char> b = a;
 
   EXPECT_EQ(CHAR, b.type());
-  EXPECT_EQ(5, b.value());
+  EXPECT_EQ(5, b.data());
   EXPECT_EQ(expr, b.expr());
   EXPECT_TRUE(b.is_symbolic());
 }
@@ -109,7 +109,7 @@ TEST(ValueTest, ValueCopyConstructorWithExpressionAndCast) {
   const Value<int> b = a;
 
   EXPECT_EQ(INT, b.type());
-  EXPECT_EQ(5, b.value());
+  EXPECT_EQ(5, b.data());
   EXPECT_NE(expr, b.expr());
   EXPECT_TRUE(b.is_symbolic());
 }
@@ -119,7 +119,7 @@ TEST(ValueTest, ValueCopyConstructorWithNullExpression) {
   const Value<char> b = a;
 
   EXPECT_EQ(CHAR, b.type());
-  EXPECT_EQ(5, b.value());
+  EXPECT_EQ(5, b.data());
   EXPECT_FALSE(b.is_symbolic());
 }
 
@@ -128,7 +128,7 @@ TEST(ValueTest, ValueCopyConstructorWithNullExpressionAndCast) {
   const Value<int> b = a;
 
   EXPECT_EQ(INT, b.type());
-  EXPECT_EQ(5, b.value());
+  EXPECT_EQ(5, b.data());
   EXPECT_FALSE(b.is_symbolic());
 }
 
@@ -141,7 +141,7 @@ TEST(ValueTest, ValueAssignmentWithoutExpressionButCast) {
   // Typing information is immutable
   EXPECT_EQ(CHAR, b.type());
 
-  EXPECT_EQ(5, b.value());
+  EXPECT_EQ(5, b.data());
   EXPECT_FALSE(b.is_symbolic());
 }
 
@@ -155,7 +155,7 @@ TEST(ValueTest, ValueAssignmentWithExpressionAndCast) {
   // Typing information is immutable
   EXPECT_EQ(CHAR, b.type());
 
-  EXPECT_EQ(5, b.value());
+  EXPECT_EQ(5, b.data());
   EXPECT_NE(expr, b.expr());
   EXPECT_TRUE(b.is_symbolic());
 }
@@ -169,7 +169,7 @@ TEST(ValueTest, ValueAssignmentWithExpressionAndWithoutCast) {
 
   EXPECT_EQ(INT, b.type());
 
-  EXPECT_EQ(5, b.value());
+  EXPECT_EQ(5, b.data());
   EXPECT_EQ(expr, b.expr());
   EXPECT_TRUE(b.is_symbolic());
 }
@@ -183,7 +183,7 @@ TEST(ValueTest, ValueAssignmentWithNullExpressionAndCast) {
   // Typing information is immutable
   EXPECT_EQ(CHAR, b.type());
 
-  EXPECT_EQ(5, b.value());
+  EXPECT_EQ(5, b.data());
   EXPECT_FALSE(b.is_symbolic());
 }
 
@@ -194,14 +194,14 @@ TEST(ValueTest, ValueAssignmentWithNullExpressionAndWithoutCast) {
   b = a;
 
   EXPECT_EQ(INT, b.type());
-  EXPECT_EQ(5, b.value());
+  EXPECT_EQ(5, b.data());
   EXPECT_FALSE(b.is_symbolic());
 }
 
 template<typename T>
-const Value<T> reflect_with_expr(const T value) {
-  Value<T> a = make_value<T>(value);
-  a.set_expr(SharedExpr(new ValueExpr<T>(value)));
+const Value<T> reflect_with_expr(const T data) {
+  Value<T> a = make_value<T>(data);
+  a.set_expr(SharedExpr(new ValueExpr<T>(data)));
   return a;
 }
 
@@ -217,8 +217,8 @@ TEST(ValueTest, AddWithoutExpression) {
   EXPECT_FALSE(c.is_symbolic());
   EXPECT_FALSE(d.is_symbolic());
 
-  EXPECT_EQ(7, (a + b).value());
-  EXPECT_EQ(7, (b + a).value());
+  EXPECT_EQ(7, (a + b).data());
+  EXPECT_EQ(7, (b + a).data());
 }
 
 TEST(ValueTest, AddWithExpression) {
@@ -233,8 +233,8 @@ TEST(ValueTest, AddWithExpression) {
   EXPECT_TRUE(c.is_symbolic());
   EXPECT_TRUE(d.is_symbolic());
 
-  EXPECT_EQ(7, (a + b).value());
-  EXPECT_EQ(7, (b + a).value());
+  EXPECT_EQ(7, (a + b).data());
+  EXPECT_EQ(7, (b + a).data());
 
   std::stringstream out;
   out << c.expr();
@@ -253,8 +253,8 @@ TEST(ValueTest, LessThanWithoutExpression) {
   EXPECT_FALSE(c.is_symbolic());
   EXPECT_FALSE(d.is_symbolic());
 
-  EXPECT_TRUE((a < b).value());
-  EXPECT_FALSE((b < a).value());
+  EXPECT_TRUE((a < b).data());
+  EXPECT_FALSE((b < a).data());
 }
 
 TEST(ValueTest, LessThanWithExpression) {
@@ -269,8 +269,8 @@ TEST(ValueTest, LessThanWithExpression) {
   EXPECT_TRUE(c.is_symbolic());
   EXPECT_TRUE(d.is_symbolic());
 
-  EXPECT_TRUE((a < b).value());
-  EXPECT_FALSE((b < a).value());
+  EXPECT_TRUE((a < b).data());
+  EXPECT_FALSE((b < a).data());
 
   std::stringstream out;
   out << c.expr();
@@ -283,7 +283,7 @@ TEST(ValueTest, NotTrueWithoutExpression) {
 
   EXPECT_EQ(BOOL, b.type());
   EXPECT_FALSE(b.is_symbolic());
-  EXPECT_FALSE((!a).value());
+  EXPECT_FALSE((!a).data());
 }
 
 TEST(ValueTest, NotFalseWithoutExpression) {
@@ -292,7 +292,7 @@ TEST(ValueTest, NotFalseWithoutExpression) {
 
   EXPECT_EQ(BOOL, b.type());
   EXPECT_FALSE(b.is_symbolic());
-  EXPECT_TRUE((!a).value());
+  EXPECT_TRUE((!a).data());
 }
 
 TEST(ValueTest, NotTrueWithExpression) {
@@ -301,7 +301,7 @@ TEST(ValueTest, NotTrueWithExpression) {
 
   EXPECT_EQ(BOOL, b.type());
   EXPECT_TRUE(b.is_symbolic());
-  EXPECT_FALSE((!a).value());
+  EXPECT_FALSE((!a).data());
 
   std::stringstream out;
   out << b.expr();
@@ -314,7 +314,7 @@ TEST(ValueTest, NotFalseWithExpression) {
 
   EXPECT_EQ(BOOL, b.type());
   EXPECT_TRUE(b.is_symbolic());
-  EXPECT_TRUE((!a).value());
+  EXPECT_TRUE((!a).data());
 
   std::stringstream out;
   out << b.expr();
@@ -457,81 +457,81 @@ TEST(ValueTest, SymbolicBoolConversionWithIfStatement) {
   EXPECT_EQ("[A:1]\n(![B:0])\n", out.str());
 }
 
-TEST(ValueTest, InitialAndSetAuxValue) {
+TEST(ValueTest, InitialAndSetAggregate) {
   Value<int> a(2);
-  EXPECT_FALSE(a.has_aux_value());
-  a.set_aux_value(3);
-  EXPECT_TRUE(a.has_aux_value());
+  EXPECT_FALSE(a.has_aggregate());
+  a.set_aggregate(3);
+  EXPECT_TRUE(a.has_aggregate());
 
   Value<int> b(2, SharedExpr(new AnyExpr<int>("A")));
-  EXPECT_FALSE(b.has_aux_value());
-  b.set_aux_value(3);
-  EXPECT_TRUE(b.has_aux_value());
+  EXPECT_FALSE(b.has_aggregate());
+  b.set_aggregate(3);
+  EXPECT_TRUE(b.has_aggregate());
 
   Value<int> c("A");
-  EXPECT_FALSE(c.has_aux_value());
-  c.set_aux_value(3);
-  EXPECT_TRUE(c.has_aux_value());
+  EXPECT_FALSE(c.has_aggregate());
+  c.set_aggregate(3);
+  EXPECT_TRUE(c.has_aggregate());
 
   Value<int> d(a);
-  EXPECT_TRUE(d.has_aux_value());
-  EXPECT_EQ(3, d.aux_value());
-  d.set_aux_value(4);
-  EXPECT_TRUE(d.has_aux_value());
+  EXPECT_TRUE(d.has_aggregate());
+  EXPECT_EQ(3, d.aggregate());
+  d.set_aggregate(4);
+  EXPECT_TRUE(d.has_aggregate());
 
   Value<int> e(Value<int>(1));
-  EXPECT_FALSE(e.has_aux_value());
-  e.set_aux_value(3);
-  EXPECT_TRUE(e.has_aux_value());
+  EXPECT_FALSE(e.has_aggregate());
+  e.set_aggregate(3);
+  EXPECT_TRUE(e.has_aggregate());
 }
 
-TEST(ValueTest, InitialAndSetSameAuxValue) {
+TEST(ValueTest, InitialAndSetSameAggregate) {
   Value<int> a(2);
-  EXPECT_FALSE(a.has_aux_value());
-  a.set_aux_value(2);
-  EXPECT_TRUE(a.has_aux_value());
+  EXPECT_FALSE(a.has_aggregate());
+  a.set_aggregate(2);
+  EXPECT_TRUE(a.has_aggregate());
 
   Value<int> b(2, SharedExpr(new AnyExpr<int>("A")));
-  EXPECT_FALSE(b.has_aux_value());
-  b.set_aux_value(2);
-  EXPECT_TRUE(b.has_aux_value());
+  EXPECT_FALSE(b.has_aggregate());
+  b.set_aggregate(2);
+  EXPECT_TRUE(b.has_aggregate());
 
   Value<int> d(a);
-  EXPECT_TRUE(d.has_aux_value());
-  EXPECT_EQ(2, d.aux_value());
-  d.set_aux_value(2);
-  EXPECT_TRUE(d.has_aux_value());
+  EXPECT_TRUE(d.has_aggregate());
+  EXPECT_EQ(2, d.aggregate());
+  d.set_aggregate(2);
+  EXPECT_TRUE(d.has_aggregate());
 
   Value<int> e(Value<int>(1));
-  EXPECT_FALSE(e.has_aux_value());
-  e.set_aux_value(1);
-  EXPECT_TRUE(e.has_aux_value());
+  EXPECT_FALSE(e.has_aggregate());
+  e.set_aggregate(1);
+  EXPECT_TRUE(e.has_aggregate());
 }
 
-TEST(ValueTest, AssignmentOperatorWithAuxValue) {
+TEST(ValueTest, AssignmentOperatorWithAggregate) {
   Value<int> a(2);
-  EXPECT_FALSE(a.has_aux_value());
-  a.set_aux_value(2);
-  EXPECT_TRUE(a.has_aux_value());
+  EXPECT_FALSE(a.has_aggregate());
+  a.set_aggregate(2);
+  EXPECT_TRUE(a.has_aggregate());
 
   Value<int> b(2, SharedExpr(new AnyExpr<int>("A")));
-  EXPECT_FALSE(b.has_aux_value());
+  EXPECT_FALSE(b.has_aggregate());
 
   b = a;
-  EXPECT_TRUE(b.has_aux_value());
+  EXPECT_TRUE(b.has_aggregate());
 }
 
-TEST(ValueTest, AssignmentOperatorWithoutAuxValue) {
+TEST(ValueTest, AssignmentOperatorWithoutAggregate) {
   Value<int> a(2);
-  EXPECT_FALSE(a.has_aux_value());
-  a.set_aux_value(2);
-  EXPECT_TRUE(a.has_aux_value());
+  EXPECT_FALSE(a.has_aggregate());
+  a.set_aggregate(2);
+  EXPECT_TRUE(a.has_aggregate());
 
   Value<int> b(2, SharedExpr(new AnyExpr<int>("A")));
-  EXPECT_FALSE(b.has_aux_value());
+  EXPECT_FALSE(b.has_aggregate());
 
   a = b;
-  EXPECT_FALSE(a.has_aux_value());
+  EXPECT_FALSE(a.has_aggregate());
 }
 
 TEST(ValueTest, IsConcrete) {
