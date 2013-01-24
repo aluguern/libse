@@ -148,7 +148,7 @@ public:
   virtual ~AbstractVar() {}
 };
 
-/// Type-safe (symbolic/concrete) rvalue
+/// Type-safe (symbolic/concrete) lvalue
 
 /// Example:
 ///
