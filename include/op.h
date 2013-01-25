@@ -37,7 +37,10 @@ enum OperatorAttrBit : OperatorAttr {
   COMM_ATTR = (1u << 3),
 
   /// Operator has a unique identity element e, i.e. x ~ e = e ~ x = x
-  HAS_ID_ELEMENT_ATTR = (1u << 4)
+  HAS_ID_ELEMENT_ATTR = (1u << 4),
+
+  /// Operator is always unary, e.g. NOT
+  UNARY_ATTR = (1u << 5)
 };
 
 /// Is the commutative bit on?
@@ -53,6 +56,11 @@ inline bool get_associative_attr(const OperatorAttr attr) {
 /// Is the identity element bit on?
 inline bool get_identity_attr(const OperatorAttr attr) {
   return (attr & HAS_ID_ELEMENT_ATTR) == HAS_ID_ELEMENT_ATTR;
+}
+
+/// Is the unary bit on?
+inline bool get_unary_attr(const OperatorAttr attr) {
+  return (attr & UNARY_ATTR) == UNARY_ATTR;
 }
 
 /// Built-in C++ operators for which symbolic execution is supported
@@ -157,6 +165,9 @@ template<Operator op> class OperatorInfo {};
     static constexpr bool has_identity() {\
       return (attr & HAS_ID_ELEMENT_ATTR) == HAS_ID_ELEMENT_ATTR;\
     }\
+    static constexpr bool is_unary() {\
+      return (attr & UNARY_ATTR) == UNARY_ATTR;\
+    }\
     \
     static constexpr bool is_commutative_monoid() {\
       return is_commutative() && is_associative() && has_identity();\
@@ -164,7 +175,7 @@ template<Operator op> class OperatorInfo {};
   };
 
 // TODO: Consider using another bit mask for floats etc.
-OPERATOR_INFO_DEF(NOT,  CLEAR_ATTR)
+OPERATOR_INFO_DEF(NOT,  UNARY_ATTR | CLEAR_ATTR)
 OPERATOR_INFO_DEF(ADD,  LASSOC_ATTR | RASSOC_ATTR | COMM_ATTR | HAS_ID_ELEMENT_ATTR)
 OPERATOR_INFO_DEF(LAND, LASSOC_ATTR | RASSOC_ATTR | COMM_ATTR | HAS_ID_ELEMENT_ATTR)
 OPERATOR_INFO_DEF(LOR,  LASSOC_ATTR | RASSOC_ATTR | COMM_ATTR | HAS_ID_ELEMENT_ATTR)
