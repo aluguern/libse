@@ -106,13 +106,11 @@ protected:
     return m_unary_operators[op - UNARY_BEGIN];
   }
 
-  // TODO: Implement unsigned operator
-  static BinaryOperator find_binary_operator(Operator op, bool is_signed) {
+  static BinaryOperator find_binary_operator(Operator op) {
     return m_binary_operators[op - UNARY_END];
   }
 
-  // TODO: Implement unsigned operator
-  static NaryOperator find_nary_operator(Operator op, bool is_signed) {
+  static NaryOperator find_nary_operator(Operator op) {
     return m_nary_operators[op - NARY_BEGIN];
   }
 
@@ -223,11 +221,11 @@ public:
     }
 
     if(operands == 2) {
-      const BinaryOperator op = find_binary_operator(expr.op(), true);
+      const BinaryOperator op = find_binary_operator(expr.op());
       return op(this, expr.operands().front(), expr.operands().back());
     }
     
-    const NaryOperator op = find_nary_operator(expr.op(), true);
+    const NaryOperator op = find_nary_operator(expr.op());
     const z3::expr& identity = identities[expr.op() - NARY_BEGIN];
     return op(this, identity, expr.operands());
   }

@@ -98,6 +98,8 @@ inline bool get_unary_attr(const OperatorAttr attr) {
 
 // Maintainer notice: The order of these operators determines the order of
 // the elements in the internal operators string array.
+//
+// TODO: Account for signed LSS etc.
 enum Operator : unsigned short {
   /// \verbatim !\endverbatim
   NOT,
