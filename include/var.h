@@ -279,7 +279,7 @@ public:
   /// approximated by is_cast().
   ///
   /// Note that when the variable is assigned to itself, no data is copied.
-  /// Also self-assignment due to cause the version number to be incremented.
+  /// Also self-assignment do not cause the version number to be incremented.
   Var& operator=(const Var& other) {
     if (this != &other) {
       m_value = other.m_value;
