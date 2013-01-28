@@ -126,6 +126,10 @@ public:
   /// \remark kind() can be safely used for downcast purposes
   ExprKind kind() const { return m_kind; }
 
+  /// Two's complement signedness
+  // TODO: Implement unsigned types
+  bool is_signed() const { return true; }
+
   /// Serialize expression to a human-readable format
 
   // Uses "Virtual Friend Function" idiom.
