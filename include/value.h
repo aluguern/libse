@@ -175,41 +175,132 @@ public:
 
 };
 
+/// Internal base class for a type-safe (symbolic/concrete) rvalue
+///
+/// This interface guarantees that if AbstractValue::is_concrete(), then any
+/// concrete data returned by __Value<T>::data() must be consistent with the
+/// program semantics of the program under test. This allows such a value to
+/// be used for single-path (i.e. DART-style) symbolic execution. Recall that
+/// this is also known as concolic execution. To facilitate this, a subclass
+/// must implements an implicit T() type conversion operator. This conversion
+/// should be standard except for the bool() case: it must also add the value's
+/// symbolic expression to the list of \ref tracer() "path constraints". Thus,
+/// the use of non-bool types in control-flow such as `if (i + 5) {...}` is
+/// currently unsupported in this implementation of concolic execution.
+///
+/// If has_aggregate() is true, then aggregate() returns concrete data which
+/// is the result of constant propagation within the value's nary expression
+/// built over an associative and commutative binary operator.
+template<typename T>
+class __Value : public AbstractValue {
+protected:
+
+  /// Concrete value for multi-path and single-path symbolic execution
+
+  /// Initially, there is no symbolic expression associated with the value.
+  /// The aggregate is undefined until set_aggregate(const T) is called.
+  __Value(bool concolic) : AbstractValue(TypeConstructor<T>::type, concolic) {}
+
+  /// Concolic value for multi-path and single-path symbolic execution
+
+  /// The aggregate is undefined until set_aggregate(const T) is called.
+  __Value(bool concolic, const SharedExpr& expr) :
+      AbstractValue(TypeConstructor<T>::type, expr, concolic) {}
+
+  /// Copy any concrete data and symbolic expression
+  __Value(const __Value& other) : AbstractValue(other) {}
+
+  /// Copy conversion constructor with type casting
+
+  /// Copy data() and aggregate() values of another type. Since this requires a
+  /// type conversion, precision could be lost. However, if the other value is
+  /// symbolic, the type cast is explicit in form of a CastExpr.
+  template<typename S>
+  __Value(const __Value<S>&);
+
+public:
+
+  /// Is symbolic expression simplified through constant propagation?
+
+  /// true if and only if set_aggregate(const T) has been called at least once.
+  ///
+  /// \remark if expr() returns a
+  ///         \ref NaryExpr::is_partial() "partial nary expression",
+  ///         then has_aggregate() is true.
+  ///
+  /// \see aggregate()
+  /// \see set_aggregate(const T)
+  // TODO: Support pointer modifications, i.e. (int* i) + N
+  virtual bool has_aggregate() const = 0;
+
+  /// Current result of constant propagation (if defined)
+
+  /// This auxiliary value is defined if and only if has_aggregate() is
+  /// true. This aggregate data is used to propagate constants. This
+  /// form of constant propagation simplifies the value's
+  /// \ref expr() "symbolic expression" if it is an NaryExpr over an
+  /// \ref NaryExpr::is_associative() "associative" and
+  /// \ref NaryExpr::is_commutative() "commutative" binary operator.
+  ///
+  /// Thus, if has_aggregate() is true, then is_symbolic() is true.
+  /// But is_concrete() can be false. In that case, the concrete data is
+  /// interpreted as the identity element of the nary operator.
+  ///
+  /// \see has_aggregate()
+  /// \see set_aggregate(const T)
+  virtual T aggregate() const = 0;
+
+  /// Set constant propagation value
+
+  /// Since aggregate() is meant to simplify the value's \ref expr()
+  /// "symbolic expression", is_symbolic() must be true when calling
+  /// set_aggregate(const T).
+  ///
+  /// \remark has_aggregate() returns true afterwards
+  /// \see aggregate()
+  virtual void set_aggregate(const T data) = 0;
+
+  /// Concrete data (if defined)
+
+  /// Concrete data is defined if and only if is_concrete() return true.
+  /// \remark Concrete data can only be set through the assignment operator
+  virtual T data() const = 0;
+
+  /// Concrete data (if defined)
+
+  /// The return value is defined if and only if is_concrete() is true.
+  /// Note that if is_symbolic() is true, the conversion could render
+  /// concolic execution incomplete.
+  ///
+  /// Since C++ supports implicit primitive type conversions, this conversion
+  /// operator is not explicit. Note that the bool() conversion operator adds
+  /// the symbolic expression to the path constraints if and only if
+  /// is_symbolic() returns true.
+  ///
+  /// \see is_concrete()
+  virtual operator T() const = 0;
+
+  virtual ~__Value() {};
+};
+
 // __any and __id are internal helper structures used for static compile-time
 // overloading of conversion operators. More specifically, it enables finding
 // the type of a template parameter. If its type does not matter, use __any.
 struct __any {};
 template <typename T> struct __id : __any { typedef T type; };
 
-/// Type-safe (symbolic/concrete) rvalue
+/// Base class for a scalar (symbolic/concrete) rvalue
 
-/// A \ref is_symbolic() "symbolic" value of type T can be created with
-/// any(const std::string&).
+/// Scalar values are of a fundamental data type such as an integer or pointer.
+/// ScalarValue<T> objects cannot be instantiated directly.
 ///
-/// In contrast, a \ref is_concrete "concrete" value of type T can be created
-/// with make_value(const T). However, such a value object can be still made
-/// symbolic by calling set_symbolic(const std::string&).
-///
-/// More generally, if AbstractValue::is_concrete(), the concrete data returned
-/// by Value<T>::data() must be consistent with the program semantics of the
-/// program under test. This allows such a value to be used for single-path
-/// (i.e. DART-style) symbolic execution. Recall that this is also known as
-/// concolic execution. To facilitate this, the class implements an implicit
-/// T() type conversion operator. This conversion is standard except for the
-/// bool() case which also adds the value's symbolic expression to the list
-/// of \ref tracer() "path constraints". Thus, the use of non-bool types in
-/// control-flow such as `if (i + 5) {...}` is unsupported in concolic
-/// execution.
-///
-/// If has_aggregate() is true, then aggregate() returns concrete data which
-/// is the result of constant propagation within the value's nary expression
-/// built over an associative and commutative binary operator.
+/// Subclasses should not override any member functions. However, subclasses
+/// may add new member functions (e.g. array subscript).
 ///
 /// \see any(const std::string&)
 /// \see make_value(const T)
 template<typename T>
-class Value : public AbstractValue {
-
+class ScalarValue : public __Value<T> {
 private:
 
   // The m_data field is used for concolic execution. That is, if
@@ -263,22 +354,20 @@ private:
   // constraints if and only if is_symbolic() is true.
   T conv(__id<bool>) const;
 
-public:
+protected:
 
   /// Concrete value for multi-path and single-path symbolic execution
 
   /// Initially, there is no symbolic expression associated with the value.
   /// The aggregate is undefined until set_aggregate(const T) is called.
-  Value(const T data) :
-      AbstractValue(TypeConstructor<T>::type, true),
-      m_data(data), m_aggregate(0), m_aggregate_init(false) {}
+  ScalarValue(const T data) : __Value<T>(true), m_data(data), m_aggregate(0),
+    m_aggregate_init(false) {}
 
   /// Concolic value for multi-path and single-path symbolic execution
 
   /// The aggregate is undefined until set_aggregate(const T) is called.
-  Value(const T data, const SharedExpr& expr) :
-      AbstractValue(TypeConstructor<T>::type, expr, true),
-      m_data(data), m_aggregate(0), m_aggregate_init(false) {}
+  ScalarValue(const T data, const SharedExpr& expr) : __Value<T>(true, expr),
+    m_data(data), m_aggregate(0), m_aggregate_init(false) {}
 
   /// Arbitrary value only for multi-path symbolic execution
 
@@ -286,14 +375,11 @@ public:
   /// suitable for multi-path symbolic execution. Unless a concrete value is
   /// assigned to it later, data() is undefined. Also aggregate() is
   /// undefined until set_aggregate(const T) is called.
-  Value(const std::string& identifier) :
-      AbstractValue(TypeConstructor<T>::type, false),
-      m_data(0), m_aggregate(0), m_aggregate_init(false) {
-    set_symbolic(identifier);
-  }
+  ScalarValue(const std::string& identifier) : __Value<T>(false), m_data(0),
+    m_aggregate(0), m_aggregate_init(false) { set_symbolic(identifier); }
 
   /// Copy any concrete data and symbolic expression
-  Value(const Value& other) : AbstractValue(other),
+  ScalarValue(const ScalarValue& other) : __Value<T>(other),
       m_data(other.m_data), m_aggregate(other.m_aggregate),
       m_aggregate_init(other.m_aggregate_init) {}
 
@@ -303,56 +389,20 @@ public:
   /// type conversion, precision could be lost. However, if the other value is
   /// symbolic, the type cast is explicit in form of a CastExpr.
   template<typename S>
-  Value(const Value<S>&);
+  ScalarValue(const ScalarValue<S>&);
 
-  virtual ~Value() {}
+public:
 
-  /// Is symbolic expression simplified through constant propagation?
+  virtual ~ScalarValue() {}
 
-  /// true if and only if set_aggregate(const T) has been called at least once.
-  ///
-  /// \remark if expr() returns a
-  ///         \ref NaryExpr::is_partial() "partial nary expression",
-  ///         then has_aggregate() is true.
-  ///
-  /// \see aggregate()
-  /// \see set_aggregate(const T)
   bool has_aggregate() const { return m_aggregate_init; }
-
-  /// Current result of constant propagation (if defined)
-
-  /// This auxiliary value is defined if and only if has_aggregate() is
-  /// true. This aggregate data is used to propagate constants. This
-  /// form of constant propagation simplifies the value's
-  /// \ref expr() "symbolic expression" if it is an NaryExpr over an
-  /// \ref NaryExpr::is_associative() "associative" and
-  /// \ref NaryExpr::is_commutative() "commutative" binary operator.
-  ///
-  /// Thus, if has_aggregate() is true, then is_symbolic() is true.
-  /// But is_concrete() can be false. In that case, the concrete data is
-  /// interpreted as the identity element of the nary operator.
-  ///
-  /// \see has_aggregate()
-  /// \see set_aggregate(const T)
   T aggregate() const { return m_aggregate; }
 
-  /// Set constant propagation value
-
-  /// Since aggregate() is meant to simplify the value's \ref expr()
-  /// "symbolic expression", is_symbolic() must be true when calling
-  /// set_aggregate(const T).
-  ///
-  /// \remark has_aggregate() returns true afterwards
-  /// \see aggregate()
   void set_aggregate(const T data) {
     if(!m_aggregate_init) { m_aggregate_init = true; }
     m_aggregate = data;
   }
 
-  /// Concrete data (if defined)
-
-  /// Concrete data is defined if and only if is_concrete() return true.
-  /// \remark Concrete data can only be set through the assignment operator
   T data() const { return m_data; }
 
   // Overrides AbstractValue::set_symbolic(const std::string&)
@@ -363,9 +413,9 @@ public:
 
   /// Simplified symbolic expression (if defined)
 
-  /// Unlike AbstractValue::expr(), Value<T>::expr() seeks to simplify an nary
-  /// expression over an associative and commutative binary operator. This
-  /// simplification is implemented through a \ref NaryExpr::is_partial()
+  /// Unlike AbstractValue::expr(), ScalarValue<T>::expr() seeks to simplify
+  /// an nary expression over an associative and commutative binary operator.
+  /// This simplification is implemented through a \ref NaryExpr::is_partial()
   /// "partial nary expression" which is completed using the aggregate() value.
   /// For example, the symbolic expression "x + 2 + 3" would set aggregate()
   /// to five (5 = 2 + 3). Then, expr() would return a \ref SharedExpr to a
@@ -380,8 +430,8 @@ public:
   /// Assignment operator copies the concrete data and shared symbolic
   /// expression of the other value. Since the assignment usually involves a
   /// temporary value, no self-assignment check is performed.
-  Value& operator=(const Value& other) {
-    AbstractValue::operator=(other);
+  ScalarValue& operator=(const ScalarValue& other) {
+    __Value<T>::operator=(other);
 
     m_data = other.m_data;
     m_aggregate = other.m_aggregate;
@@ -389,41 +439,53 @@ public:
     return *this;
   }
 
-  /// Concrete data (if defined)
-
-  /// The return value is defined if and only if is_concrete() is true.
-  /// Note that if is_symbolic() is true, the conversion could render
-  /// concolic execution incomplete.
-  ///
-  /// Since C++ supports implicit primitive type conversions, this conversion
-  /// operator is not explicit. Note that the bool() conversion operator adds
-  /// the symbolic expression to the path constraints if and only if
-  /// is_symbolic() returns true.
-  ///
-  /// \see is_concrete()
   operator T() const { return conv(__id<T>()); }
 
 };
 
+/// Type-safe (symbolic/concrete) rvalue
+
+/// A \ref is_symbolic() "symbolic" value of type T can be created with
+/// any(const std::string&).
+///
+/// In contrast, a \ref is_concrete "concrete" value of type T can be created
+/// with make_value(const T). However, such a value object can be still made
+/// symbolic by calling set_symbolic(const std::string&).
+template<typename T>
+class Value : public ScalarValue<T> {
+public:
+
+  Value(const T data) : ScalarValue<T>(data) {}
+  Value(const T data, const SharedExpr& expr) : ScalarValue<T>(data, expr) {}
+  Value(const std::string& identifier) : ScalarValue<T>(identifier) {}
+  Value(const Value& other) : ScalarValue<T>(other) {}
+
+  template<typename S>
+  Value(const Value<S>& other) : ScalarValue<T>(other) {}
+
+  ~Value() {}
+};
+
 template<typename T>
 template<typename S>
-Value<T>::Value(const Value<S>& other) :
-    AbstractValue(TypeConstructor<T>::type, other.is_concrete()),
-    m_data(static_cast<T>(other.data())),
+ScalarValue<T>::ScalarValue(const ScalarValue<S>& other) :
+    __Value<T>(other.is_concrete()), m_data(static_cast<T>(other.data())),
     m_aggregate(static_cast<T>(other.aggregate())) {
 
   if(other.is_symbolic()) {
-    set_expr(SharedExpr(new CastExpr(type(), other.expr())));
+    const SharedExpr cast_expr(new CastExpr(__Value<T>::type(), other.expr()));
+    __Value<T>::set_expr(cast_expr);
   }
 }
 
 template<typename T>
-T Value<T>::conv(__id<bool>) const {
-  if(is_symbolic()) {
+T ScalarValue<T>::conv(__id<bool>) const {
+  if (__Value<T>::is_symbolic()) {
     if(m_data) {
-      tracer().add_path_constraint(expr());
+      tracer().add_path_constraint(__Value<T>::expr());
     } else {
-      tracer().add_path_constraint(SharedExpr(new UnaryExpr(NOT, expr())));
+      const SharedExpr unary_expr(new UnaryExpr(NOT, __Value<T>::expr()));
+      tracer().add_path_constraint(unary_expr);
     }
   }
 
@@ -431,17 +493,17 @@ T Value<T>::conv(__id<bool>) const {
 }
 
 template<typename T>
-void Value<T>::set_symbolic(const std::string& identifier) {
-  if(is_concrete()) {
-    set_expr(create_value_expr(identifier));
+void ScalarValue<T>::set_symbolic(const std::string& identifier) {
+  if (__Value<T>::is_concrete()) {
+    __Value<T>::set_expr(create_value_expr(identifier));
   } else {
-    set_expr(create_any_expr(identifier));
+    __Value<T>::set_expr(create_any_expr(identifier));
   }
 }
 
 template<typename T>
-std::ostream& Value<T>::write(std::ostream& out) const {
-  if(!is_concrete()) {
+std::ostream& ScalarValue<T>::write(std::ostream& out) const {
+  if (!__Value<T>::is_concrete()) {
     // TODO: Error
   }
 
@@ -450,9 +512,9 @@ std::ostream& Value<T>::write(std::ostream& out) const {
 }
 
 template<typename T>
-const SharedExpr Value<T>::expr() const {
-  if(is_symbolic()) {
-    SharedExpr raw_expr = AbstractValue::expr();
+const SharedExpr ScalarValue<T>::expr() const {
+  if (__Value<T>::is_symbolic()) {
+    SharedExpr raw_expr = __Value<T>::expr();
     if(raw_expr->kind() == NARY_EXPR) {
       std::shared_ptr<NaryExpr> nary_expr = std::dynamic_pointer_cast<NaryExpr>(raw_expr);
       if(nary_expr->is_partial()) {
@@ -470,7 +532,7 @@ const SharedExpr Value<T>::expr() const {
     return raw_expr;
   }
 
-  if(!is_concrete()) {
+  if (!__Value<T>::is_concrete()) {
     // TODO: Error
   }
 
