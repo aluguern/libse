@@ -28,6 +28,8 @@ enum Type : unsigned short {
   CHAR,
   /// \see std::numeric_limits<int>
   INT,
+  /// \see std::numeric_limits<size_t>
+  SIZE_T,
 
   POINTER
 };

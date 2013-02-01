@@ -46,6 +46,7 @@ public:
 TYPE_CTOR_DEF(bool, BOOL)
 TYPE_CTOR_DEF(char, CHAR)
 TYPE_CTOR_DEF(int, INT)
+TYPE_CTOR_DEF(size_t, SIZE_T)
 
 /// Base class for a (symbolic/concrete) rvalue
 
