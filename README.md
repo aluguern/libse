@@ -9,7 +9,7 @@ Libse is distributed under a [BSD-style license][bsd-license].
 
 [bsd-license]: https://raw.github.com/ahorn/libse/master/LICENSE
 
-## Requirements
+## Prerequisite
 
 You need to compile the [Z3 theorem prover][z3]. Its source code is available
 under the [Microsoft Research License Agreement][msr-la]:
