@@ -148,65 +148,101 @@ public:
   virtual ~AbstractVar() {}
 };
 
-/// Type-safe (symbolic/concrete) lvalue
-
-/// Example:
-///
-///     Int x = any<int>("X");
-///     Int y = 7;
-///     Int z = x + 3;
-///     y = z + 5;
-///
-/// Here `x` is said to be a \ref is_symbolic() "symbolic" variable whose
-/// type() is \ref INT. In contrast, `y` is an integer variable with only
-/// concrete data (e.g. 7). However, `y` can become symbolic later in the
-/// symbolic execution of the program under test (e.g. last assignment). Due to
-/// \ref Value::aggregate() "constant propagation", `y`'s final Var<T>::expr()
-/// is of the form "x + 8".
-///
-/// The concrete data and/or symbolic expression of a variable can be accessed
-/// through data(). See the AbstractVar and Value class documentation for more
-/// details.
-///
-/// The following table summarizes common mechanisms to create a variable:
-///
-///   Code | Description 
-/// ------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------
-///  Var<T> x = \ref any(const std::string&) "any"<T>("X")                                     | \ref is_symbolic() "symbolic" variable of type `T` and identifier "X"
-///  Var<T> x = [primitive value]                                                              | \ref is_concrete() "concrete" variable of type `T`
-///  Var<T> x = [primitive value]; x.\ref set_symbolic(const std::string&) "set_symbolic"("X") | variable of type `T` which is \ref is_symbolic() "symbolic" and \ref is_concrete() "concrete"
-///
-/// Once a variable has been created, it can be used as any other regular
-/// program variable as long as the required operators have been overloaded.
-template<typename /* primitive type */T>
-class Var : public AbstractVar {
- 
+/// Internal base class for a type-safe (symbolic/concrete) lvalue
+template<typename T>
+class __Var : public AbstractVar {
 private:
-
-  // Concrete and/or symbolic value of type T
-  Value<T> m_value;
-
-  // true if and only if m_value's data is the result of an up or downcast.
-  // If the variable is symbolic and cast is true, then its expression is
-  // also going to have a CastExpr for the required type cast.
   bool m_cast;
+
+protected:
+
+  __Var(bool cast) : m_cast(cast) {}
+  __Var(const __Var& other) : m_cast(other.m_cast) {}
+  virtual ~__Var() {}
+
+  /// Force is_cast() to true
+
+  /// Set to true if and only if value().data() is the result of an up or
+  /// downcast. If is_cast() and is_symbolic() is true, then expr() must
+  /// have at least one CastExpr.
+  void set_cast(bool cast) { m_cast = cast; }
+
+public:
+
+  /// Concrete/symbolic value
+
+  /// Read-only reference to an object that contains the concrete value and
+  /// runtime information about this variable. The caller must ensure that
+  /// it does not dereference the return value after this object has been
+  /// destroyed.
+  ///
+  /// \see Value
+  virtual const Value<T>& value() const = 0;
+
+  Type type() const { return TypeConstructor<T>::type; }
+  bool is_cast() const { return m_cast; }
+  bool is_concrete() const { return value().is_concrete(); }
+  bool is_symbolic() const { return value().is_symbolic(); }
+  const SharedExpr expr() const { return value().expr(); }
+
+  /// Concrete data (if defined)
+
+  /// The return value is defined if and only if is_concrete() is true.
+  /// Note that if is_symbolic() is true, the conversion could render
+  /// concolic execution incomplete. Also note that the bool() conversion
+  /// operator adds the symbolic expression to the \ref tracer() "global"
+  /// path constraints if and only if is_symbolic() returns true.
+  ///
+  /// If type casts coerce the data, is_cast() returns true.
+  ///
+  /// \see Value::operator T()
+  virtual operator T() const = 0;
+
+  virtual void set_symbolic(const std::string& identifier) = 0;
+
+  virtual Version version() const = 0;
+  virtual void set_expr(const SharedExpr& expr) = 0;
+
+  virtual void stash() = 0;
+  virtual void unstash(bool restore) = 0;
+
+};
+
+/// Base class for a scalar (symbolic/concrete) lvalue
+
+/// Scalar values are of a fundamental data type such as an integer or pointer.
+/// ScalarVar<T> objects cannot be instantiated directly except through a
+/// conversion constructor for Value<T> objects. This conversion is needed for
+/// the assignment operator, i.e. ScalarVar<T>::operator=(const ScalarVar<T>&).
+///
+/// Subclasses can safely add new member functions (e.g. array subscript).
+/// Subclasses may also override member functions as long as these need not
+/// be polymorphic.
+template<typename /* primitive type */T>
+class ScalarVar : public __Var<T> {
+private:
+  // stack to stash() and unstash() internal state
+  struct State {
+    const Value<T> value;
+    const bool cast;
+    const Version version;
+  };
+  std::stack<State> m_stack;
+
+protected:
+  // Concrete and/or symbolic value of this variable
+  Value<T> m_value;
 
   // Version number that never decreases; initially, it is VZERO. With each
   // assignment operation, the version number is incremented by one.
   Version m_version;
 
-  // stack to stash() and unstash() internal state
-  struct State { const Value<T> value; const bool cast; Version version; };
-  std::stack<State> m_stack;
-
-public:
-
   /// Concrete variable
-  Var(const T data) : m_value(data), m_cast(false), m_version(VZERO) {}
+  ScalarVar(const T data) : __Var<T>(false), m_value(data), m_version(VZERO) {}
 
   /// Variable based on another (symbolic/concrete) value of the same type
-  Var(const Value<T>& value) : m_value(value), m_cast(false),
-                               m_version(VZERO) {}
+  ScalarVar(const Value<T>& value, Version version) : __Var<T>(false),
+    m_value(value), m_version(version) {}
 
   /// Variable based on another (symbolic/concrete) value of a different type
 
@@ -216,7 +252,7 @@ public:
   /// value is_symbolic(), the symbolic expression of the variable is going
   /// to have a new CastExpr.
   template<typename S>
-  Var(const Value<S>& value) : m_value(value), m_cast(true),
+  ScalarVar(const Value<S>& value) : __Var<T>(true), m_value(value),
     m_version(VZERO) {}
 
   /// Safe copy constructor
@@ -226,8 +262,8 @@ public:
   /// shared between both the original and copied variable object until either
   /// one is modified. Note that casts are transitive: if other.is_cast() is
   /// true, then the copy's is_cast() is true.
-  Var(const Var& other) : m_value(other.m_value), m_cast(other.m_cast),
-                          m_version(VZERO) {}
+  ScalarVar(const ScalarVar& other) : __Var<T>(other), m_value(other.m_value),
+    m_version(VZERO) {}
 
   /// Unsafe copy constructor with type casting
 
@@ -237,10 +273,16 @@ public:
   /// implicit type casting. In the case in which the other variable is also
   /// symbolic, the new variable's expr() is going to have a new CastExpr.
   template<typename S>
-  Var(const Var<S>& other) : m_value(other.value()), m_cast(true),
-                             m_version(VZERO) {}
+  ScalarVar(const ScalarVar<S>& other) : __Var<T>(true), m_value(other.value()),
+    m_version(VZERO) {}
 
-  ~Var() {}
+public:
+
+  /// Variable based on another (symbolic/concrete) value of the same type
+  ScalarVar(const Value<T>& value) : __Var<T>(false), m_value(value),
+    m_version(VZERO) {}
+
+  virtual ~ScalarVar() {}
 
   /// Concrete/symbolic value
 
@@ -264,7 +306,7 @@ public:
   ///
   /// \see Value::operator T()
   operator T() const {
-    if(is_symbolic()) {
+    if(__Var<T>::is_symbolic()) {
        // TODO: log possibility of incomplete analysis
     }
 
@@ -273,43 +315,39 @@ public:
 
   /// Replace the value and propagate cast information
 
-  /// Copy any concrete data symbolic expression of the other variable. Any
-  /// required type conversions are first performed by Var(const Var<S>&).
-  /// Such a conversion could result in precision lost. This is conservatively
-  /// approximated by is_cast().
-  ///
+  /// Copy concrete data and symbolic expression (if any) of the other variable.
   /// Note that when the variable is assigned to itself, no data is copied.
-  /// Also self-assignments leave the version number unchanged.
-  Var& operator=(const Var& other) {
+  /// Thus, self-assignments also leave the version number unchanged.
+  ///
+  /// The class ensures that any required type coercion of the argument is first
+  /// done by its converting constructor, i.e. ScalarVar<T>(const ScalarVar<U>&).
+  ScalarVar& operator=(const ScalarVar& other) {
     if (this != &other) {
-      m_value = other.m_value;
-      m_cast = other.m_cast;
+      set_cast(other.is_cast());
+      m_value = other.value();
       m_version++;
     }
 
     return *this;
   }
 
-  Type type() const { return TypeConstructor<T>::type; }
-  bool is_cast() const { return m_cast; }
+  Version version() const { return m_version; }
+
   void set_symbolic(const std::string& identifier) {
     m_value.set_symbolic(identifier);
   }
-  bool is_symbolic() const { return m_value.is_symbolic(); }
-  bool is_concrete() const { return m_value.is_concrete(); }
-  Version version() const { return m_version; }
-  const SharedExpr expr() const { return m_value.expr(); }
+
   void set_expr(const SharedExpr& expr) {
     m_version++;
     m_value.set_expr(expr);
   }
 
-  void stash() { m_stack.push(State{ m_value, m_cast, m_version }); }
+  void stash() { m_stack.push(State{ m_value, __Var<T>::is_cast(), m_version }); }
   void unstash(bool restore) {
     if (restore) {
       const State& state = m_stack.top();
       if (m_version != state.version) {
-        m_cast = state.cast;
+        set_cast(state.cast);
         m_value = state.value;
         m_version++;
       }
@@ -317,6 +355,55 @@ public:
 
     m_stack.pop();
   }
+};
+
+/// Type-safe (symbolic/concrete) lvalue
+
+/// Example:
+///
+///     Int x = any<int>("X");
+///     Int y = 7;
+///     Int z = x + 3;
+///     y = z + 5;
+///
+/// Here `x` is said to be a \ref is_symbolic() "symbolic" variable whose
+/// type() is \ref INT. In contrast, `y` is an integer variable with only
+/// concrete data (e.g. 7). However, `y` can become symbolic later in the
+/// symbolic execution of the program under test (e.g. last assignment). Due to
+/// \ref Value::aggregate() "constant propagation", `y`'s final Var<T>::expr()
+/// is of the form "x + 8".
+///
+/// The concrete data and/or symbolic expression of a variable can be accessed
+/// through data(). See the AbstractVar and Value class documentation for more
+/// details.
+///
+/// The following table summarizes common mechanisms to create a variable:
+///
+///   Code                                                                           | Description 
+/// -------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------
+///  Var<T> x = \ref any(const std::string&) "any"<T>("X")                           | \ref is_symbolic() "symbolic" variable of type `T` and identifier "X"
+///  Var<T> x = [value]                                                              | \ref is_concrete() "concrete" variable of type `T`
+///  Var<T> x = [value]; x.\ref set_symbolic(const std::string&) "set_symbolic"("X") | variable of type `T` which is \ref is_symbolic() "symbolic" and \ref is_concrete() "concrete"
+///
+/// Once a variable has been created, it can be used as any other regular
+/// program variable as long as the required operators have been overloaded.
+template<typename T>
+class Var : public ScalarVar<T> {
+public:
+
+  Var(const T data) : ScalarVar<T>(data) {}
+  Var(const Value<T>& value) : ScalarVar<T>(value) {}
+
+  template<typename S>
+  Var(const Value<S>& value) : ScalarVar<T>(value) {};
+
+  Var(const Var& other) : ScalarVar<T>(other) {}
+
+  template<typename S>
+  Var(const Var<S>& other) : ScalarVar<T>(other) {}
+
+  ~Var() {}
+
 };
 
 typedef Var<bool> Bool;
