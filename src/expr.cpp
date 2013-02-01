@@ -52,5 +52,28 @@ std::ostream& NaryExpr::write(std::ostream& out) const {
   return out;
 }
 
+std::ostream& ArrayExpr::write(std::ostream& out) const {
+  out << LSQPAR << m_identifier << RSQPAR;
+  return out;
+}
+
+std::ostream& SelectExpr::write(std::ostream& out) const {
+  out << "Select" << LPAR;
+  out << m_array_expr;
+  out << COMMA << SPACE;
+  out << m_index_expr << RPAR;
+  return out;
+}
+
+std::ostream& StoreExpr::write(std::ostream& out) const {
+  out << "Store" << LPAR;
+  out << m_array_expr;
+  out << COMMA << SPACE;
+  out << m_index_expr << COMMA << SPACE;
+  out << m_elem_expr << RPAR;
+  return out;
+}
+
+
 }
 

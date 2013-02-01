@@ -31,10 +31,26 @@ TEST(ExprTest, GetKind) {
 
   NaryExpr f(ADD, OperatorInfo<ADD>::attr);
   EXPECT_EQ(NARY_EXPR, f.kind());
+
+  ArrayExpr g(CHAR, 5, "F");
+  EXPECT_EQ(ARRAY_EXPR, g.kind());
+
+  const SharedExpr index_expr(new ValueExpr<size_t>(2));
+  SelectExpr h(SharedExpr(new ArrayExpr(CHAR, 5, "F")), index_expr);
+  EXPECT_EQ(SELECT_EXPR, h.kind());
+
+  StoreExpr i(SharedExpr(new ArrayExpr(CHAR, 5, "F")), index_expr,
+    SharedExpr(new AnyExpr<char>("X")));
+  EXPECT_EQ(STORE_EXPR, i.kind());
 }
 
 TEST(ExprTest, GetNameOnAnyExpr) {
   AnyExpr<char> a("That rabbit's dynamite!");
+  EXPECT_EQ("That rabbit's dynamite!", a.identifier());
+}
+
+TEST(ExprTest, GetNameOnArrayExpr) {
+  ArrayExpr a(INT, 7, "That rabbit's dynamite!");
   EXPECT_EQ("That rabbit's dynamite!", a.identifier());
 }
 
@@ -278,4 +294,64 @@ TEST(ExprTest, WriteTreeWithEveryTypeOfExpr) {
   out << ternary;
 
   EXPECT_EQ("((!([A]<5))?((char)([C])):[D])", out.str());
+}
+
+TEST(ExprTest, ArrayExpr) {
+  const SharedExpr array_expr(new ArrayExpr(CHAR, 5, "F"));
+
+  std::stringstream out;
+  out << array_expr;
+
+  EXPECT_EQ("[F]", out.str());
+}
+
+TEST(ExprTest, SelectExpr) {
+  const SharedExpr array_expr(new ArrayExpr(CHAR, 5, "F"));
+  const SharedExpr index_expr(new ValueExpr<size_t>(2));
+  const SharedExpr select_expr(new SelectExpr(array_expr, index_expr));
+
+  std::stringstream out;
+  out << select_expr;
+
+  EXPECT_EQ("Select([F], 2)", out.str());
+}
+
+TEST(ExprTest, StoreExpr) {
+  const SharedExpr array_expr(new ArrayExpr(CHAR, 5, "F"));
+  const SharedExpr elem_expr(new AnyExpr<char>("X"));
+  const SharedExpr index_expr(new ValueExpr<size_t>(2));
+  const SharedExpr store_expr(new StoreExpr(array_expr, index_expr, elem_expr));
+
+  std::stringstream out;
+  out << store_expr;
+
+  EXPECT_EQ("Store([F], 2, [X])", out.str());
+}
+
+TEST(ExprTest, GetOnArrayExpr) {
+  const ArrayExpr array_expr(CHAR, 5, "F");
+  
+  EXPECT_EQ(CHAR, array_expr.range_type());
+  EXPECT_EQ(5, array_expr.size());
+  EXPECT_EQ("F", array_expr.identifier());
+}
+
+TEST(ExprTest, GetOnSelectExpr) {
+  const SharedExpr array_expr(new ArrayExpr(CHAR, 5, "F"));
+  const SharedExpr index_expr(new ValueExpr<size_t>(2));
+  const SelectExpr select_expr(array_expr, index_expr);
+  
+  EXPECT_EQ(array_expr, select_expr.array_expr());
+  EXPECT_EQ(index_expr, select_expr.index_expr());
+}
+
+TEST(ExprTest, GetOnStoreExpr) {
+  const SharedExpr array_expr(new ArrayExpr(CHAR, 5, "F"));
+  const SharedExpr index_expr(new ValueExpr<size_t>(2));
+  const SharedExpr elem_expr(new AnyExpr<char>("X"));
+  const StoreExpr store_expr(array_expr, index_expr, elem_expr);
+  
+  EXPECT_EQ(array_expr, store_expr.array_expr());
+  EXPECT_EQ(index_expr, store_expr.index_expr());
+  EXPECT_EQ(elem_expr, store_expr.elem_expr());
 }

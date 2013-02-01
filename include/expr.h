@@ -36,8 +36,12 @@ static std::string types[] = { "bool", "char", "int" };
 
 static std::string LPAR = "(";
 static std::string RPAR = ")";
+static std::string LSQPAR = "[";
+static std::string RSQPAR = "]";
 static std::string QUERY = "?";
 static std::string COLON = ":";
+static std::string COMMA = ",";
+static std::string SPACE = " ";
 
 // Internal array which maps an Operator to its corresponding string
 // representation. Therefore, both data types need to be coordinated.
@@ -61,6 +65,12 @@ enum ExprKind : unsigned int {
   ITE_EXPR,
   /// Identifier for NaryExpr
   NARY_EXPR,
+  /// Identifier for ArrayExpr
+  ARRAY_EXPR,
+  /// Identifier for SelectExpr
+  SELECT_EXPR,
+  /// Identifier for StoreExpr
+  STORE_EXPR,
 
   /// Expr subclasses which are not part of the library must use this value.
   ///
@@ -421,6 +431,77 @@ public:
 
   /// Is ((x op y) op z) = (x op (y op z)) where op = op()?
   bool is_associative() const { return get_associative_attr(m_attr); }
+
+  std::ostream& write(std::ostream&) const;
+
+  WALK_DEF(void)
+  WALK_DEF(z3::expr)
+};
+
+class ArrayExpr : public Expr {
+private:
+  const Type m_range_type;
+  const size_t m_size;
+  const std::string m_identifier;
+
+public:
+  ArrayExpr(Type range_type, size_t size, const std::string& identifier) :
+    Expr(ARRAY_EXPR), m_range_type(range_type), m_size(size),
+    m_identifier(identifier) {}
+
+  ArrayExpr(const ArrayExpr& other) : Expr(ARRAY_EXPR),
+    m_range_type(other.m_range_type), m_size(other.m_size),
+    m_identifier(other.m_identifier) {}
+
+  const std::string& identifier() const { return m_identifier; }
+  size_t size() const { return m_size; }
+  Type range_type() const { return m_range_type; }
+
+  std::ostream& write(std::ostream&) const;
+
+  WALK_DEF(void)
+  WALK_DEF(z3::expr)
+};
+
+class SelectExpr : public Expr {
+private:
+  const SharedExpr m_array_expr;
+  const SharedExpr m_index_expr;
+
+public:
+  SelectExpr(const SharedExpr& array_expr, const SharedExpr& index_expr) :
+    Expr(SELECT_EXPR), m_array_expr(array_expr), m_index_expr(index_expr) {}
+
+  SelectExpr(const SelectExpr& other) : Expr(SELECT_EXPR),
+    m_array_expr(other.m_array_expr), m_index_expr(other.m_index_expr) {}
+
+  GET_SHARED_EXPR(array_expr)
+  GET_SHARED_EXPR(index_expr)
+
+  std::ostream& write(std::ostream&) const;
+
+  WALK_DEF(void)
+  WALK_DEF(z3::expr)
+};
+
+class StoreExpr : public Expr {
+private:
+  const SharedExpr m_array_expr;
+  const SharedExpr m_index_expr;
+  const SharedExpr m_elem_expr;
+
+public:
+  StoreExpr(const SharedExpr& array_expr, const SharedExpr& index_expr,
+    const SharedExpr& elem_expr) : Expr(STORE_EXPR), m_array_expr(array_expr),
+    m_index_expr(index_expr), m_elem_expr(elem_expr) {}
+
+  StoreExpr(const StoreExpr& other) : Expr(STORE_EXPR),
+    m_array_expr(other.m_array_expr), m_index_expr(other.m_index_expr),
+    m_elem_expr(other.m_elem_expr) {}
+
+  GET_SHARED_EXPR(array_expr)
+  GET_SHARED_EXPR(index_expr)
+  GET_SHARED_EXPR(elem_expr)
 
   std::ostream& write(std::ostream&) const;
 
