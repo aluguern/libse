@@ -27,7 +27,9 @@ enum Type : unsigned short {
   /// \see std::numeric_limits<char>
   CHAR,
   /// \see std::numeric_limits<int>
-  INT
+  INT,
+
+  POINTER
 };
 
 // Internal array which maps a Type to its corresponding string representation.

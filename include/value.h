@@ -36,6 +36,13 @@ class TypeConstructor<builtin_type> {\
     static const Type type = enum_value;\
 };\
 
+template<typename T>
+class TypeConstructor<T*> {
+public:
+  static const Type type = POINTER;
+  static const Type base_type = TypeConstructor<T>::type;
+};
+
 TYPE_CTOR_DEF(bool, BOOL)
 TYPE_CTOR_DEF(char, CHAR)
 TYPE_CTOR_DEF(int, INT)
