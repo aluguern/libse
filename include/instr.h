@@ -58,6 +58,7 @@ public:
         }
         if(create_partial_nary_expr) {
           /* larg.data() must act as the identity element of op. */
+          // TODO: Support pointer modifications, i.e. (int* i) + N
           result.set_aggregate(rarg);
           result.set_expr(PARTIAL_EXPR(op, raw_expr));
           return;

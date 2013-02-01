@@ -73,6 +73,7 @@ pkginclude_HEADERS = \
   include/visitor.h \
   include/interpreter.h \
   include/var.h \
+  include/memory.h \
   include/if.h \
   include/loop.h \
   include/sequential-se.h \
@@ -112,6 +113,7 @@ test_se_SOURCES = \
   test/visitor_test.cpp \
   test/interpreter_test.cpp \
   test/var_test.cpp \
+  test/memory_test.cpp \
   test/if_test.cpp \
   test/loop_test.cpp \
   test/version_test.cpp \
