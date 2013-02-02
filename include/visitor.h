@@ -50,7 +50,7 @@ class Visitor {
 public:
 
   /// Handle expression where Expr::kind() >= \ref EXT_EXPR.
-  virtual T visit(const Expr& other) {};
+  virtual T visit(const Expr& other) = 0;
 
   TYPED_VISIT_DECL(bool)
   TYPED_VISIT_DECL(char)

@@ -158,6 +158,10 @@ public:
                          context.bool_val(true),
                          context.bool_val(false) } {}
 
+  z3::expr visit(const Expr& other) {
+    throw InterpreterException("Expression extensions are unsupported");
+  }
+
   z3::expr visit(const AnyExpr<bool>& expr) {
     return context.bool_const(expr.identifier().c_str());
   }

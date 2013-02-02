@@ -74,7 +74,7 @@ public:
 
   OtherExpr() : Expr(ext_expr_kind(1u)) {}
 
-  std::ostream& write(std::ostream& out) const { out << "Other!"; };
+  std::ostream& write(std::ostream& out) const { out << "Other!"; return out; };
 };
 
 TEST(ExprTest, OtherVisit) {
