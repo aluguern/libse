@@ -49,7 +49,7 @@ static inline const se::Value<T>& __value(const se::Value<T>& value) {
 // Note that none of the template types can ever be native or smart pointers.
 #define OVERLOAD_BINARY_OPERATOR(op, opname) \
   template<typename T, typename U>\
-  const auto operator op(const T& larg, const U& rarg) ->\
+  auto operator op(const T& larg, const U& rarg) ->\
     decltype(se::make_value(__value(larg).data() op __value(rarg).data())) {\
     \
     const auto larg_value = __value(larg);\
@@ -59,7 +59,7 @@ static inline const se::Value<T>& __value(const se::Value<T>& value) {
     return ret;\
   }\
   template<typename T>\
-  const auto operator op(const T& larg, const int rarg) ->\
+  auto operator op(const T& larg, const int rarg) ->\
     decltype(se::make_value(__value(larg).data() op rarg)) {\
     \
     const auto larg_value = __value(larg);\
@@ -68,7 +68,7 @@ static inline const se::Value<T>& __value(const se::Value<T>& value) {
     return ret;\
   }\
   template<typename T>\
-  const auto operator op(const int larg, const T& rarg) ->\
+  auto operator op(const int larg, const T& rarg) ->\
     decltype(se::make_value(larg op __value(rarg).data())) {\
     \
     const auto rarg_value = __value(rarg);\
@@ -90,7 +90,7 @@ OVERLOAD_BINARY_OPERATOR(<, LSS)
 // Note that none of the template types can ever be native or smart pointers.
 #define OVERLOAD_UNARY_OPERATOR(op, opname) \
   template<typename T>\
-  const auto operator op(const T& arg) ->\
+  auto operator op(const T& arg) ->\
     decltype(se::make_value(op __value(arg).data())) {\
     \
     const auto arg_value = __value(arg);\
