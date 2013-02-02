@@ -24,10 +24,18 @@ with any of the following compilers: Visual Studio, g++ or clang++.
 
 ## Installation
 
-To build and install the library, execute the following commands:
+To build and install the library on Linux, execute the following commands:
 
     $ ./autogen.sh
     $ ./configure
+    $ make
+    $ make test
+    $ make install
+
+On OS X, you may have to specify clang++ explicitly:
+
+    $ ./autogen.sh
+    $ ./configure CXX=clang++
     $ make
     $ make test
     $ make install

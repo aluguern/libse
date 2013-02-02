@@ -28,6 +28,7 @@ AM_INIT_AUTOMAKE([-Wall -Werror dist-zip foreign subdir-objects])
 
 AC_PROG_CXX
 AC_LANG([C++])
+AX_CXX_COMPILE_STDCXX_11([noext])
 AC_PROG_LIBTOOL
 
 # Output the generated files. No further autoconf macros may be used.

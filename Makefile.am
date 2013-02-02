@@ -1,7 +1,7 @@
 # Since everything we compile requires the same headers,
 # we define the global AM_CPPFLAGS. We also require the
 # C++11 standard to be able to use std::shared_ptr.
-AM_CPPFLAGS = -std=c++0x -I$(srcdir)/include
+AM_CPPFLAGS = -I$(srcdir)/include
 
 AUTOMAKE_OPTIONS = foreign
 
