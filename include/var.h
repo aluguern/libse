@@ -323,7 +323,7 @@ public:
   /// done by its converting constructor, i.e. ScalarVar<T>(const ScalarVar<U>&).
   ScalarVar& operator=(const ScalarVar& other) {
     if (this != &other) {
-      set_cast(other.is_cast());
+      __Var<T>::set_cast(other.is_cast());
       m_value = other.value();
       m_version++;
     }
@@ -347,7 +347,7 @@ public:
     if (restore) {
       const State& state = m_stack.top();
       if (m_version != state.version) {
-        set_cast(state.cast);
+        __Var<T>::set_cast(state.cast);
         m_value = state.value;
         m_version++;
       }
