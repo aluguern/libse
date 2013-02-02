@@ -32,10 +32,10 @@ To build and install the library on Linux, execute the following commands:
     $ make test
     $ make install
 
-On OS X, you may have to specify clang++ explicitly:
+On OS X, you may build and install the library with clang++:
 
     $ ./autogen.sh
-    $ ./configure CXX=clang++
+    $ ./configure CXX=clang++ CXXFLAGS=-stdlib=libc++
     $ make
     $ make test
     $ make install
