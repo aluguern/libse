@@ -31,7 +31,7 @@ public:
   static T build(Visitor<T> * const visitor,
                  const SharedExpr& expr) {
 
-    return eval(expr->walk(visitor));
+    return __Operator<T, op>::eval(expr->walk(visitor));
   }
 };
 
@@ -41,7 +41,7 @@ public:
   static T build(Visitor<T> * const visitor,
                  const SharedExpr& lexpr, const SharedExpr& rexpr) {
 
-    return eval(lexpr->walk(visitor), rexpr->walk(visitor));
+    return __Operator<T, op>::eval(lexpr->walk(visitor), rexpr->walk(visitor));
   }
 };
 
@@ -53,7 +53,7 @@ public:
     T formula = identity;
 
     for(SharedExpr expr : exprs) {
-      formula = eval(formula, expr->walk(visitor));
+      formula = __Operator<T, op>::eval(formula, expr->walk(visitor));
     }
 
     return formula;
