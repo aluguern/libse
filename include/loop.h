@@ -180,8 +180,8 @@ private:
   // Internal helper function that extracts the join expression the iterator.
   static IfThenElseExpr* to_ite_expr_ptr(const Loop::JoinExprMap::iterator& iter);
 
-  Loop(const Loop&) {}
-  Loop& operator=(const Loop&) {}
+  Loop(const Loop&) = delete;
+  Loop& operator=(const Loop&) = delete; 
 
 public:
 
