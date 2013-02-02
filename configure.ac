@@ -31,5 +31,8 @@ AC_LANG([C++])
 AX_CXX_COMPILE_STDCXX_11([noext])
 AC_PROG_LIBTOOL
 
+# Work around for internal/gtest-port.h dependency on tr1/tuple
+AC_CHECK_DEFINED(__APPLE__, [CXXFLAGS="$CXXFLAGS -DGTEST_USE_OWN_TR1_TUPLE=1"])
+
 # Output the generated files. No further autoconf macros may be used.
 AC_OUTPUT

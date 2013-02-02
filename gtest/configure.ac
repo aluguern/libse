@@ -59,6 +59,9 @@ AM_CONDITIONAL([HAVE_PTHREADS],[test "x$have_pthreads" == "xyes"])
 AC_SUBST(PTHREAD_CFLAGS)
 AC_SUBST(PTHREAD_LIBS)
 
+# Work around for internal/gtest-port.h dependency on tr1/tuple
+AC_CHECK_DEFINED(__APPLE__, [CXXFLAGS="$CXXFLAGS -DGTEST_USE_OWN_TR1_TUPLE=1"])
+
 # TODO(chandlerc@google.com) Check for the necessary system headers.
 
 # TODO(chandlerc@google.com) Check the types, structures, and other compiler
