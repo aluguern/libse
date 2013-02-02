@@ -55,7 +55,7 @@ public:
   /// This is intentionally a non-polymorphic override of the assignment
   /// operator in the superclass.
   ScalarVar<T>& operator=(const ScalarVar<T>& other) {
-    set_cast(other.is_cast());
+    ScalarVar<T>::set_cast(other.is_cast());
     m_memory->store_value(m_index, other.value());
     ScalarVar<T>::m_value = m_memory->load_value(m_index);
     ScalarVar<T>::m_version = m_memory->version();
