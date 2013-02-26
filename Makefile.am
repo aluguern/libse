@@ -1,3 +1,6 @@
+# To support AC_CHECK_DEFINED
+ACLOCAL_AMFLAGS = -I m4
+
 # Since everything we compile requires the same headers,
 # we define the global AM_CPPFLAGS. We also require the
 # C++11 standard to be able to use std::shared_ptr.
