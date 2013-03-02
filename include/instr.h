@@ -46,8 +46,7 @@ public:
           auto nary_expr = std::dynamic_pointer_cast<NaryExpr>(raw_expr);
           if(nary_expr->attr() == OperatorInfo<op>::attr) {
             if(nary_expr->is_partial()) {
-              const auto new_aggregate = 
-                Eval<op>::eval(larg.aggregate(), rarg, result.data());
+              const auto new_aggregate = Eval<op>::eval(larg.aggregate(), rarg);
               result.set_aggregate(new_aggregate);
               result.set_expr(raw_expr);
               return;

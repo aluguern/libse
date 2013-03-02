@@ -17,11 +17,11 @@ template<typename T, Operator op>
 class __Operator {
 protected:
   static T eval(const T& larg, const T& rarg) {
-    return Eval<op>::eval(larg, rarg, larg);
+    return Eval<op>::eval(larg, rarg);
   }
 
   static T eval(const T& arg) {
-    return Eval<op>::eval(arg, arg);
+    return Eval<op>::eval(arg);
   }
 };
 

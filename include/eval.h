@@ -16,10 +16,10 @@ template<Operator op> class Eval;
   template<>\
   class Eval<opname> {\
   public:\
-    template<typename T, typename U>\
-    static inline U eval(const T arg, const U result) {\
-      return op arg;\
-    }\
+    template<typename T>\
+    static inline auto eval(const T arg) ->\
+      decltype(op arg) { return op arg; }\
+    \
     template<typename T>\
     static constexpr auto const_eval(const T arg) ->\
       decltype(op arg) { return op arg; }\
@@ -29,10 +29,10 @@ template<Operator op> class Eval;
   template<>\
   class Eval<opname> {\
   public:\
-    template<typename T, typename U, typename V>\
-    static inline V eval(const T larg, const U rarg, const V result) {\
-      return larg op rarg;\
-    }\
+    template<typename T, typename U>\
+    static inline auto eval(const T larg, const U rarg) ->\
+      decltype(larg + rarg) { return larg op rarg; }\
+    \
     template<typename T, typename U>\
     static constexpr auto const_eval(const T larg, const U rarg) ->\
       decltype(larg op rarg) { return larg op rarg; }\
