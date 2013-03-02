@@ -12,16 +12,6 @@ namespace se {
 /// Evaluate built-in arithmetic and boolean expressions
 template<Operator op> class Eval;
 
-#define EVAL_BINARY(op, opname) \
-  template<>\
-  class Eval<opname> {\
-  public:\
-    template<typename T, typename U, typename V>\
-    static inline V eval(const T larg, const U rarg, const V result) {\
-      return larg op rarg;\
-    }\
-  };
-
 #define EVAL_UNARY(op, opname) \
   template<>\
   class Eval<opname> {\
@@ -30,15 +20,31 @@ template<Operator op> class Eval;
     static inline U eval(const T arg, const U result) {\
       return op arg;\
     }\
+    template<typename T>\
+    static constexpr auto const_eval(const T arg) ->\
+      decltype(op arg) { return op arg; }\
   };
+
+#define EVAL_BINARY(op, opname) \
+  template<>\
+  class Eval<opname> {\
+  public:\
+    template<typename T, typename U, typename V>\
+    static inline V eval(const T larg, const U rarg, const V result) {\
+      return larg op rarg;\
+    }\
+    template<typename T, typename U>\
+    static constexpr auto const_eval(const T larg, const U rarg) ->\
+      decltype(larg op rarg) { return larg op rarg; }\
+  };
+
+EVAL_UNARY(!, NOT)
 
 EVAL_BINARY(+, ADD)
 EVAL_BINARY(&&, LAND)
 EVAL_BINARY(||, LOR)
 EVAL_BINARY(==, EQL)
 EVAL_BINARY(<, LSS)
-
-EVAL_UNARY(!, NOT)
 
 }
 
