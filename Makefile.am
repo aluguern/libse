@@ -59,6 +59,8 @@ lib_LTLIBRARIES = lib/libse.la
 
 lib_libse_la_SOURCES = \
   src/core/op.cpp \
+  src/concurrency/event.cpp \
+  src/concurrency.cpp \
   src/expr.cpp \
   src/value.cpp \
   src/var.cpp \
@@ -70,6 +72,12 @@ lib_libse_la_SOURCES = \
 pkginclude_HEADERS = \
   include/core/op.h \
   include/core/eval.h \
+  include/core/type.h \
+  include/concurrency/memory.h \
+  include/concurrency/event.h \
+  include/concurrency/instr.h \
+  include/concurrency/relation.h \
+  include/concurrency.h \
   include/value.h \
   include/expr.h \
   include/instr.h \
@@ -109,6 +117,12 @@ check_PROGRAMS = test/se
 test_se_SOURCES = \
   test/core/op_test.cpp \
   test/core/eval_test.cpp \
+  test/core/type_test.cpp \
+  test/concurrency/memory_test.cpp \
+  test/concurrency/event_test.cpp \
+  test/concurrency/instr_test.cpp \
+  test/concurrency/relation_test.cpp \
+  test/concurrency_test.cpp \
   test/value_test.cpp \
   test/any_test.cpp \
   test/expr_test.cpp \
@@ -124,7 +138,7 @@ test_se_SOURCES = \
   test/simplify_test.cpp \
   test/tester_functional_test.cpp \
   test/single_path_functional_test.cpp \
-  test/multi_path_functional_test.cpp \
+  test/multi_path_functional_test.cpp
 
 test_se_CPPFLAGS = -std=c++0x -I$(srcdir)/include -I$(top_srcdir)/gtest/include
 test_se_LDADD = $(top_builddir)/gtest/lib/libgtest_main.la lib/libse.la
