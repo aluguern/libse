@@ -10,7 +10,7 @@
 #include <ostream>
 #include <list>
 #include <z3++.h>
-#include "op.h"
+#include "core/op.h"
 #include "visitor.h"
 
 /// Symbolic execution namespace

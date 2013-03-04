@@ -5,7 +5,7 @@
 #ifndef INSTR_H_
 #define INSTR_H_
 
-#include "eval.h"
+#include "core/eval.h"
 #include "value.h"
 
 namespace se {

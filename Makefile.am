@@ -58,7 +58,7 @@ dist_doc_DATA = README.md
 lib_LTLIBRARIES = lib/libse.la
 
 lib_libse_la_SOURCES = \
-  src/op.cpp \
+  src/core/op.cpp \
   src/expr.cpp \
   src/value.cpp \
   src/var.cpp \
@@ -68,10 +68,10 @@ lib_libse_la_SOURCES = \
   src/tracer.cpp
 
 pkginclude_HEADERS = \
-  include/op.h \
+  include/core/op.h \
+  include/core/eval.h \
   include/value.h \
   include/expr.h \
-  include/eval.h \
   include/instr.h \
   include/visitor.h \
   include/interpreter.h \
@@ -107,11 +107,11 @@ TESTS = test/se
 check_PROGRAMS = test/se
 
 test_se_SOURCES = \
-  test/op_test.cpp \
+  test/core/op_test.cpp \
+  test/core/eval_test.cpp \
   test/value_test.cpp \
   test/any_test.cpp \
   test/expr_test.cpp \
-  test/eval_test.cpp \
   test/instr_test.cpp \
   test/visitor_test.cpp \
   test/interpreter_test.cpp \
@@ -124,7 +124,7 @@ test_se_SOURCES = \
   test/simplify_test.cpp \
   test/tester_functional_test.cpp \
   test/single_path_functional_test.cpp \
-  test/multi_path_functional_test.cpp
+  test/multi_path_functional_test.cpp \
 
 test_se_CPPFLAGS = -std=c++0x -I$(srcdir)/include -I$(top_srcdir)/gtest/include
 test_se_LDADD = $(top_builddir)/gtest/lib/libgtest_main.la lib/libse.la

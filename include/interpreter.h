@@ -7,7 +7,7 @@
 
 #include <stdexcept>
 #include "expr.h"
-#include "eval.h"
+#include "core/eval.h"
 
 namespace se {
 
