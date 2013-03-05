@@ -20,7 +20,7 @@ namespace se {
 
 template<typename T>
 inline std::unique_ptr<ReadInstr<T>> alloc_read_instr(const ConcurrentVar<T>& var) {
-  const std::shared_ptr<ReadInstr<bool>> condition = path_condition().top();
+  const std::shared_ptr<ReadInstr<bool>> condition = recorder_ptr()->path_condition().top();
   std::unique_ptr<ReadEvent<T>> event_ptr(new ReadEvent<T>(var.addr(), condition));
   return std::unique_ptr<ReadInstr<T>>(new BasicReadInstr<T>(std::move(event_ptr)));
 }
@@ -28,7 +28,7 @@ inline std::unique_ptr<ReadInstr<T>> alloc_read_instr(const ConcurrentVar<T>& va
 template<typename T>
 inline std::unique_ptr<ReadInstr<typename
   std::enable_if<std::is_arithmetic<T>::value, T>::type>> alloc_read_instr(const T& literal) {
-  const std::shared_ptr<ReadInstr<bool>> condition = path_condition().top();
+  const std::shared_ptr<ReadInstr<bool>> condition = recorder_ptr()->path_condition().top();
   return std::unique_ptr<ReadInstr<T>>(new LiteralReadInstr<T>(literal, condition));
 }
 

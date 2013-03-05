@@ -29,7 +29,7 @@ TEST(ConcurrencyTest, AllocLiteralReadInstrWithCondition) {
   const MemoryAddr addr(ptr);
   const ConcurrentVar<char> var(addr);
 
-  path_condition().push(3L < var);
+  recorder_ptr()->path_condition().push(3L < var);
 
   std::unique_ptr<ReadInstr<long long>> read_instr_ptr(alloc_read_instr(42LL));
 

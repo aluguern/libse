@@ -8,9 +8,11 @@ namespace se {
 
 const std::shared_ptr<ReadInstr<bool>> PathCondition::s_true_condition = nullptr;
 
-PathCondition& path_condition() {
-  static PathCondition s_path_condition;
-  return s_path_condition;
+static std::shared_ptr<Recorder> s_recorder_ptr(new Recorder());
+
+std::shared_ptr<Recorder> recorder_ptr() { return s_recorder_ptr; }
+void set_recorder(const std::shared_ptr<Recorder>& recorder_ptr) {
+  s_recorder_ptr = recorder_ptr;
 }
 
 }

@@ -10,6 +10,7 @@
 
 #include "concurrent/event.h"
 #include "concurrent/instr.h"
+#include "concurrent/recorder.h"
 
 namespace se {
 
@@ -43,7 +44,7 @@ public:
   const ReadInstr<T>& instr_ref() const { return m_event_ptr->instr_ref(); }
 
   ConcurrentVar<T>& operator=(std::unique_ptr<ReadInstr<T>> instr_ptr) {
-    m_event_ptr = std::unique_ptr<WriteEvent<T>>(new WriteEvent<T>(addr(), std::move(instr_ptr)));
+    m_event_ptr = recorder_ptr()->instr(addr(), std::move(instr_ptr));
     return *this;
   }
 };
