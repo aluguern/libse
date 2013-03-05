@@ -1,7 +1,7 @@
 #include "gtest/gtest.h"
 
-#include "concurrency/relation.h"
-#include "concurrency/memory.h"
+#include "concurrent/relation.h"
+#include "concurrent/memory.h"
 
 using namespace se;
 

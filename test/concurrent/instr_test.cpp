@@ -1,6 +1,6 @@
 #include "gtest/gtest.h"
 
-#include "concurrency/instr.h"
+#include "concurrent/instr.h"
 
 using namespace se;
 

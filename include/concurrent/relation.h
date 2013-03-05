@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-#ifndef LIBSE_CONCURRENCY_RELATION_H_
-#define LIBSE_CONCURRENCY_RELATION_H_
+#ifndef LIBSE_CONCURRENT_RELATION_H_
+#define LIBSE_CONCURRENT_RELATION_H_
 
 #include <unordered_map>
 #include <type_traits>
@@ -11,7 +11,7 @@
 #include <cstdint>
 #include <memory>
 
-#include "concurrency/event.h"
+#include "concurrent/event.h"
 
 namespace se {
 

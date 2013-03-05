@@ -1,7 +1,7 @@
 #include "gtest/gtest.h"
 
-#include "concurrency/event.h"
-#include "concurrency/instr.h"
+#include "concurrent/event.h"
+#include "concurrent/instr.h"
 
 using namespace se;
 

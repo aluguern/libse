@@ -2,14 +2,14 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-#ifndef LIBSE_CONCURRENCY_EVENT_H_
-#define LIBSE_CONCURRENCY_EVENT_H_
+#ifndef LIBSE_CONCURRENT_EVENT_H_
+#define LIBSE_CONCURRENT_EVENT_H_
 
 #include <cassert>
 #include <cstddef>
 #include <memory>
 
-#include "concurrency/memory.h"
+#include "concurrent/memory.h"
 
 namespace se {
 

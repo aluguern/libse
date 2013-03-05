@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-#ifndef LIBSE_CONCURRENCY_INSTR_H_
-#define LIBSE_CONCURRENCY_INSTR_H_
+#ifndef LIBSE_CONCURRENT_INSTR_H_
+#define LIBSE_CONCURRENT_INSTR_H_
 
 #include <memory>
 #include <cassert>
@@ -11,7 +11,7 @@
 
 #include "core/type.h"
 
-#include "concurrency/event.h"
+#include "concurrent/event.h"
 
 namespace se {
 

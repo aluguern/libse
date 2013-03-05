@@ -1,6 +1,6 @@
 #include "gtest/gtest.h"
 
-#include "concurrency/memory.h"
+#include "concurrent/memory.h"
 
 using namespace se;
 
