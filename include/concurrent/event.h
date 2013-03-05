@@ -18,8 +18,13 @@ class ReadInstr;
 
 /// Untyped read or write event
 
+/// An Event object can only be instantiated through a subclass. Usually,
+/// these objects should be made accessible through a shared smart pointer
+/// such as std::shared_ptr because during the analysis events often need
+/// to be put in \ref Relation "relation" to each other.
+///
 /// An axiom is that two events `e` and `e'` are equal if and only if
-/// both their references are identical, i.e. `&e == &e'`. To enforce
+/// both their heap references are identical, i.e. `&e == &e'`. To enforce
 /// this equality axiom for subclasses as well, each Event object has
 /// a \ref Event::id() "unique identifier".
 ///
@@ -33,12 +38,13 @@ private:
   const MemoryAddr m_addr;
   const std::shared_ptr<ReadInstr<bool>> m_condition_ptr;
 
-public:
-  static void reset_id(size_t id = 0) { s_next_id = id; }
-
+protected:
   Event(const MemoryAddr& addr,
     const std::shared_ptr<ReadInstr<bool>>& condition_ptr = nullptr) :
     m_id(s_next_id++), m_addr(addr), m_condition_ptr(condition_ptr) {}
+
+public:
+  static void reset_id(size_t id = 0) { s_next_id = id; }
 
   virtual ~Event() {}
 
@@ -58,24 +64,28 @@ public:
 template<typename T>
 class WriteEvent : public Event {
 private:
-  const std::shared_ptr<ReadInstr<T>> m_instr_ptr;
+  // Never null
+  const std::unique_ptr<ReadInstr<T>> m_instr_ptr;
 
 public:
   WriteEvent(const MemoryAddr& addr,
-    const std::shared_ptr<ReadInstr<T>>& instr_ptr,
-    const std::shared_ptr<ReadInstr<bool>>& condition_ptr) :
-    Event(addr, condition_ptr), m_instr_ptr(instr_ptr) {}
+    std::unique_ptr<ReadInstr<T>> instr_ptr,
+    const std::shared_ptr<ReadInstr<bool>>& condition_ptr = nullptr) :
+    Event(addr, condition_ptr), m_instr_ptr(std::move(instr_ptr)) {
+
+    assert(nullptr != m_instr_ptr);
+  }
 
   ~WriteEvent() {}
 
-  const std::shared_ptr<ReadInstr<T>> instr_ptr() const { return m_instr_ptr; }
+  const ReadInstr<T>& instr_ref() const { return *m_instr_ptr; }
 };
 
 template<typename T>
 class ReadEvent : public Event {
 public:
   ReadEvent(const MemoryAddr& addr,
-    const std::shared_ptr<ReadInstr<bool>>& condition_ptr) :
+    const std::shared_ptr<ReadInstr<bool>>& condition_ptr = nullptr) :
     Event(addr, condition_ptr) {}
 
   ~ReadEvent() {}

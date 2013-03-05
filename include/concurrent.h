@@ -17,17 +17,40 @@
 
 namespace se {
 
-class MemoryAddr;
+/// Concrete or symbolic shared variable whose type is `T`
 
+/// The lifetime of a ConcurrentVar object must span all threads that
+/// can access it. Therefore, ConcurrentVar objects should be generally
+/// allocated statically. This use case justifies why a ConcurrentVar
+/// object is always initialized to zero unless another initial value
+/// is explicitly given to the constructor. Noteworthy, this value may
+/// also be symbolic.
+///
+/// \remark Usually a static variable
 template<typename T>
 class ConcurrentVar {
 private:
   MemoryAddr m_addr;
+  std::shared_ptr<WriteEvent<T>> m_event_ptr;
+
+  static std::unique_ptr<ReadInstr<T>> zero_literal_ptr() {
+    return std::unique_ptr<ReadInstr<T>>(new LiteralReadInstr<T>(0));
+  }
 
 public:
-  ConcurrentVar(const MemoryAddr& addr) : m_addr(addr) {}
+  ConcurrentVar(const MemoryAddr& addr) : m_addr(addr),
+    m_event_ptr(new WriteEvent<T>(m_addr, zero_literal_ptr())) {}
+
+  ConcurrentVar() : m_addr(reinterpret_cast<uintptr_t>(this)),
+    m_event_ptr(new WriteEvent<T>(m_addr, zero_literal_ptr())) {}
 
   const MemoryAddr& addr() const { return m_addr; }
+  const ReadInstr<T>& instr_ref() const { return m_event_ptr->instr_ref(); }
+
+  ConcurrentVar<T>& operator=(std::unique_ptr<ReadInstr<T>> instr_ptr) {
+    m_event_ptr = std::unique_ptr<WriteEvent<T>>(new WriteEvent<T>(m_addr, std::move(instr_ptr)));
+    return *this;
+  }
 };
 
 class PathCondition {
@@ -58,7 +81,7 @@ extern PathCondition& path_condition();
 template<typename T>
 inline std::unique_ptr<ReadInstr<T>> alloc_read_instr(const ConcurrentVar<T>& var) {
   const std::shared_ptr<ReadInstr<bool>> condition = path_condition().top();
-  std::unique_ptr<Event> event_ptr(new Event(var.addr(), condition));
+  std::unique_ptr<ReadEvent<T>> event_ptr(new ReadEvent<T>(var.addr(), condition));
   return std::unique_ptr<ReadInstr<T>>(new BasicReadInstr<T>(std::move(event_ptr)));
 }
 

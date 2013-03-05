@@ -5,12 +5,20 @@
 
 using namespace se;
 
+/// Public constructor of superclass
+class TestEvent : public Event {
+public:
+  TestEvent(const MemoryAddr& addr,
+    const std::shared_ptr<ReadInstr<bool>>& condition_ptr = nullptr) :
+    Event(addr, condition_ptr) {}
+};
+
 TEST(RelationTest, DefaultMemoryAccessRelation) {
   uintptr_t ptr = 0x03fa;
 
-  const std::shared_ptr<Event> event_ptr(new Event(ptr));
+  const std::shared_ptr<TestEvent> event_ptr(new TestEvent(ptr));
 
-  MemoryAccessRelation<> relation;
+  MemoryAccessRelation<TestEvent> relation;
 
   relation.relate(event_ptr);
 
@@ -21,9 +29,9 @@ TEST(RelationTest, DefaultMemoryAccessRelation) {
 TEST(RelationTest, MemoryAccessFunction) {
   uintptr_t ptr = 0x03fa;
 
-  const std::shared_ptr<Event> event_ptr(new Event(ptr));
+  const std::shared_ptr<TestEvent> event_ptr(new TestEvent(ptr));
 
-  MemoryAccessRelation<Event> relation;
+  MemoryAccessRelation<TestEvent> relation;
 
   relation.relate(event_ptr);
 
@@ -36,9 +44,9 @@ TEST(RelationTest, MemoryAccessRelation) {
   uintptr_t ptr_b = 0x03fb;
   const MemoryAddr addr = MemoryAddr::join(ptr_a, ptr_b);
 
-  const std::shared_ptr<Event> event_ptr(new Event(addr));
+  const std::shared_ptr<TestEvent> event_ptr(new TestEvent(addr));
 
-  MemoryAccessRelation<Event> relation;
+  MemoryAccessRelation<TestEvent> relation;
 
   relation.relate(event_ptr);
 

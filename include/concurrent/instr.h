@@ -16,6 +16,10 @@
 namespace se {
 
 /// Non-copyable class that identifies a built-in memory read instruction
+
+/// Any operands of a subclass of ReadInstr<T> must be only accessible
+/// through a constant reference. If a subclass of ReadInstr<T> refers
+/// to an event, then it must be of type ReadEvent<T>.
 template<typename T>
 class ReadInstr {
 protected:
@@ -41,7 +45,7 @@ protected:
 
 public:
   LiteralReadInstr(const T& literal,
-    const std::shared_ptr<ReadInstr<bool>>& condition) :
+    const std::shared_ptr<ReadInstr<bool>>& condition = nullptr) :
     m_literal(literal), m_condition(condition) {}
 
   LiteralReadInstr(const LiteralReadInstr& other) = delete;
@@ -54,7 +58,7 @@ public:
 template<typename T>
 class BasicReadInstr : public ReadInstr<T> {
 private:
-  std::shared_ptr<Event> m_event_ptr;
+  std::shared_ptr<ReadEvent<T>> m_event_ptr;
 
 protected:
   std::shared_ptr<ReadInstr<bool>> condition_ptr() const {
@@ -62,20 +66,20 @@ protected:
   }
 
 public:
-  BasicReadInstr(std::unique_ptr<Event> event_ptr) :
+  BasicReadInstr(std::unique_ptr<ReadEvent<T>> event_ptr) :
     m_event_ptr(std::move(event_ptr)) {}
 
   BasicReadInstr(const BasicReadInstr& other) = delete;
 
   ~BasicReadInstr() {}
 
-  std::shared_ptr<Event> event_ptr() const { return m_event_ptr; }
+  std::shared_ptr<ReadEvent<T>> event_ptr() const { return m_event_ptr; }
 };
 
 template<Operator op, typename U>
 class UnaryReadInstr : public ReadInstr<typename ReturnType<op, U>::result_type> {
 private:
-  const std::shared_ptr<ReadInstr<U>> m_operand_ptr;
+  const std::unique_ptr<ReadInstr<U>> m_operand_ptr;
 
 protected:
   std::shared_ptr<ReadInstr<bool>> condition_ptr() const {
@@ -90,8 +94,8 @@ public:
 
   ~UnaryReadInstr() {}
 
-  std::shared_ptr<ReadInstr<U>> operand_ptr() const {
-    return m_operand_ptr;
+  const ReadInstr<U>& operand_ref() const {
+    return *m_operand_ptr;
   }
 };
 
@@ -100,8 +104,8 @@ class BinaryReadInstr :
   public ReadInstr<typename ReturnType<op, U, V>::result_type> {
 
 private:
-  const std::shared_ptr<ReadInstr<U>> m_loperand_ptr;
-  const std::shared_ptr<ReadInstr<V>> m_roperand_ptr;
+  const std::unique_ptr<ReadInstr<U>> m_loperand_ptr;
+  const std::unique_ptr<ReadInstr<V>> m_roperand_ptr;
 
 protected:
   std::shared_ptr<ReadInstr<bool>> condition_ptr() const {
@@ -121,8 +125,8 @@ public:
 
   ~BinaryReadInstr() {}
 
-  std::shared_ptr<ReadInstr<U>> loperand_ptr() const { return m_loperand_ptr; }
-  std::shared_ptr<ReadInstr<V>> roperand_ptr() const { return m_roperand_ptr; }
+  const ReadInstr<U>& loperand_ref() const { return *m_loperand_ptr; }
+  const ReadInstr<V>& roperand_ref() const { return *m_roperand_ptr; }
 };
 
 }
