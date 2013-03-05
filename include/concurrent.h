@@ -7,76 +7,16 @@
 
 #include <utility>
 #include <memory>
-#include <stack>
 
 #include "core/op.h"
 #include "core/type.h"
 
 #include "concurrent/event.h"
 #include "concurrent/instr.h"
+#include "concurrent/path_condition.h"
+#include "concurrent/var.h"
 
 namespace se {
-
-/// Concrete or symbolic shared variable whose type is `T`
-
-/// The lifetime of a ConcurrentVar object must span all threads that
-/// can access it. Therefore, ConcurrentVar objects should be generally
-/// allocated statically. This use case justifies why a ConcurrentVar
-/// object is always initialized to zero unless another initial value
-/// is explicitly given to the constructor. Noteworthy, this value may
-/// also be symbolic.
-///
-/// \remark Usually a static variable
-template<typename T>
-class ConcurrentVar {
-private:
-  MemoryAddr m_addr;
-  std::shared_ptr<WriteEvent<T>> m_event_ptr;
-
-  static std::unique_ptr<ReadInstr<T>> zero_literal_ptr() {
-    return std::unique_ptr<ReadInstr<T>>(new LiteralReadInstr<T>(0));
-  }
-
-public:
-  ConcurrentVar(const MemoryAddr& addr) : m_addr(addr),
-    m_event_ptr(new WriteEvent<T>(m_addr, zero_literal_ptr())) {}
-
-  ConcurrentVar() : m_addr(reinterpret_cast<uintptr_t>(this)),
-    m_event_ptr(new WriteEvent<T>(m_addr, zero_literal_ptr())) {}
-
-  const MemoryAddr& addr() const { return m_addr; }
-  const ReadInstr<T>& instr_ref() const { return m_event_ptr->instr_ref(); }
-
-  ConcurrentVar<T>& operator=(std::unique_ptr<ReadInstr<T>> instr_ptr) {
-    m_event_ptr = std::unique_ptr<WriteEvent<T>>(new WriteEvent<T>(m_addr, std::move(instr_ptr)));
-    return *this;
-  }
-};
-
-class PathCondition {
-private:
-  static const std::shared_ptr<ReadInstr<bool>> s_true_condition;
-
-  std::stack<std::shared_ptr<ReadInstr<bool>>> m_conditions;
-
-public:
-  void push(std::unique_ptr<ReadInstr<bool>> condition) {
-    m_conditions.push(std::move(condition));
-  }
-
-  void pop() { m_conditions.pop(); }
-
-  std::shared_ptr<ReadInstr<bool>> top() const {
-    if (m_conditions.empty()) {
-      return s_true_condition;
-    }
-
-    return m_conditions.top();
-  }
-};
-
-/// Static object which can record path constraints
-extern PathCondition& path_condition();
 
 template<typename T>
 inline std::unique_ptr<ReadInstr<T>> alloc_read_instr(const ConcurrentVar<T>& var) {

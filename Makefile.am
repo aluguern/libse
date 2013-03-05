@@ -59,8 +59,8 @@ lib_LTLIBRARIES = lib/libse.la
 
 lib_libse_la_SOURCES = \
   src/core/op.cpp \
+  src/concurrent/path_condition.cpp \
   src/concurrent/event.cpp \
-  src/concurrent.cpp \
   src/expr.cpp \
   src/value.cpp \
   src/var.cpp \
@@ -76,6 +76,8 @@ pkginclude_HEADERS = \
   include/concurrent/memory.h \
   include/concurrent/event.h \
   include/concurrent/instr.h \
+  include/concurrent/path_condition.h \
+  include/concurrent/var.h \
   include/concurrent/relation.h \
   include/concurrent.h \
   include/value.h \
@@ -121,6 +123,8 @@ test_se_SOURCES = \
   test/concurrent/memory_test.cpp \
   test/concurrent/event_test.cpp \
   test/concurrent/instr_test.cpp \
+  test/concurrent/path_condition_test.cpp \
+  test/concurrent/var_test.cpp \
   test/concurrent/relation_test.cpp \
   test/concurrent_test.cpp \
   test/value_test.cpp \

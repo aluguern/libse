@@ -5,37 +5,6 @@
 
 using namespace se;
 
-TEST(ConcurrencyTest, EmptyPathCondition) {
-  PathCondition path_condition;
-  EXPECT_EQ(nullptr, path_condition.top());
-}
-
-TEST(ConcurrencyTest, NonemptyPathCondition) {
-  std::unique_ptr<ReadInstr<bool>> true_condition(
-    new LiteralReadInstr<bool>(true, nullptr));
-
-  std::unique_ptr<ReadInstr<bool>> false_condition(
-    new LiteralReadInstr<bool>(false, nullptr));
-
-  PathCondition path_condition;
-  path_condition.push(std::move(true_condition));
-  path_condition.push(std::move(false_condition));
-
-  const LiteralReadInstr<bool>& false_read_instr =
-    dynamic_cast<const LiteralReadInstr<bool>&>(*path_condition.top());
-  EXPECT_FALSE(false_read_instr.literal());
-
-  path_condition.pop();
-
-  const LiteralReadInstr<bool>& true_read_instr =
-    dynamic_cast<const LiteralReadInstr<bool>&>(*path_condition.top());
-  EXPECT_TRUE(true_read_instr.literal());
-
-  path_condition.pop();
-
-  EXPECT_EQ(nullptr, path_condition.top());
-}
-
 TEST(ConcurrencyTest, AllocLiteralReadInstrWithConstant) {
   std::unique_ptr<ReadInstr<long>> read_instr_ptr(alloc_read_instr(42L));
 
@@ -192,31 +161,6 @@ TEST(ConcurrencyTest, BinaryOperatorLSSLiteralAllocWithoutCondition) {
   // Make no assumption about the order in which operands are evaluated
   const size_t right_id = right_child.event_ptr()->id();
   EXPECT_EQ(15, right_id);
-}
-
-TEST(ConcurrencyTest, ConcurrentVarExternalAddr) {
-  Event::reset_id(7);
-  const uintptr_t var_addr = 0x03fa;
-  const MemoryAddr addr(var_addr);
-
-  ConcurrentVar<char> var(addr);
-
-  EXPECT_EQ(std::unordered_set<uintptr_t>({ var_addr }), var.addr().ptrs());
-
-  const LiteralReadInstr<char>& instr = dynamic_cast<const LiteralReadInstr<char>&>(var.instr_ref());
-  EXPECT_EQ(0, instr.literal());
-}
-
-TEST(ConcurrencyTest, ConcurrentVarInternalAddr) {
-  Event::reset_id(7);
-
-  ConcurrentVar<char> var;
-
-  const uintptr_t var_addr = reinterpret_cast<uintptr_t>(&var);
-  EXPECT_EQ(std::unordered_set<uintptr_t>({ var_addr }), var.addr().ptrs());
-
-  const LiteralReadInstr<char>& instr = dynamic_cast<const LiteralReadInstr<char>&>(var.instr_ref());
-  EXPECT_EQ(0, instr.literal());
 }
 
 TEST(ConcurrencyTest, ConcurrentVarAssignmentWithoutCondition) {
