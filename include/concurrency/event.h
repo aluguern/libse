@@ -34,7 +34,7 @@ private:
   const std::shared_ptr<ReadInstr<bool>> m_condition_ptr;
 
 public:
-  static size_t reset_id(size_t id = 0) { s_next_id = id; }
+  static void reset_id(size_t id = 0) { s_next_id = id; }
 
   Event(const MemoryAddr& addr,
     const std::shared_ptr<ReadInstr<bool>>& condition_ptr = nullptr) :
