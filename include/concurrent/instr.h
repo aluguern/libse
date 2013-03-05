@@ -8,12 +8,15 @@
 #include <memory>
 #include <cassert>
 #include <utility>
+#include <forward_list>
 
 #include "core/type.h"
 
 #include "concurrent/event.h"
 
 namespace se {
+
+class ReadInstrConverter;
 
 /// Non-copyable class that identifies a built-in memory read instruction
 
@@ -28,6 +31,8 @@ protected:
 public:
   ReadInstr(const ReadInstr& other) = delete;
   virtual ~ReadInstr() {}
+
+  virtual void filter(std::forward_list<std::shared_ptr<Event>>&) const = 0;
 
   virtual std::shared_ptr<ReadInstr<bool>> condition_ptr() const = 0;
 };
@@ -53,6 +58,8 @@ public:
   ~LiteralReadInstr() {}
 
   const T& literal() const { return m_literal; }
+
+  void filter(std::forward_list<std::shared_ptr<Event>>&) const { /* skip */ }
 };
 
 template<typename T>
@@ -74,6 +81,10 @@ public:
   ~BasicReadInstr() {}
 
   std::shared_ptr<ReadEvent<T>> event_ptr() const { return m_event_ptr; }
+
+  void filter(std::forward_list<std::shared_ptr<Event>>& event_ptrs) const {
+    event_ptrs.push_front(m_event_ptr);
+  }
 };
 
 template<Operator op, typename U>
@@ -94,8 +105,10 @@ public:
 
   ~UnaryReadInstr() {}
 
-  const ReadInstr<U>& operand_ref() const {
-    return *m_operand_ptr;
+  const ReadInstr<U>& operand_ref() const { return *m_operand_ptr; }
+
+  void filter(std::forward_list<std::shared_ptr<Event>>& event_ptrs) const {
+    operand_ref().filter(event_ptrs);
   }
 };
 
@@ -127,6 +140,11 @@ public:
 
   const ReadInstr<U>& loperand_ref() const { return *m_loperand_ptr; }
   const ReadInstr<V>& roperand_ref() const { return *m_roperand_ptr; }
+
+  void filter(std::forward_list<std::shared_ptr<Event>>& event_ptrs) const {
+    loperand_ref().filter(event_ptrs);
+    roperand_ref().filter(event_ptrs);
+  }
 };
 
 }

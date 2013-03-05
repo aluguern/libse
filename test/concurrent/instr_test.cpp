@@ -142,3 +142,29 @@ TEST(InstrTest, BinaryReadInstrWithDifferentPathConditions) {
   EXPECT_EXIT((BinaryReadInstr<ADD, int, long>(std::move(basic_read_instr_a),
     std::move(basic_read_instr_b))), ::testing::KilledBySignal(SIGABRT), "Assertion");
 }
+
+TEST(InstrTest, Filter) {
+  Event::reset_id(7);
+
+  uintptr_t access_a = 0x03fa;
+  uintptr_t access_b = 0x03fb;
+  std::unique_ptr<ReadEvent<int>> event_ptr_a(new ReadEvent<int>(access_a));
+  std::unique_ptr<ReadEvent<long>> event_ptr_b(new ReadEvent<long>(access_b));
+  std::unique_ptr<ReadInstr<int>> basic_read_instr_a(new BasicReadInstr<int>(std::move(event_ptr_a)));
+  const BinaryReadInstr<ADD, int, long> instr(std::move(basic_read_instr_a) /* explicit move */,
+    std::unique_ptr<ReadInstr<long>>(new BasicReadInstr<long>(std::move(event_ptr_b))) /* implicit move */ );
+
+  std::forward_list<std::shared_ptr<Event>> event_ptrs;
+  instr.filter(event_ptrs);
+
+  const ReadEvent<long>& event_b = dynamic_cast<const ReadEvent<long>&>(*event_ptrs.front());
+  EXPECT_EQ(8, event_b.id());
+
+  event_ptrs.pop_front();
+
+  const ReadEvent<int>& event_a = dynamic_cast<const ReadEvent<int>&>(*event_ptrs.front());
+  EXPECT_EQ(7, event_a.id());
+
+  event_ptrs.pop_front();
+  EXPECT_TRUE(event_ptrs.empty());
+}
