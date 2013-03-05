@@ -1,15 +1,15 @@
 #include "gtest/gtest.h"
 
-#include "concurrent/path_condition.h"
+#include "concurrent/recorder.h"
 
 using namespace se;
 
-TEST(PathConditionTest, EmptyPathCondition) {
+TEST(RecorderTest, EmptyPathCondition) {
   PathCondition path_condition;
   EXPECT_EQ(nullptr, path_condition.top());
 }
 
-TEST(PathConditionTest, NonemptyPathCondition) {
+TEST(RecorderTest, NonemptyPathCondition) {
   std::unique_ptr<ReadInstr<bool>> true_condition(
     new LiteralReadInstr<bool>(true, nullptr));
 

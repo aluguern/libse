@@ -13,7 +13,7 @@
 
 #include "concurrent/event.h"
 #include "concurrent/instr.h"
-#include "concurrent/path_condition.h"
+#include "concurrent/recorder.h"
 #include "concurrent/var.h"
 
 namespace se {

@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-#ifndef LIBSE_CONCURRENT_PATH_CONDITION_H_
-#define LIBSE_CONCURRENT_PATH_CONDITION_H_
+#ifndef LIBSE_CONCURRENT_RECORDER_H_
+#define LIBSE_CONCURRENT_RECORDER_H_
 
 #include <memory>
 #include <stack>
