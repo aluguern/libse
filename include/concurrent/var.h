@@ -26,7 +26,6 @@ namespace se {
 template<typename T>
 class ConcurrentVar {
 private:
-  MemoryAddr m_addr;
   std::shared_ptr<WriteEvent<T>> m_event_ptr;
 
   static std::unique_ptr<ReadInstr<T>> zero_literal_ptr() {
@@ -34,17 +33,17 @@ private:
   }
 
 public:
-  ConcurrentVar(const MemoryAddr& addr) : m_addr(addr),
-    m_event_ptr(new WriteEvent<T>(m_addr, zero_literal_ptr())) {}
+  ConcurrentVar(const MemoryAddr& addr) :
+    m_event_ptr(new WriteEvent<T>(addr, zero_literal_ptr())) {}
 
-  ConcurrentVar() : m_addr(reinterpret_cast<uintptr_t>(this)),
-    m_event_ptr(new WriteEvent<T>(m_addr, zero_literal_ptr())) {}
+  ConcurrentVar() :m_event_ptr(new WriteEvent<T>(
+    reinterpret_cast<uintptr_t>(this), zero_literal_ptr())) {}
 
-  const MemoryAddr& addr() const { return m_addr; }
+  const MemoryAddr& addr() const { return m_event_ptr->addr(); }
   const ReadInstr<T>& instr_ref() const { return m_event_ptr->instr_ref(); }
 
   ConcurrentVar<T>& operator=(std::unique_ptr<ReadInstr<T>> instr_ptr) {
-    m_event_ptr = std::unique_ptr<WriteEvent<T>>(new WriteEvent<T>(m_addr, std::move(instr_ptr)));
+    m_event_ptr = std::unique_ptr<WriteEvent<T>>(new WriteEvent<T>(addr(), std::move(instr_ptr)));
     return *this;
   }
 };
