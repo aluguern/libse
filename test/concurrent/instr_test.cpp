@@ -1,5 +1,7 @@
 #include "gtest/gtest.h"
 
+#include <sstream>
+
 #include "concurrent/instr.h"
 
 using namespace se;
@@ -167,4 +169,30 @@ TEST(InstrTest, Filter) {
 
   event_ptrs.pop_front();
   EXPECT_TRUE(event_ptrs.empty());
+}
+
+class ReadInstrPrinter : public ReadInstrSwitch<ReadInstrPrinter, std::ostream> {
+public:
+
+  template<typename T>
+  void case_instr(const LiteralReadInstr<T>& instr, std::ostream& out) const {
+    out << "LiteralReadInstr" << std::endl;
+  }
+
+};
+
+TEST(InstrTest, ReadInstrSwitch) {
+  const LiteralReadInstr<int> literal_read_instr(5);
+
+  uintptr_t access = 0x03fa;
+  std::unique_ptr<ReadEvent<long>> event_ptr(new ReadEvent<long>(access));
+  const BasicReadInstr<long> basic_read_instr(std::move(event_ptr));
+  
+  const ReadInstrPrinter printer;
+  std::stringstream out;
+
+  printer.switch_instr(literal_read_instr, out);
+  printer.switch_instr(basic_read_instr, out);
+
+  EXPECT_EQ("LiteralReadInstr\n", out.str());
 }

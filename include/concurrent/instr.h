@@ -16,8 +16,6 @@
 
 namespace se {
 
-class ReadInstrConverter;
-
 /// Non-copyable class that identifies a built-in memory read instruction
 
 /// Any operands of a subclass of ReadInstr<T> must be only accessible
@@ -144,6 +142,78 @@ public:
   void filter(std::forward_list<std::shared_ptr<Event>>& event_ptrs) const {
     loperand_ref().filter(event_ptrs);
     roperand_ref().filter(event_ptrs);
+  }
+};
+
+template<typename T> class LiteralReadInstr;
+template<typename T> class BasicReadInstr;
+template<Operator op, typename T> class UnaryReadInstr;
+template<Operator op, typename T, typename U> class BinaryReadInstr;
+
+template<typename ...T> struct ReadInstrResult;
+
+template<typename T>
+struct ReadInstrResult<LiteralReadInstr<T>> { typedef T Type; };
+
+template<typename T>
+struct ReadInstrResult<BasicReadInstr<T>> { typedef T Type; };
+
+template<Operator op, typename T>
+struct ReadInstrResult<UnaryReadInstr<op, T>> { typedef T Type; };
+
+template<Operator op, typename T, typename U>
+struct ReadInstrResult<BinaryReadInstr<op, T, U>> {
+  typedef typename ReturnType<op, T, U>::result_type Type;
+};
+
+/// Optional control flow over the exact type of a read instruction
+
+/// \remark Can only deallocate ReadInstrSwitch<Subclass> through Subclass
+template<typename Subclass, typename U>
+class ReadInstrSwitch {
+private:
+  template<typename> struct template_true_type : std::true_type{};
+
+  template<class T, class Arg0, class Arg1>
+  static auto check_case_instr(Arg0&& arg0, Arg1&& arg1, int)
+    -> template_true_type<decltype(std::declval<T>().case_instr(arg0, arg1))>;
+
+  template<class T, class Arg0, class Arg1>
+  static std::false_type check_case_instr(Arg0&&, Arg1&&, long);
+
+  // For gcc earlier than 4.7
+  template<class T> struct wrap { typedef T type; };
+
+  template<class T, class Arg0, class Arg1>
+  struct has_case_instr :
+    wrap<decltype(check_case_instr<T>(std::declval<Arg0>(), std::declval<Arg1>(), 0))>::type {};
+
+protected:
+  ~ReadInstrSwitch() {}
+
+  /// Subclass is allowed to reimplement this non-virtual member function
+
+  /// \remark Default implementation does nothing
+  template<typename T, class = typename std::enable_if<
+    /* if */ std::is_base_of<ReadInstr<typename ReadInstrResult<T>::Type>, T>::value,
+    /* then */ T>::type>
+  void case_instr(const T& instr, U& update) const {}
+
+public:
+  /// Statically dispatches to Subclass if allowed
+
+  /// \warning Subclass must not reimplement this non-virtual member function
+  template<typename T, class = typename std::enable_if<
+    /* if */ std::is_base_of<ReadInstr<typename ReadInstrResult<T>::Type>, T>::value,
+    /* then */ T>::type>
+  void switch_instr(const T& instr, U& update) const {
+    typedef typename std::conditional<
+      /* if */ has_case_instr<Subclass, T, U>::value,
+      /* then */ const Subclass*,
+      /* else */ const ReadInstrSwitch*>
+      ::type Case;
+
+    static_cast<Case>(this)->case_instr(instr, update);
   }
 };
 
