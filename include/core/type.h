@@ -5,6 +5,7 @@
 #ifndef LIBSE_TYPE_H_
 #define LIBSE_TYPE_H_
 
+#include <utility>
 #include <type_traits>
 
 #include "core/op.h"
@@ -16,12 +17,12 @@ template<Operator op, typename ...T> struct ReturnType;
 
 template<Operator op, typename T>
 struct ReturnType<op, T> {
-  typedef decltype(Eval<op>::template const_eval<T>(0)) result_type;
+  typedef decltype(Eval<op>::template const_eval<T>(std::declval<T>())) result_type;
 };
 
 template<Operator op, typename T, typename U>
 struct ReturnType<op, T, U> {
-  typedef decltype(Eval<op>::template const_eval<T, U>(0, 0)) result_type;
+  typedef decltype(Eval<op>::template const_eval<T, U>(std::declval<T>(), std::declval<U>())) result_type;
 };
 
 struct __EmptyUnwrapType {};
