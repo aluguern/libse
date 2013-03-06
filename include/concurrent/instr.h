@@ -145,11 +145,6 @@ public:
   }
 };
 
-template<typename T> class LiteralReadInstr;
-template<typename T> class BasicReadInstr;
-template<Operator op, typename T> class UnaryReadInstr;
-template<Operator op, typename T, typename U> class BinaryReadInstr;
-
 template<typename ...T> struct ReadInstrResult;
 
 template<typename T>
