@@ -174,6 +174,8 @@ TEST(InstrTest, Filter) {
 class ReadInstrPrinter : public ReadInstrSwitch<ReadInstrPrinter, std::ostream> {
 public:
 
+  ReadInstrPrinter() {}
+
   template<typename T>
   void case_instr(const LiteralReadInstr<T>& instr, std::ostream& out) const {
     out << "LiteralReadInstr" << std::endl;
