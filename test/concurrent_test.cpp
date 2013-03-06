@@ -180,3 +180,19 @@ TEST(ConcurrencyTest, ConcurrentVarAssignmentWithoutCondition) {
   EXPECT_EQ(3L, loperand.literal());
   EXPECT_EQ(9, roperand.event_ptr()->id());
 }
+
+TEST(ConcurrencyTest, ConcurrentVarOtherAssignmentWithoutCondition) {
+  Event::reset_id(12);
+
+  ConcurrentVar<char> char_integer;
+  ConcurrentVar<long> long_integer;
+  ConcurrentVar<long> another_long_integer;
+
+  long_integer = 3L + char_integer;
+
+  another_long_integer = long_integer;
+
+  const BasicReadInstr<long>& read_instr = dynamic_cast<const BasicReadInstr<long>&>(another_long_integer.instr_ref());
+
+  EXPECT_EQ(17, read_instr.event_ptr()->id());
+}

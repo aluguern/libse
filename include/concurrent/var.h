@@ -14,6 +14,11 @@
 
 namespace se {
 
+template<typename T> class ConcurrentVar;
+
+template<typename T>
+std::unique_ptr<ReadInstr<T>> alloc_read_instr(const ConcurrentVar<T>&);
+
 /// Concrete or symbolic shared variable whose type is `T`
 
 /// The lifetime of a ConcurrentVar object must span all threads that
@@ -42,6 +47,10 @@ public:
 
   const MemoryAddr& addr() const { return m_event_ptr->addr(); }
   const ReadInstr<T>& instr_ref() const { return m_event_ptr->instr_ref(); }
+
+  ConcurrentVar<T>& operator=(const ConcurrentVar<T>& other) {
+    return operator=(alloc_read_instr(other));
+  }
 
   ConcurrentVar<T>& operator=(std::unique_ptr<ReadInstr<T>> instr_ptr) {
     m_event_ptr = recorder_ptr()->instr(addr(), std::move(instr_ptr));
