@@ -181,10 +181,15 @@ public:
     out << "LiteralReadInstr" << std::endl;
   }
 
+  void case_instr(const LiteralReadInstr<long>& instr, std::ostream& out) const {
+    out << "LiteralReadInstr<long>" << std::endl;
+  }
+
 };
 
 TEST(InstrTest, ReadInstrSwitch) {
-  const LiteralReadInstr<int> literal_read_instr(5);
+  const LiteralReadInstr<int> int_literal_read_instr(5);
+  const LiteralReadInstr<long> long_literal_read_instr(7L);
 
   uintptr_t access = 0x03fa;
   std::unique_ptr<ReadEvent<long>> event_ptr(new ReadEvent<long>(access));
@@ -193,8 +198,9 @@ TEST(InstrTest, ReadInstrSwitch) {
   const ReadInstrPrinter printer;
   std::stringstream out;
 
-  printer.switch_instr(literal_read_instr, out);
+  printer.switch_instr(int_literal_read_instr, out);
   printer.switch_instr(basic_read_instr, out);
+  printer.switch_instr(long_literal_read_instr, out);
 
-  EXPECT_EQ("LiteralReadInstr\n", out.str());
+  EXPECT_EQ("LiteralReadInstr\nLiteralReadInstr<long>\n", out.str());
 }
