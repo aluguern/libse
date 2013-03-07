@@ -9,6 +9,8 @@
 #include <cstddef>
 #include <memory>
 
+#include "core/type.h"
+
 #include "concurrent/memory.h"
 
 namespace se {
@@ -37,6 +39,7 @@ private:
 
   const size_t m_id;
   const bool m_is_read;
+  const Type* const m_type_ptr;
   const MemoryAddr m_addr;
   const std::shared_ptr<ReadInstr<bool>> m_condition_ptr;
 
@@ -52,10 +55,23 @@ private:
   }
 
 protected:
-  Event(const MemoryAddr& addr, bool is_read,
+
+  /// Create a unique read or write event
+
+  /// \param addr - memory address read or written by the event
+  /// \param is_read - does the event cause memory to be read?
+  /// \param type_ptr - pointer to statically allocated memory, never null
+  /// \param condition_ptr - necessary condition for the event to occur
+  ///
+  /// The type_ptr describes the event in terms of its memory characteristics
+  /// such as how many bytes are read or written.
+  Event(const MemoryAddr& addr, bool is_read, const Type* const type_ptr,
     const std::shared_ptr<ReadInstr<bool>>& condition_ptr = nullptr) :
     m_id(next_id(is_read)), m_addr(addr), m_is_read(is_read),
-    m_condition_ptr(condition_ptr) {}
+    m_type_ptr(type_ptr), m_condition_ptr(condition_ptr) {
+
+    assert(type_ptr != nullptr);
+  }
 
 public:
   static void reset_id(size_t id = 0) { s_next_id = id; }
@@ -66,6 +82,7 @@ public:
   const MemoryAddr& addr() const { return m_addr; }
   bool is_read() const { return m_is_read; }
   bool is_write() const { return !m_is_read; }
+  const Type& type() { return *m_type_ptr; }
 
   /// Condition that guards the event
 
@@ -87,7 +104,8 @@ public:
   WriteEvent(const MemoryAddr& addr,
     std::unique_ptr<ReadInstr<T>> instr_ptr,
     const std::shared_ptr<ReadInstr<bool>>& condition_ptr = nullptr) :
-    Event(addr, false, condition_ptr), m_instr_ptr(std::move(instr_ptr)) {
+    Event(addr, false, &TypeInfo<T>::s_type, condition_ptr),
+    m_instr_ptr(std::move(instr_ptr)) {
 
     assert(nullptr != m_instr_ptr);
   }
@@ -102,7 +120,7 @@ class ReadEvent : public Event {
 public:
   ReadEvent(const MemoryAddr& addr,
     const std::shared_ptr<ReadInstr<bool>>& condition_ptr = nullptr) :
-    Event(addr, true, condition_ptr) {}
+    Event(addr, true, &TypeInfo<T>::s_type, condition_ptr) {}
 
   ~ReadEvent() {}
 };

@@ -5,12 +5,12 @@
 
 using namespace se;
 
-/// Public constructor of superclass
+/// A read event on an integer
 class TestEvent : public Event {
 public:
   TestEvent(const MemoryAddr& addr,
     const std::shared_ptr<ReadInstr<bool>>& condition_ptr = nullptr) :
-    Event(addr, true, condition_ptr) {}
+    Event(addr, true, &TypeInfo<int>::s_type, condition_ptr) {}
 };
 
 TEST(EventTest, EventId) {
