@@ -37,3 +37,14 @@ TEST(TypeTest, UnwrapType) {
     typename UnwrapType<bool>::base>::value));
 }
 
+TEST(TypeTest, TypeInfo) {
+  EXPECT_TRUE(TypeInfo<int>::s_type.is_signed());
+  EXPECT_FALSE(TypeInfo<char>::s_type.is_pointer());
+  EXPECT_EQ(TypeInfo<long>::s_type.bv_size(), TypeInfo<unsigned long>::s_type.bv_size());
+
+  EXPECT_TRUE(TypeInfo<int*>::s_type.is_pointer());
+  EXPECT_TRUE(TypeInfo<int*>::s_type.pointer_type().is_signed());
+
+  EXPECT_TRUE(TypeInfo<unsigned int*>::s_type.is_pointer());
+  EXPECT_FALSE(TypeInfo<unsigned int*>::s_type.pointer_type().is_signed());
+}

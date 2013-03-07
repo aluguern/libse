@@ -5,7 +5,9 @@
 #ifndef LIBSE_TYPE_H_
 #define LIBSE_TYPE_H_
 
+#include <limits>
 #include <utility>
+#include <cassert>
 #include <type_traits>
 
 #include "core/op.h"
@@ -56,6 +58,46 @@ template<typename T>
 struct UnwrapType<T* const volatile> {
   typedef typename UnwrapType<T>::base* const volatile base;
 };
+
+/// Runtime type information
+class Type {
+private:
+  const size_t m_bv_size;
+  const bool m_is_signed;
+  const bool m_is_pointer;
+  const Type* const m_pointer_type;
+
+  template<typename T>
+  friend struct TypeInfo;
+
+  constexpr Type(
+    size_t bv_size, bool is_signed,
+    bool is_pointer, const Type* const pointer_type) :
+    m_bv_size(bv_size), m_is_signed(is_signed),
+    m_is_pointer(is_pointer), m_pointer_type(pointer_type) {}
+
+public:
+  size_t bv_size() const { return m_bv_size; }
+  bool is_signed() const { return m_is_signed; }
+  bool is_pointer() const { return m_is_pointer; }
+
+  /// \pre is_pointer() is true
+  const Type& pointer_type() const {
+    assert(m_is_pointer); return *m_pointer_type;
+  }
+};
+
+/// Lookup table of statically allocated Type objects
+template<typename T> struct TypeInfo { static Type s_type; };
+template<typename T> constexpr size_t bv_size() { return 8 * sizeof(T); }
+
+template<typename T>
+Type TypeInfo<T>::s_type(bv_size<T>(),
+                         std::is_signed<T>::value,
+                         std::is_pointer<T>::value,
+
+                         /* undefined memory address if T is not a pointer type */
+                         &TypeInfo<typename std::remove_pointer<T>::type>::s_type);
 
 }
 
