@@ -44,7 +44,7 @@ TEST(ConcurrencyTest, AllocLiteralReadInstrWithCondition) {
   const BasicReadInstr<char>& right_child = dynamic_cast<const BasicReadInstr<char>&>(lss_instr.roperand_ref());
   EXPECT_EQ(3L, left_child.literal());
 
-  EXPECT_EQ(8, right_child.event_ptr()->id());
+  EXPECT_EQ(2*8, right_child.event_ptr()->id());
   EXPECT_EQ(1, right_child.event_ptr()->addr().ptrs().size());
 }
 
@@ -86,7 +86,7 @@ TEST(ConcurrencyTest, AllocConcurrentVar) {
 
   const BasicReadInstr<int>& basic_read_instr =
     dynamic_cast<const BasicReadInstr<int>&>(*read_instr_ptr);
-  EXPECT_EQ(43, basic_read_instr.event_ptr()->id());
+  EXPECT_EQ(2*43, basic_read_instr.event_ptr()->id());
 }
 
 TEST(ConcurrencyTest, BinaryOperatorLSSAllocAllocWithoutCondition) {
@@ -110,8 +110,8 @@ TEST(ConcurrencyTest, BinaryOperatorLSSAllocAllocWithoutCondition) {
   // Make no assumption about the order in which operands are evaluated
   const size_t left_id = left_child.event_ptr()->id();
   const size_t right_id = right_child.event_ptr()->id();
-  EXPECT_TRUE(15 == left_id || 16 == left_id);
-  EXPECT_TRUE(15 == right_id || 16 == right_id);
+  EXPECT_TRUE(2*15 == left_id || 2*16 == left_id);
+  EXPECT_TRUE(2*15 == right_id || 2*16 == right_id);
   EXPECT_NE(left_id, right_id);
 }
 
@@ -134,7 +134,7 @@ TEST(ConcurrencyTest, BinaryOperatorLSSAllocLiteralWithoutCondition) {
 
   // Make no assumption about the order in which operands are evaluated
   const size_t left_id = left_child.event_ptr()->id();
-  EXPECT_EQ(15, left_id);
+  EXPECT_EQ(2*15, left_id);
 
   EXPECT_EQ(3, right_child.literal());
 }
@@ -160,7 +160,7 @@ TEST(ConcurrencyTest, BinaryOperatorLSSLiteralAllocWithoutCondition) {
 
   // Make no assumption about the order in which operands are evaluated
   const size_t right_id = right_child.event_ptr()->id();
-  EXPECT_EQ(15, right_id);
+  EXPECT_EQ(2*15, right_id);
 }
 
 TEST(ConcurrencyTest, ConcurrentVarAssignmentWithoutCondition) {
@@ -178,7 +178,7 @@ TEST(ConcurrencyTest, ConcurrentVarAssignmentWithoutCondition) {
 
   EXPECT_EQ(1, roperand.event_ptr()->addr().ptrs().size());
   EXPECT_EQ(3L, loperand.literal());
-  EXPECT_EQ(9, roperand.event_ptr()->id());
+  EXPECT_EQ(2*9, roperand.event_ptr()->id());
 }
 
 TEST(ConcurrencyTest, ConcurrentVarOtherAssignmentWithoutCondition) {
@@ -194,5 +194,5 @@ TEST(ConcurrencyTest, ConcurrentVarOtherAssignmentWithoutCondition) {
 
   const BasicReadInstr<long>& read_instr = dynamic_cast<const BasicReadInstr<long>&>(another_long_integer.instr_ref());
 
-  EXPECT_EQ(17, read_instr.event_ptr()->id());
+  EXPECT_EQ(2*17, read_instr.event_ptr()->id());
 }

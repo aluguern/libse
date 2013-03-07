@@ -30,7 +30,7 @@ TEST(InstrTest, BasicReadInstrWithoutCondition) {
   std::unique_ptr<ReadEvent<int>> event_ptr(new ReadEvent<int>(access));
 
   const BasicReadInstr<int> instr(std::move(event_ptr));
-  EXPECT_EQ(3, instr.event_ptr()->id());
+  EXPECT_EQ(2*3, instr.event_ptr()->id());
   EXPECT_EQ(1, instr.event_ptr()->addr().ptrs().size());
 }
 
@@ -46,7 +46,7 @@ TEST(InstrTest, BasicReadInstrWithCondition) {
   std::unique_ptr<ReadEvent<int>> event_ptr(new ReadEvent<int>(access, condition_ptr));
 
   const BasicReadInstr<int> instr(std::move(event_ptr));
-  EXPECT_EQ(8, instr.event_ptr()->id());
+  EXPECT_EQ(2*8, instr.event_ptr()->id());
   EXPECT_EQ(1, instr.event_ptr()->addr().ptrs().size());
 }
 
@@ -58,7 +58,7 @@ TEST(InstrTest, UnaryReadInstrWithoutCondition) {
   const UnaryReadInstr<NOT, int> instr(std::move(basic_read_instr));
 
   const BasicReadInstr<int>& operand = dynamic_cast<const BasicReadInstr<int>&>(instr.operand_ref());
-  EXPECT_EQ(7, operand.event_ptr()->id());
+  EXPECT_EQ(2*7, operand.event_ptr()->id());
   EXPECT_EQ(1, operand.event_ptr()->addr().ptrs().size());
 }
 
@@ -76,7 +76,7 @@ TEST(InstrTest, UnaryReadInstrWithCondition) {
   const UnaryReadInstr<NOT, int> instr(std::move(basic_read_instr));
 
   const BasicReadInstr<int>& operand = dynamic_cast<const BasicReadInstr<int>&>(instr.operand_ref());
-  EXPECT_EQ(8, operand.event_ptr()->id());
+  EXPECT_EQ(2*8, operand.event_ptr()->id());
   EXPECT_EQ(1, operand.event_ptr()->addr().ptrs().size());
 }
 
@@ -91,10 +91,10 @@ TEST(InstrTest, BinaryReadInstrWithoutCondition) {
 
   const BasicReadInstr<int>& left_child = dynamic_cast<const BasicReadInstr<int>&>(instr.loperand_ref());
   const BasicReadInstr<long>& right_child = dynamic_cast<const BasicReadInstr<long>&>(instr.roperand_ref());
-  EXPECT_EQ(7, left_child.event_ptr()->id());
+  EXPECT_EQ(2*7, left_child.event_ptr()->id());
   EXPECT_EQ(1, left_child.event_ptr()->addr().ptrs().size());
 
-  EXPECT_EQ(8, right_child.event_ptr()->id());
+  EXPECT_EQ(2*8, right_child.event_ptr()->id());
   EXPECT_EQ(1, right_child.event_ptr()->addr().ptrs().size());
 }
 
@@ -115,10 +115,10 @@ TEST(InstrTest, BinaryReadInstrWithCondition) {
 
   const BasicReadInstr<int>& left_child = dynamic_cast<const BasicReadInstr<int>&>(instr.loperand_ref());
   const BasicReadInstr<long>& right_child = dynamic_cast<const BasicReadInstr<long>&>(instr.roperand_ref());
-  EXPECT_EQ(8, left_child.event_ptr()->id());
+  EXPECT_EQ(2*8, left_child.event_ptr()->id());
   EXPECT_EQ(1, left_child.event_ptr()->addr().ptrs().size());
 
-  EXPECT_EQ(9, right_child.event_ptr()->id());
+  EXPECT_EQ(2*9, right_child.event_ptr()->id());
   EXPECT_EQ(1, right_child.event_ptr()->addr().ptrs().size());
 }
 
@@ -160,12 +160,12 @@ TEST(InstrTest, Filter) {
   instr.filter(event_ptrs);
 
   const ReadEvent<long>& event_b = dynamic_cast<const ReadEvent<long>&>(*event_ptrs.front());
-  EXPECT_EQ(8, event_b.id());
+  EXPECT_EQ(2*8, event_b.id());
 
   event_ptrs.pop_front();
 
   const ReadEvent<int>& event_a = dynamic_cast<const ReadEvent<int>&>(*event_ptrs.front());
-  EXPECT_EQ(7, event_a.id());
+  EXPECT_EQ(2*7, event_a.id());
 
   event_ptrs.pop_front();
   EXPECT_TRUE(event_ptrs.empty());

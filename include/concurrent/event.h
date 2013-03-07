@@ -40,10 +40,21 @@ private:
   const MemoryAddr m_addr;
   const std::shared_ptr<ReadInstr<bool>> m_condition_ptr;
 
+  // Even positive integers (m = 2k for k in 0 to 2^15-1) are for read
+  // events. In turn, odd positive integers (n = 2k + 1 for k in 0 to 2^15-1)
+  // are write events. That is, the maximal read event identifier is 2^30-2
+  // and the maximal write event identifier is 2^30-1. These upper limits
+  // stem from Z3 which aligns char pointers for symbol names by 4 bytes on
+  // 32-bit architectures.
+  static size_t next_id(bool is_read) {
+    const size_t even = 2 * s_next_id++;
+    return is_read ? even : even + 1;
+  }
+
 protected:
   Event(const MemoryAddr& addr, bool is_read,
     const std::shared_ptr<ReadInstr<bool>>& condition_ptr = nullptr) :
-    m_id(s_next_id++), m_addr(addr), m_is_read(is_read),
+    m_id(next_id(is_read)), m_addr(addr), m_is_read(is_read),
     m_condition_ptr(condition_ptr) {}
 
 public:
