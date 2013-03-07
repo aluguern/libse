@@ -32,7 +32,7 @@ class ReadInstr;
 /// is said to be conditional; otherwise, it is said to be unconditional.
 class Event {
 private:
-  // The legal range of identifiers is 0 to 2^30-1.
+  // On 32-bit architectures, the legal range of identifiers is 0 to 2^15-1.
   static size_t s_next_id;
 
   const size_t m_id;
