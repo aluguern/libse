@@ -10,7 +10,7 @@ class TestEvent : public Event {
 public:
   TestEvent(const MemoryAddr& addr,
     const std::shared_ptr<ReadInstr<bool>>& condition_ptr = nullptr) :
-    Event(addr, condition_ptr) {}
+    Event(addr, true, condition_ptr) {}
 };
 
 TEST(RelationTest, DefaultMemoryAccessRelation) {

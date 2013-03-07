@@ -10,7 +10,7 @@ class TestEvent : public Event {
 public:
   TestEvent(const MemoryAddr& addr,
     const std::shared_ptr<ReadInstr<bool>>& condition_ptr = nullptr) :
-    Event(addr, condition_ptr) {}
+    Event(addr, true, condition_ptr) {}
 };
 
 TEST(EventTest, EventId) {
@@ -73,6 +73,9 @@ TEST(EventTest, WriteEventWithCondition) {
   const WriteEvent<long> write_event(write_access, std::move(read_instr_ptr), condition_ptr);
   const LiteralReadInstr<long>& read_instr = dynamic_cast<const LiteralReadInstr<long>&>(write_event.instr_ref());
 
+  EXPECT_TRUE(write_event.is_write());
+  EXPECT_FALSE(write_event.is_read());
+
   EXPECT_EQ(6, write_event.id());
   EXPECT_EQ(1, write_event.addr().ptrs().size());
   EXPECT_EQ(condition_ptr, write_event.condition_ptr());
@@ -88,6 +91,9 @@ TEST(EventTest, WriteEventWithoutCondition) {
 
   const WriteEvent<long> write_event(write_access, std::move(read_instr_ptr));
   const LiteralReadInstr<long>& read_instr = dynamic_cast<const LiteralReadInstr<long>&>(write_event.instr_ref());
+
+  EXPECT_TRUE(write_event.is_write());
+  EXPECT_FALSE(write_event.is_read());
 
   EXPECT_EQ(5, write_event.id());
   EXPECT_EQ(1, write_event.addr().ptrs().size());
@@ -114,6 +120,8 @@ TEST(EventTest, ReadEventWithCondition) {
   uintptr_t another_read_access = 0x03fb;
 
   const ReadEvent<int> another_event(another_read_access, condition_ptr);
+  EXPECT_FALSE(another_event.is_write());
+  EXPECT_TRUE(another_event.is_read());
   EXPECT_EQ(6, another_event.id());
   EXPECT_EQ(1, another_event.addr().ptrs().size());
   EXPECT_NE(nullptr, another_event.condition_ptr());
@@ -126,6 +134,8 @@ TEST(EventTest, ReadEventWithoutCondition) {
   uintptr_t another_read_access = 0x03fb;
 
   const ReadEvent<int> another_event(another_read_access);
+  EXPECT_FALSE(another_event.is_write());
+  EXPECT_TRUE(another_event.is_read());
   EXPECT_EQ(5, another_event.id());
   EXPECT_EQ(1, another_event.addr().ptrs().size());
   EXPECT_EQ(nullptr, another_event.condition_ptr());
