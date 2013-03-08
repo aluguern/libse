@@ -172,6 +172,54 @@ TEST(InstrTest, BinaryReadInstrWithDifferentPathConditions) {
     std::move(basic_read_instr_b))), ::testing::KilledBySignal(SIGABRT), "Assertion");
 }
 
+TEST(InstrTest, DereferenceFixedSizeArrayReadInstrWithoutCondition) {
+  Event::reset_id(7);
+
+  const unsigned thread_id = 3;
+  const size_t array_size = 5;
+
+  const uintptr_t offset_access = 0x03fa;
+  std::unique_ptr<ReadEvent<size_t>> offset_event_ptr(new ReadEvent<size_t>(thread_id, offset_access));
+  std::unique_ptr<ReadInstr<size_t>> offset_read_instr(new BasicReadInstr<size_t>(std::move(offset_event_ptr)));
+
+  const uintptr_t pointer_access = 0x03fb;
+  std::unique_ptr<ReadEvent<char[array_size]>> pointer_event_ptr(new ReadEvent<char[array_size]>(thread_id, pointer_access));
+  std::unique_ptr<ReadInstr<char[array_size]>> pointer_read_instr(new BasicReadInstr<char[array_size]>(std::move(pointer_event_ptr)));
+
+  const DereferenceReadInstr<size_t, char[array_size]> dereference_instr(std::move(offset_read_instr), std::move(pointer_read_instr));
+
+  const BasicReadInstr<size_t>& offset_instr = dynamic_cast<const BasicReadInstr<size_t>&>(dereference_instr.offset_ref());
+  const BasicReadInstr<char[array_size]>& memory_instr = dynamic_cast<const BasicReadInstr<char[array_size]>&>(dereference_instr.memory_ref());
+  EXPECT_EQ(2*7, offset_instr.event_ptr()->event_id());
+  EXPECT_EQ(2*8, memory_instr.event_ptr()->event_id());
+}
+
+TEST(InstrTest, DereferenceFixedSizeArrayReadInstrWithCondition) {
+  Event::reset_id(7);
+
+  const unsigned thread_id = 3;
+  const size_t array_size = 5;
+  const uintptr_t condition_read_access = 0x03fa;
+
+  std::unique_ptr<ReadEvent<bool>> condition_event_ptr(new ReadEvent<bool>(thread_id, condition_read_access));
+  const std::shared_ptr<ReadInstr<bool>> condition_ptr(new BasicReadInstr<bool>(std::move(condition_event_ptr)));
+
+  const uintptr_t offset_access = 0x03fa;
+  std::unique_ptr<ReadEvent<size_t>> offset_event_ptr(new ReadEvent<size_t>(thread_id, offset_access, condition_ptr));
+  std::unique_ptr<ReadInstr<size_t>> offset_read_instr(new BasicReadInstr<size_t>(std::move(offset_event_ptr)));
+
+  const uintptr_t pointer_access = 0x03fb;
+  std::unique_ptr<ReadEvent<char[array_size]>> pointer_event_ptr(new ReadEvent<char[array_size]>(thread_id, pointer_access, condition_ptr));
+  std::unique_ptr<ReadInstr<char[array_size]>> pointer_read_instr(new BasicReadInstr<char[array_size]>(std::move(pointer_event_ptr)));
+
+  const DereferenceReadInstr<size_t, char[array_size]> dereference_instr(std::move(offset_read_instr), std::move(pointer_read_instr));
+
+  const BasicReadInstr<size_t>& offset_instr = dynamic_cast<const BasicReadInstr<size_t>&>(dereference_instr.offset_ref());
+  const BasicReadInstr<char[array_size]>& memory_instr = dynamic_cast<const BasicReadInstr<char[array_size]>&>(dereference_instr.memory_ref());
+  EXPECT_EQ(2*8, offset_instr.event_ptr()->event_id());
+  EXPECT_EQ(2*9, memory_instr.event_ptr()->event_id());
+}
+
 TEST(InstrTest, Filter) {
   Event::reset_id(7);
 

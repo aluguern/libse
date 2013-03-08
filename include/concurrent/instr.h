@@ -148,6 +148,30 @@ public:
   }
 };
 
+/// Load memory at an offset of type T through a memory address of type U
+template<typename T, typename U> class DereferenceReadInstr;
+
+/// Select an element in a fixed-size array
+template<typename T, typename U, size_t N>
+class DereferenceReadInstr<T, U[N]> {
+private:
+  const std::unique_ptr<ReadInstr<T>> m_index_ptr;
+  const std::unique_ptr<ReadInstr<U[N]>> m_array_ptr;
+
+public:
+  DereferenceReadInstr(std::unique_ptr<ReadInstr<T>> index_ptr,
+    std::unique_ptr<ReadInstr<U[N]>> array_ptr) :
+    m_index_ptr(std::move(index_ptr)), m_array_ptr(std::move(array_ptr)) {}
+
+  const ReadInstr<T>& offset_ref() const { return *m_index_ptr; }
+  const ReadInstr<U[N]>& memory_ref() const { return *m_array_ptr; }
+
+  void filter(std::forward_list<std::shared_ptr<Event>>& event_ptrs) const {
+    offset_ref().filter(event_ptrs);
+    memory_ref().filter(event_ptrs);
+  }
+};
+
 template<typename ...T> struct ReadInstrResult;
 
 template<typename T>
@@ -163,6 +187,9 @@ template<Operator op, typename T, typename U>
 struct ReadInstrResult<BinaryReadInstr<op, T, U>> {
   typedef typename ReturnType<op, T, U>::result_type Type;
 };
+
+template<typename T, typename U, size_t N>
+struct ReadInstrResult<DereferenceReadInstr<T, U[N]>> { typedef U Type; };
 
 /// Optional control flow over the exact type of a read instruction
 
