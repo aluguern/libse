@@ -220,6 +220,14 @@ TEST(InstrTest, DereferenceFixedSizeArrayReadInstrWithCondition) {
   EXPECT_EQ(2*9, memory_instr.event_ptr()->event_id());
 }
 
+TEST(InstrTest, ReadInstrResult) {
+  static_assert(std::is_same<long, ReadInstrResult<LiteralReadInstr<long>>::Type>::value, "Wrong result type");
+  static_assert(std::is_same<size_t, ReadInstrResult<BasicReadInstr<size_t>>::Type>::value, "Wrong result type");
+  static_assert(std::is_same<bool, ReadInstrResult<UnaryReadInstr<NOT, long>>::Type>::value, "Wrong result type");
+  static_assert(std::is_same<long, ReadInstrResult<BinaryReadInstr<ADD, int, long>>::Type>::value, "Wrong result type");
+  static_assert(std::is_same<char, ReadInstrResult<DereferenceReadInstr<size_t, char[5]>>::Type>::value, "Wrong result type");
+}
+
 TEST(InstrTest, Filter) {
   Event::reset_id(7);
 

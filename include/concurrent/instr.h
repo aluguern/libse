@@ -181,7 +181,9 @@ template<typename T>
 struct ReadInstrResult<BasicReadInstr<T>> { typedef T Type; };
 
 template<Operator op, typename T>
-struct ReadInstrResult<UnaryReadInstr<op, T>> { typedef T Type; };
+struct ReadInstrResult<UnaryReadInstr<op, T>> {
+  typedef typename ReturnType<op, T>::result_type Type;
+};
 
 template<Operator op, typename T, typename U>
 struct ReadInstrResult<BinaryReadInstr<op, T, U>> {
