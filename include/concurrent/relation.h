@@ -15,6 +15,43 @@
 
 namespace se {
 
+template<typename T>
+class Predicate {
+protected:
+  Predicate() {}
+
+public:
+  virtual bool check(const T&) const = 0;
+};
+
+class ReadEventPredicate : public Predicate<std::shared_ptr<Event>> {
+private:
+  static ReadEventPredicate s_read_predicate;
+
+  ReadEventPredicate() {}
+
+public:
+  virtual bool check(const std::shared_ptr<Event>& event_ptr) const {
+    return event_ptr->is_read();
+  }
+
+  static const ReadEventPredicate& predicate() { return s_read_predicate; }
+};
+
+class WriteEventPredicate : public Predicate<std::shared_ptr<Event>> {
+private:
+  static WriteEventPredicate s_write_predicate;
+
+  WriteEventPredicate() {}
+
+public:
+  virtual bool check(const std::shared_ptr<Event>& event_ptr) const {
+    return event_ptr->is_write();
+  }
+
+  static const WriteEventPredicate& predicate() { return s_write_predicate; }
+};
+
 template<class T, class U, class THash = std::hash<T>, class UHash = std::hash<U>>
 class Relation {
 private:
@@ -29,8 +66,11 @@ protected:
 public:
   virtual ~Relation() {}
 
-  /// \returns set `{ b | (a, b) in R }` where `R` is the set of pairs `T x U`
-  std::unordered_set<U, UHash> find(const T& a) const {
+  /// Filter relation pairs
+
+  /// \returns set `{ b | (a, b) in R and p(b) is true}` where `R` is
+  /// the set of pairs `T x U`
+  std::unordered_set<U, UHash> find(const T& a, const Predicate<U>& p) const {
     const std::pair<typename __Relation::const_iterator,
       typename __Relation::const_iterator> range(m_relation.equal_range(a));
 
@@ -38,7 +78,9 @@ public:
     for (typename __Relation::const_iterator iter = range.first;
          iter != range.second; iter++) {
 
-      set.insert(iter->second);
+      if (p.check(iter->second)) {
+        set.insert(iter->second);
+      }
     }
 
     return set;
