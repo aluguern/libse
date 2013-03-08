@@ -20,6 +20,20 @@ TEST(InstrTest, LiteralReadInstrWithCondition) {
   EXPECT_EQ(literal, instr.literal());
 }
 
+TEST(InstrTest, LiteralReadInstrInitializer) {
+  const LiteralReadInstr<unsigned long> ulong_instr;
+  EXPECT_EQ(0UL, ulong_instr.literal());
+}
+
+TEST(InstrTest, LiteralReadInstrInitializerWithArray) {
+  const LiteralReadInstr<unsigned long[5]> array_instr;
+  EXPECT_EQ(0UL, array_instr.literal()[0]);
+  EXPECT_EQ(0UL, array_instr.literal()[1]);
+  EXPECT_EQ(0UL, array_instr.literal()[2]);
+  EXPECT_EQ(0UL, array_instr.literal()[3]);
+  EXPECT_EQ(0UL, array_instr.literal()[4]);
+}
+
 TEST(InstrTest, LiteralReadInstrWithoutCondition) {
   const LiteralReadInstr<unsigned long> instr(0UL);
   EXPECT_EQ(0UL, instr.literal());

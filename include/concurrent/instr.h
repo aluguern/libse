@@ -51,6 +51,9 @@ public:
     const std::shared_ptr<ReadInstr<bool>>& condition = nullptr) :
     m_literal(literal), m_condition(condition) {}
 
+  LiteralReadInstr(const std::shared_ptr<ReadInstr<bool>>& condition = nullptr) :
+    m_literal(/* initializer list */ {}), m_condition(condition) {}
+
   LiteralReadInstr(const LiteralReadInstr& other) = delete;
 
   ~LiteralReadInstr() {}

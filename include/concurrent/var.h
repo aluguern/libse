@@ -35,7 +35,7 @@ private:
   std::shared_ptr<WriteEvent<T>> m_event_ptr;
 
   static std::unique_ptr<ReadInstr<T>> zero_literal_ptr() {
-    return std::unique_ptr<ReadInstr<T>>(new LiteralReadInstr<T>(0));
+    return std::unique_ptr<ReadInstr<T>>(new LiteralReadInstr<T>());
   }
 
 public:
