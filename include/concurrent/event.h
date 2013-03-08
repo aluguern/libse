@@ -28,7 +28,7 @@ class ReadInstr;
 /// An axiom is that two events `e` and `e'` are equal if and only if
 /// both their heap references are identical, i.e. `&e == &e'`. To enforce
 /// this equality axiom for subclasses as well, each Event object has
-/// a \ref Event::id() "unique identifier".
+/// a \ref Event::event_id() "unique identifier".
 ///
 /// An event guarded by a non-null \ref Event::condition_ptr() "condition"
 /// is said to be conditional; otherwise, it is said to be unconditional.
@@ -37,7 +37,7 @@ private:
   // On 32-bit architectures, the legal range of identifiers is 0 to 2^15-1.
   static size_t s_next_id;
 
-  const size_t m_id;
+  const size_t m_event_id;
   const unsigned m_thread_id;
   const bool m_is_read;
   const Type* const m_type_ptr;
@@ -70,7 +70,7 @@ protected:
   Event(unsigned thread_id, const MemoryAddr& addr, bool is_read,
     const Type* const type_ptr,
     const std::shared_ptr<ReadInstr<bool>>& condition_ptr = nullptr) :
-    m_id(next_id(is_read)), m_addr(addr), m_thread_id(thread_id),
+    m_event_id(next_id(is_read)), m_addr(addr), m_thread_id(thread_id),
     m_is_read(is_read), m_type_ptr(type_ptr), m_condition_ptr(condition_ptr) {
 
     assert(type_ptr != nullptr);
@@ -81,7 +81,7 @@ public:
 
   virtual ~Event() {}
 
-  size_t id() const { return m_id; }
+  size_t event_id() const { return m_event_id; }
   unsigned thread_id() const { return m_thread_id; }
   const MemoryAddr& addr() const { return m_addr; }
   bool is_read() const { return m_is_read; }
@@ -95,7 +95,9 @@ public:
     return m_condition_ptr;
   }
 
-  bool operator==(const Event& other) const { return m_id == other.m_id; }
+  bool operator==(const Event& other) const {
+    return m_event_id == other.m_event_id;
+  }
 };
 
 template<typename T>

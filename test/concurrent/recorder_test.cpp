@@ -60,17 +60,17 @@ TEST(RecorderTest, RecordEvents) {
   std::forward_list<std::shared_ptr<Event>>& event_ptrs = recorder.event_ptrs();
 
   const WriteEvent<long>& write_long_event = dynamic_cast<const WriteEvent<long>&>(*event_ptrs.front());
-  EXPECT_EQ(2*5+1, write_long_event.id());
+  EXPECT_EQ(2*5+1, write_long_event.event_id());
 
   event_ptrs.pop_front();
 
   const ReadEvent<long>& read_long_event = dynamic_cast<const ReadEvent<long>&>(*event_ptrs.front());
-  EXPECT_EQ(2*4, read_long_event.id());
+  EXPECT_EQ(2*4, read_long_event.event_id());
 
   event_ptrs.pop_front();
 
   const ReadEvent<char>& read_char_event = dynamic_cast<const ReadEvent<char>&>(*event_ptrs.front());
-  EXPECT_EQ(2*3, read_char_event.id());
+  EXPECT_EQ(2*3, read_char_event.event_id());
 
   event_ptrs.pop_front();
   EXPECT_TRUE(event_ptrs.empty());

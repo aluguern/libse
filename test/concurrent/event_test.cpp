@@ -23,7 +23,7 @@ TEST(EventTest, EventId) {
 
   const TestEvent event(ptr);
 
-  EXPECT_EQ(2*42, event.id());
+  EXPECT_EQ(2*42, event.event_id());
   Event::reset_id();
 }
 
@@ -61,7 +61,7 @@ TEST(EventTest, ConditionalEventConstructor) {
   uintptr_t another_access = 0x03fb;
 
   const TestEvent another_event(another_access, condition_ptr);
-  EXPECT_EQ(2*1, another_event.id());
+  EXPECT_EQ(2*1, another_event.event_id());
   EXPECT_EQ(1, another_event.addr().ptrs().size());
   EXPECT_NE(nullptr, another_event.condition_ptr());
   EXPECT_EQ(condition_ptr, another_event.condition_ptr());
@@ -90,7 +90,7 @@ TEST(EventTest, WriteEventWithCondition) {
   EXPECT_FALSE(write_event.is_read());
 
   EXPECT_EQ(thread_id, write_event.thread_id());
-  EXPECT_EQ(2*6+1, write_event.id());
+  EXPECT_EQ(2*6+1, write_event.event_id());
   EXPECT_EQ(1, write_event.addr().ptrs().size());
   EXPECT_EQ(condition_ptr, write_event.condition_ptr());
   EXPECT_EQ(42L, read_instr.literal());
@@ -112,7 +112,7 @@ TEST(EventTest, WriteEventWithoutCondition) {
   EXPECT_FALSE(write_event.is_read());
 
   EXPECT_EQ(thread_id, write_event.thread_id());
-  EXPECT_EQ(2*5+1, write_event.id());
+  EXPECT_EQ(2*5+1, write_event.event_id());
   EXPECT_EQ(1, write_event.addr().ptrs().size());
   EXPECT_EQ(nullptr, write_event.condition_ptr());
   EXPECT_EQ(42L, read_instr.literal());
@@ -144,7 +144,7 @@ TEST(EventTest, ReadEventWithCondition) {
   EXPECT_FALSE(another_event.is_write());
   EXPECT_TRUE(another_event.is_read());
   EXPECT_EQ(thread_id, another_event.thread_id());
-  EXPECT_EQ(2*6, another_event.id());
+  EXPECT_EQ(2*6, another_event.event_id());
   EXPECT_EQ(1, another_event.addr().ptrs().size());
   EXPECT_NE(nullptr, another_event.condition_ptr());
   EXPECT_EQ(condition_ptr, another_event.condition_ptr());
@@ -159,7 +159,7 @@ TEST(EventTest, ReadEventWithoutCondition) {
   const ReadEvent<int> another_event(thread_id, another_read_access);
   EXPECT_FALSE(another_event.is_write());
   EXPECT_TRUE(another_event.is_read());
-  EXPECT_EQ(2*5, another_event.id());
+  EXPECT_EQ(2*5, another_event.event_id());
   EXPECT_EQ(thread_id, another_event.thread_id());
   EXPECT_EQ(1, another_event.addr().ptrs().size());
   EXPECT_EQ(nullptr, another_event.condition_ptr());
