@@ -39,6 +39,8 @@ public:
 /// Records events and path constraints on a per-thread basis
 class Recorder {
 private:
+  const unsigned m_thread_id;
+
   PathCondition m_path_condition;
   std::forward_list<std::shared_ptr<Event>> m_event_ptrs;
 
@@ -47,8 +49,10 @@ private:
   }
 
 public:
-  Recorder() : m_path_condition(), m_event_ptrs() {}
+  Recorder(unsigned thread_id) : m_thread_id(thread_id),
+    m_path_condition(), m_event_ptrs() {}
 
+  unsigned thread_id() const { return m_thread_id; }
   PathCondition& path_condition() { return m_path_condition; }
 
   std::forward_list<std::shared_ptr<Event>>& event_ptrs() {
@@ -69,8 +73,8 @@ public:
        /* range */ read_event_ptrs.cbegin(), read_event_ptrs.cend());
 
     // Finally, append new write event which depends on the previous read events
-    std::shared_ptr<WriteEvent<T>> write_event_ptr(
-      new WriteEvent<T>(addr, std::move(instr_ptr), path_condition().top()));
+    std::shared_ptr<WriteEvent<T>> write_event_ptr(new WriteEvent<T>(
+      m_thread_id, addr, std::move(instr_ptr), path_condition().top()));
     m_event_ptrs.push_front(write_event_ptr);
 
     return write_event_ptr;

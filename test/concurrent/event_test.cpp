@@ -5,12 +5,16 @@
 
 using namespace se;
 
-/// A read event on an integer
+/// A read event on an integer in the main thread
 class TestEvent : public Event {
 public:
   TestEvent(const MemoryAddr& addr,
     const std::shared_ptr<ReadInstr<bool>>& condition_ptr = nullptr) :
-    Event(addr, true, &TypeInfo<int>::s_type, condition_ptr) {}
+    Event(0, addr, true, &TypeInfo<int>::s_type, condition_ptr) {}
+
+  TestEvent(unsigned thread_id, const MemoryAddr& addr,
+    const std::shared_ptr<ReadInstr<bool>>& condition_ptr = nullptr) :
+        Event(thread_id, addr, true, &TypeInfo<int>::s_type, condition_ptr) {}
 };
 
 TEST(EventTest, EventId) {
@@ -21,6 +25,11 @@ TEST(EventTest, EventId) {
 
   EXPECT_EQ(2*42, event.id());
   Event::reset_id();
+}
+
+TEST(EventTest, ThreadId) {
+  const TestEvent event(12, 0x03fa, nullptr);
+  EXPECT_EQ(12, event.thread_id());
 }
 
 TEST(EventTest, EventEquality) {
@@ -41,9 +50,11 @@ TEST(EventTest, UnconditionalEventConstructor) {
 
 TEST(EventTest, ConditionalEventConstructor) {
   Event::reset_id();
+
+  unsigned thread_id = 3;
   uintptr_t condition_read_access = 0x03fa;
 
-  std::unique_ptr<ReadEvent<bool>> condition_event_ptr(new ReadEvent<bool>(condition_read_access));
+  std::unique_ptr<ReadEvent<bool>> condition_event_ptr(new ReadEvent<bool>(thread_id, condition_read_access));
   const std::shared_ptr<ReadInstr<bool>> condition_ptr(
     new BasicReadInstr<bool>(std::move(condition_event_ptr)));
 
@@ -58,9 +69,11 @@ TEST(EventTest, ConditionalEventConstructor) {
 
 TEST(EventTest, WriteEventWithCondition) {
   Event::reset_id(5);
+
+  unsigned thread_id = 3;
   uintptr_t condition_read_access = 0x03fa;
 
-  std::unique_ptr<ReadEvent<bool>> condition_event_ptr(new ReadEvent<bool>(condition_read_access));
+  std::unique_ptr<ReadEvent<bool>> condition_event_ptr(new ReadEvent<bool>(thread_id, condition_read_access));
   const std::shared_ptr<ReadInstr<bool>> condition_ptr(
     new BasicReadInstr<bool>(std::move(condition_event_ptr)));
 
@@ -70,12 +83,13 @@ TEST(EventTest, WriteEventWithCondition) {
 
   uintptr_t write_access = 0x03fc;
 
-  const WriteEvent<long> write_event(write_access, std::move(read_instr_ptr), condition_ptr);
+  const WriteEvent<long> write_event(thread_id, write_access, std::move(read_instr_ptr), condition_ptr);
   const LiteralReadInstr<long>& read_instr = dynamic_cast<const LiteralReadInstr<long>&>(write_event.instr_ref());
 
   EXPECT_TRUE(write_event.is_write());
   EXPECT_FALSE(write_event.is_read());
 
+  EXPECT_EQ(thread_id, write_event.thread_id());
   EXPECT_EQ(2*6+1, write_event.id());
   EXPECT_EQ(1, write_event.addr().ptrs().size());
   EXPECT_EQ(condition_ptr, write_event.condition_ptr());
@@ -85,16 +99,19 @@ TEST(EventTest, WriteEventWithCondition) {
 TEST(EventTest, WriteEventWithoutCondition) {
   Event::reset_id(5);
 
+  unsigned thread_id = 3;
+
   uintptr_t read_access = 0x03fb;
   std::unique_ptr<ReadInstr<long>> read_instr_ptr(new LiteralReadInstr<long>(42L));
   uintptr_t write_access = 0x03fc;
 
-  const WriteEvent<long> write_event(write_access, std::move(read_instr_ptr));
+  const WriteEvent<long> write_event(thread_id, write_access, std::move(read_instr_ptr));
   const LiteralReadInstr<long>& read_instr = dynamic_cast<const LiteralReadInstr<long>&>(write_event.instr_ref());
 
   EXPECT_TRUE(write_event.is_write());
   EXPECT_FALSE(write_event.is_read());
 
+  EXPECT_EQ(thread_id, write_event.thread_id());
   EXPECT_EQ(2*5+1, write_event.id());
   EXPECT_EQ(1, write_event.addr().ptrs().size());
   EXPECT_EQ(nullptr, write_event.condition_ptr());
@@ -104,24 +121,29 @@ TEST(EventTest, WriteEventWithoutCondition) {
 TEST(EventTest, WriteEventWithoutInstr) {
   ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
+  unsigned thread_id = 3;
   uintptr_t write_access = 0x03fc;
-  EXPECT_EXIT((WriteEvent<long>(write_access, nullptr)),
+
+  EXPECT_EXIT((WriteEvent<long>(thread_id, write_access, nullptr)),
     ::testing::KilledBySignal(SIGABRT), "Assertion");
 }
 
 TEST(EventTest, ReadEventWithCondition) {
   Event::reset_id(5);
+
+  unsigned thread_id = 3;
   uintptr_t condition_read_access = 0x03fa;
 
-  std::unique_ptr<ReadEvent<bool>> condition_event_ptr(new ReadEvent<bool>(condition_read_access));
+  std::unique_ptr<ReadEvent<bool>> condition_event_ptr(new ReadEvent<bool>(thread_id, condition_read_access));
   const std::shared_ptr<ReadInstr<bool>> condition_ptr(
     new BasicReadInstr<bool>(std::move(condition_event_ptr)));
 
   uintptr_t another_read_access = 0x03fb;
 
-  const ReadEvent<int> another_event(another_read_access, condition_ptr);
+  const ReadEvent<int> another_event(thread_id, another_read_access, condition_ptr);
   EXPECT_FALSE(another_event.is_write());
   EXPECT_TRUE(another_event.is_read());
+  EXPECT_EQ(thread_id, another_event.thread_id());
   EXPECT_EQ(2*6, another_event.id());
   EXPECT_EQ(1, another_event.addr().ptrs().size());
   EXPECT_NE(nullptr, another_event.condition_ptr());
@@ -131,12 +153,14 @@ TEST(EventTest, ReadEventWithCondition) {
 TEST(EventTest, ReadEventWithoutCondition) {
   Event::reset_id(5);
 
+  unsigned thread_id = 3;
   uintptr_t another_read_access = 0x03fb;
 
-  const ReadEvent<int> another_event(another_read_access);
+  const ReadEvent<int> another_event(thread_id, another_read_access);
   EXPECT_FALSE(another_event.is_write());
   EXPECT_TRUE(another_event.is_read());
   EXPECT_EQ(2*5, another_event.id());
+  EXPECT_EQ(thread_id, another_event.thread_id());
   EXPECT_EQ(1, another_event.addr().ptrs().size());
   EXPECT_EQ(nullptr, another_event.condition_ptr());
 }

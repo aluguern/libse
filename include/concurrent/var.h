@@ -24,9 +24,9 @@ std::unique_ptr<ReadInstr<T>> alloc_read_instr(const ConcurrentVar<T>&);
 /// The lifetime of a ConcurrentVar object must span all threads that
 /// can access it. Therefore, ConcurrentVar objects should be generally
 /// allocated statically. This use case justifies why a ConcurrentVar
-/// object is always initialized to zero unless another initial value
-/// is explicitly given to the constructor. Noteworthy, this value may
-/// also be symbolic.
+/// object is always initialized to zero by the main thread unless
+/// another initial value is explicitly given to the constructor.
+/// Noteworthy, this value may also be symbolic.
 ///
 /// \remark Usually a static variable
 template<typename T>
@@ -40,9 +40,10 @@ private:
 
 public:
   ConcurrentVar(const MemoryAddr& addr) :
-    m_event_ptr(new WriteEvent<T>(addr, zero_literal_ptr())) {}
+    m_event_ptr(new WriteEvent<T>(/* main thread */ 0, addr,
+      zero_literal_ptr())) {}
 
-  ConcurrentVar() :m_event_ptr(new WriteEvent<T>(
+  ConcurrentVar() :m_event_ptr(new WriteEvent<T>(/* main thread */ 0,
     reinterpret_cast<uintptr_t>(this), zero_literal_ptr())) {}
 
   const MemoryAddr& addr() const { return m_event_ptr->addr(); }

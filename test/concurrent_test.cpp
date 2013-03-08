@@ -49,28 +49,30 @@ TEST(ConcurrencyTest, AllocLiteralReadInstrWithCondition) {
 }
 
 TEST(ConcurrencyTest, UnaryOperatorNOT) {
+  unsigned thread_id = 3;
   uintptr_t condition_ptr = 0x03fa;
 
-  std::unique_ptr<ReadEvent<bool>> condition_event_ptr(new ReadEvent<bool>(condition_ptr));
+  std::unique_ptr<ReadEvent<bool>> condition_event_ptr(new ReadEvent<bool>(thread_id, condition_ptr));
   const std::shared_ptr<ReadInstr<bool>> condition(
     new BasicReadInstr<bool>(std::move(condition_event_ptr)));
 
   uintptr_t ptr = 0x03fa;
-  std::unique_ptr<ReadEvent<int>> event_ptr(new ReadEvent<int>(ptr, condition));
+  std::unique_ptr<ReadEvent<int>> event_ptr(new ReadEvent<int>(thread_id, ptr, condition));
   std::unique_ptr<ReadInstr<int>> basic_read_instr(new BasicReadInstr<int>(std::move(event_ptr)));
   std::unique_ptr<ReadInstr<bool>> instr_ptr(! std::move(basic_read_instr));
 }
 
 TEST(ConcurrencyTest, BinaryOperatorADD) {
+  unsigned thread_id = 3;
   uintptr_t condition_ptr = 0x03fa;
 
-  std::unique_ptr<ReadEvent<bool>> condition_event_ptr(new ReadEvent<bool>(condition_ptr));
+  std::unique_ptr<ReadEvent<bool>> condition_event_ptr(new ReadEvent<bool>(thread_id, condition_ptr));
   const std::shared_ptr<ReadInstr<bool>> condition(
     new BasicReadInstr<bool>(std::move(condition_event_ptr)));
 
   uintptr_t ptr = 0x03fa;
-  std::unique_ptr<ReadEvent<int>> event_ptr_a(new ReadEvent<int>(ptr, condition));
-  std::unique_ptr<ReadEvent<long>> event_ptr_b(new ReadEvent<long>(ptr + 1, condition));
+  std::unique_ptr<ReadEvent<int>> event_ptr_a(new ReadEvent<int>(thread_id, ptr, condition));
+  std::unique_ptr<ReadEvent<long>> event_ptr_b(new ReadEvent<long>(thread_id, ptr + 1, condition));
   std::unique_ptr<ReadInstr<int>> basic_read_instr_a(new BasicReadInstr<int>(std::move(event_ptr_a)));
   std::unique_ptr<ReadInstr<long>> instr_ptr(std::move(basic_read_instr_a) /* explicit move */ +
     std::unique_ptr<ReadInstr<long>>(new BasicReadInstr<long>(std::move(event_ptr_b))) /* implicit move */);

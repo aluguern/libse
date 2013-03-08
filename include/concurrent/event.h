@@ -38,6 +38,7 @@ private:
   static size_t s_next_id;
 
   const size_t m_id;
+  const unsigned m_thread_id;
   const bool m_is_read;
   const Type* const m_type_ptr;
   const MemoryAddr m_addr;
@@ -59,16 +60,18 @@ protected:
   /// Create a unique read or write event
 
   /// \param addr - memory address read or written by the event
+  /// \param thread_id - unique thread identifier
   /// \param is_read - does the event cause memory to be read?
   /// \param type_ptr - pointer to statically allocated memory, never null
   /// \param condition_ptr - necessary condition for the event to occur
   ///
   /// The type_ptr describes the event in terms of its memory characteristics
   /// such as how many bytes are read or written.
-  Event(const MemoryAddr& addr, bool is_read, const Type* const type_ptr,
+  Event(unsigned thread_id, const MemoryAddr& addr, bool is_read,
+    const Type* const type_ptr,
     const std::shared_ptr<ReadInstr<bool>>& condition_ptr = nullptr) :
-    m_id(next_id(is_read)), m_addr(addr), m_is_read(is_read),
-    m_type_ptr(type_ptr), m_condition_ptr(condition_ptr) {
+    m_id(next_id(is_read)), m_addr(addr), m_thread_id(thread_id),
+    m_is_read(is_read), m_type_ptr(type_ptr), m_condition_ptr(condition_ptr) {
 
     assert(type_ptr != nullptr);
   }
@@ -79,6 +82,7 @@ public:
   virtual ~Event() {}
 
   size_t id() const { return m_id; }
+  unsigned thread_id() const { return m_thread_id; }
   const MemoryAddr& addr() const { return m_addr; }
   bool is_read() const { return m_is_read; }
   bool is_write() const { return !m_is_read; }
@@ -101,10 +105,10 @@ private:
   const std::unique_ptr<ReadInstr<T>> m_instr_ptr;
 
 public:
-  WriteEvent(const MemoryAddr& addr,
+  WriteEvent(unsigned thread_id, const MemoryAddr& addr,
     std::unique_ptr<ReadInstr<T>> instr_ptr,
     const std::shared_ptr<ReadInstr<bool>>& condition_ptr = nullptr) :
-    Event(addr, false, &TypeInfo<T>::s_type, condition_ptr),
+    Event(thread_id, addr, false, &TypeInfo<T>::s_type, condition_ptr),
     m_instr_ptr(std::move(instr_ptr)) {
 
     assert(nullptr != m_instr_ptr);
@@ -118,9 +122,9 @@ public:
 template<typename T>
 class ReadEvent : public Event {
 public:
-  ReadEvent(const MemoryAddr& addr,
+  ReadEvent(unsigned thread_id, const MemoryAddr& addr,
     const std::shared_ptr<ReadInstr<bool>>& condition_ptr = nullptr) :
-    Event(addr, true, &TypeInfo<T>::s_type, condition_ptr) {}
+    Event(thread_id, addr, true, &TypeInfo<T>::s_type, condition_ptr) {}
 
   ~ReadEvent() {}
 };

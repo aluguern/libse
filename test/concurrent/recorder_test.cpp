@@ -38,12 +38,14 @@ TEST(RecorderTest, NonemptyPathCondition) {
 TEST(RecorderTest, RecordEvents) {
   Event::reset_id(3);
 
+  unsigned thread_id = 3;
+
   uintptr_t char_access = 0x03fa;
-  std::unique_ptr<ReadEvent<char>> char_event_ptr(new ReadEvent<char>(char_access));
+  std::unique_ptr<ReadEvent<char>> char_event_ptr(new ReadEvent<char>(thread_id, char_access));
   std::unique_ptr<ReadInstr<char>> char_instr_ptr(new BasicReadInstr<char>(std::move(char_event_ptr)));
 
   uintptr_t long_access = 0x03fb;
-  std::unique_ptr<ReadEvent<long>> long_event_ptr(new ReadEvent<long>(long_access));
+  std::unique_ptr<ReadEvent<long>> long_event_ptr(new ReadEvent<long>(thread_id, long_access));
   std::unique_ptr<ReadInstr<long>> long_instr_ptr(new BasicReadInstr<long>(std::move(long_event_ptr)));
 
   std::unique_ptr<ReadInstr<long>> instr_ptr(
@@ -52,7 +54,7 @@ TEST(RecorderTest, RecordEvents) {
   uintptr_t last_access = 0x03fc;
   const MemoryAddr write_addr(last_access);
 
-  Recorder recorder;
+  Recorder recorder(thread_id);
   recorder.instr(write_addr, std::move(instr_ptr));
 
   std::forward_list<std::shared_ptr<Event>>& event_ptrs = recorder.event_ptrs();
