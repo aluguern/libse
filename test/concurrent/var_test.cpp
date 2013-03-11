@@ -4,27 +4,24 @@
 
 using namespace se;
 
-TEST(VarTest, ConcurrentVarExternalAddr) {
+TEST(VarTest, DeclVarInitScalar) {
   Event::reset_id(7);
-  const uintptr_t var_addr = 0x03fa;
-  const MemoryAddr addr(var_addr);
 
-  ConcurrentVar<char> var(addr);
+  DeclVar<char> var;
 
-  EXPECT_EQ(std::unordered_set<uintptr_t>({ var_addr }), var.addr().ptrs());
-
-  const LiteralReadInstr<char>& instr = dynamic_cast<const LiteralReadInstr<char>&>(var.instr_ref());
+  const LiteralReadInstr<char>& instr = dynamic_cast<const LiteralReadInstr<char>&>(var.write_event_ref().instr_ref());
   EXPECT_EQ(0, instr.literal());
 }
 
-TEST(VarTest, ConcurrentVarInternalAddr) {
+TEST(VarTest, DeclVarInitArray) {
   Event::reset_id(7);
 
-  ConcurrentVar<char> var;
+  DeclVar<char[5]> var;
 
-  const uintptr_t var_addr = reinterpret_cast<uintptr_t>(&var);
-  EXPECT_EQ(std::unordered_set<uintptr_t>({ var_addr }), var.addr().ptrs());
-
-  const LiteralReadInstr<char>& instr = dynamic_cast<const LiteralReadInstr<char>&>(var.instr_ref());
-  EXPECT_EQ(0, instr.literal());
+  const LiteralReadInstr<char[5]>& instr = dynamic_cast<const LiteralReadInstr<char[5]>&>(var.write_event_ref().instr_ref());
+  EXPECT_EQ(0, instr.literal()[0]);
+  EXPECT_EQ(0, instr.literal()[1]);
+  EXPECT_EQ(0, instr.literal()[2]);
+  EXPECT_EQ(0, instr.literal()[3]);
+  EXPECT_EQ(0, instr.literal()[4]);
 }

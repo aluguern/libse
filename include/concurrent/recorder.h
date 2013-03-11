@@ -44,10 +44,6 @@ private:
   PathCondition m_path_condition;
   std::forward_list<std::shared_ptr<Event>> m_event_ptrs;
 
-  void add_event_ptr(const std::shared_ptr<Event>& event_ptr) {
-    m_event_ptrs.push_front(event_ptr);
-  }
-
 public:
   Recorder(unsigned thread_id) : m_thread_id(thread_id),
     m_path_condition(), m_event_ptrs() {}
@@ -59,12 +55,26 @@ public:
     return m_event_ptrs;
   }
 
-  /// \returns a pointer to the newly recorded WriteEvent<T>
+  /// Records a direct memory write event
+
+  /// \returns a shared pointer to the newly recorded WriteEvent<T>
   template<typename T>
   std::shared_ptr<WriteEvent<T>> instr(const MemoryAddr& addr,
     std::unique_ptr<ReadInstr<T>> instr_ptr) {
-    
-    // Extract pointers to ReadEvent<T> objects
+
+    std::unique_ptr<ReadInstr<T>> null_ptr;
+    return instr(addr, std::move(null_ptr), std::move(instr_ptr));
+  }
+
+  /// Records a memory write event
+
+  /// \returns a shared pointer to the newly recorded WriteEvent<T>
+  template<typename T>
+  std::shared_ptr<WriteEvent<T>> instr(const MemoryAddr& addr,
+    std::unique_ptr<ReadInstr<T>> deref_instr_ptr,
+    std::unique_ptr<ReadInstr<T>> instr_ptr) {
+
+    // Extract from ReadInstr<T> pointer all pointers to ReadEvent<T> objects
     std::forward_list<std::shared_ptr<Event>> read_event_ptrs;
     instr_ptr->filter(read_event_ptrs);
 
@@ -72,9 +82,15 @@ public:
      m_event_ptrs.insert_after(m_event_ptrs.cbefore_begin(),
        /* range */ read_event_ptrs.cbegin(), read_event_ptrs.cend());
 
-    // Finally, append new write event which depends on the previous read events
+    bool is_direct = deref_instr_ptr == nullptr;
+
+    // Append new write event that writes a memory location
     std::shared_ptr<WriteEvent<T>> write_event_ptr(new WriteEvent<T>(
-      m_thread_id, addr, std::move(instr_ptr), path_condition().top()));
+      m_thread_id, addr, std::move(deref_instr_ptr), std::move(instr_ptr),
+      path_condition().top()));
+
+    assert(is_direct == write_event_ptr->is_direct());
+
     m_event_ptrs.push_front(write_event_ptr);
 
     return write_event_ptr;

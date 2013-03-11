@@ -38,21 +38,20 @@ TEST(RecorderTest, NonemptyPathCondition) {
 TEST(RecorderTest, RecordEvents) {
   Event::reset_id(3);
 
-  unsigned thread_id = 3;
+  const unsigned thread_id = 3;
 
-  uintptr_t char_access = 0x03fa;
-  std::unique_ptr<ReadEvent<char>> char_event_ptr(new ReadEvent<char>(thread_id, char_access));
+  const MemoryAddr char_addr = MemoryAddr::alloc<char>();
+  std::unique_ptr<ReadEvent<char>> char_event_ptr(new ReadEvent<char>(thread_id, char_addr));
   std::unique_ptr<ReadInstr<char>> char_instr_ptr(new BasicReadInstr<char>(std::move(char_event_ptr)));
 
-  uintptr_t long_access = 0x03fb;
-  std::unique_ptr<ReadEvent<long>> long_event_ptr(new ReadEvent<long>(thread_id, long_access));
+  const MemoryAddr long_addr = MemoryAddr::alloc<long>();
+  std::unique_ptr<ReadEvent<long>> long_event_ptr(new ReadEvent<long>(thread_id, long_addr));
   std::unique_ptr<ReadInstr<long>> long_instr_ptr(new BasicReadInstr<long>(std::move(long_event_ptr)));
 
   std::unique_ptr<ReadInstr<long>> instr_ptr(
     new BinaryReadInstr<ADD, char, long>(std::move(char_instr_ptr), std::move(long_instr_ptr)));
 
-  uintptr_t last_access = 0x03fc;
-  const MemoryAddr write_addr(last_access);
+  const MemoryAddr write_addr = MemoryAddr::alloc<long>();
 
   Recorder recorder(thread_id);
   recorder.instr(write_addr, std::move(instr_ptr));

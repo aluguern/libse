@@ -7,23 +7,40 @@
 
 #include <unordered_set>
 #include <cstdint>
+#include <cstddef>
 #include <utility>
 
 namespace se {
 
 class MemoryAddr {
 private:
+  static uintptr_t s_next_addr;
+
   const std::unordered_set<uintptr_t> m_ptrs;
   const bool m_is_shared;
 
   MemoryAddr(std::unordered_set<uintptr_t>&& ptrs, bool is_shared) :
     m_ptrs(std::move(ptrs)), m_is_shared(is_shared) {}
 
-public:
-  MemoryAddr(uintptr_t ptr, bool is_shared = true) :
+  MemoryAddr(uintptr_t ptr, bool is_shared) :
     m_ptrs{ ptr }, m_is_shared(is_shared) {}
 
+  template<typename T> friend class MemoryAddrRelation;
   const std::unordered_set<uintptr_t>& ptrs() const { return m_ptrs; }
+
+public:
+
+  bool is_shared() const { return m_is_shared; }
+
+  bool operator==(const MemoryAddr& other) const {
+    return m_ptrs == other.m_ptrs && m_is_shared == other.m_is_shared;
+  }
+
+  MemoryAddr operator+(size_t offset) const {
+    std::unordered_set<uintptr_t> ptrs;
+    for (uintptr_t ptr : m_ptrs) { ptrs.insert(ptr + offset); }
+    return MemoryAddr(std::move(ptrs), m_is_shared);
+  }
 
   static MemoryAddr join(const MemoryAddr& a, const MemoryAddr& b) {
     std::unordered_set<uintptr_t> join_ptrs(a.m_ptrs);
@@ -31,10 +48,9 @@ public:
     return MemoryAddr(std::move(join_ptrs), a.is_shared() || b.is_shared());
   }
 
-  bool is_shared() const { return m_is_shared; }
-
-  bool operator==(const MemoryAddr& other) const {
-    return m_ptrs == other.m_ptrs && m_is_shared == other.m_is_shared;
+  template<typename T>
+  static MemoryAddr alloc(bool is_shared = true, size_t size = 1) {
+    return MemoryAddr(s_next_addr += sizeof(T) * size, is_shared);
   }
 };
 

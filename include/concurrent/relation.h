@@ -58,47 +58,53 @@ private:
   typedef std::unordered_multimap<T, U, THash> __Relation;
   __Relation m_relation;
 
-protected:
+public:
+  virtual ~Relation() {}
+
   void add(const T& a, const U& b) {
     m_relation.insert(typename __Relation::value_type(a, b));
   }
 
-public:
-  virtual ~Relation() {}
-
   /// Filter relation pairs
 
-  /// \returns set `{ b | (a, b) in R and p(b) is true}` where `R` is
-  /// the set of pairs `T x U`
-  std::unordered_set<U, UHash> find(const T& a, const Predicate<U>& p) const {
+  /// The output is stored in the last argument and is defined to be the set
+  /// `{ b | (a, b) in R and p(b) is true}` where `R` is the set of pairs `T x U`.
+  void find(const T& a, const Predicate<U>& p, std::unordered_set<U, UHash>& result) const {
     const std::pair<typename __Relation::const_iterator,
       typename __Relation::const_iterator> range(m_relation.equal_range(a));
 
-    std::unordered_set<U, UHash> set;
     for (typename __Relation::const_iterator iter = range.first;
          iter != range.second; iter++) {
 
       if (p.check(iter->second)) {
-        set.insert(iter->second);
+        result.insert(iter->second);
       }
     }
-
-    return set;
   }
 };
 
 template<typename T = Event>
-class MemoryAccessRelation : public Relation<uintptr_t, std::shared_ptr<T>> {
+class MemoryAddrRelation {
 static_assert(std::is_base_of<Event, T>::value, "T must be a subclass of Event");
 
 private:
-  typedef Relation<uintptr_t, std::shared_ptr<T>> Super;
+  Relation<uintptr_t, std::shared_ptr<T>> relation;
 
 public:
   void relate(const std::shared_ptr<T>& event_ptr) {
     for (uintptr_t ptr : event_ptr->addr().ptrs()) {
-      Super::add(ptr, event_ptr);
+      relation.add(ptr, event_ptr);
     }
+  }
+
+  std::unordered_set<std::shared_ptr<T>> find(const MemoryAddr& addr,
+    const Predicate<std::shared_ptr<T>>& predicate) {
+
+    std::unordered_set<std::shared_ptr<T>> result;
+    for (uintptr_t ptr : addr.ptrs()) {
+      relation.find(ptr, predicate, result);
+    }
+    return result;
   }
 };
 

@@ -148,27 +148,32 @@ public:
   }
 };
 
-/// Load memory at an offset of type T through a memory address of type U
+/// Load memory at an offset of type U through a memory address of type T
 template<typename T, typename U> class DereferenceReadInstr;
 
 /// Select an element in a fixed-size array
 template<typename T, typename U, size_t N>
-class DereferenceReadInstr<T, U[N]> {
+class DereferenceReadInstr<T[N], U> : public ReadInstr<T> {
 private:
-  const std::unique_ptr<ReadInstr<T>> m_index_ptr;
-  const std::unique_ptr<ReadInstr<U[N]>> m_array_ptr;
+  const std::unique_ptr<ReadInstr<T[N]>> m_array_ptr;
+  const std::unique_ptr<ReadInstr<U>> m_index_ptr;
+
+protected:
+  std::shared_ptr<ReadInstr<bool>> condition_ptr() const {
+    return m_array_ptr->condition_ptr();
+  }
 
 public:
-  DereferenceReadInstr(std::unique_ptr<ReadInstr<T>> index_ptr,
-    std::unique_ptr<ReadInstr<U[N]>> array_ptr) :
-    m_index_ptr(std::move(index_ptr)), m_array_ptr(std::move(array_ptr)) {}
+  DereferenceReadInstr(std::unique_ptr<ReadInstr<T[N]>> array_ptr,
+    std::unique_ptr<ReadInstr<U>> index_ptr) :
+    m_array_ptr(std::move(array_ptr)), m_index_ptr(std::move(index_ptr)) {}
 
-  const ReadInstr<T>& offset_ref() const { return *m_index_ptr; }
-  const ReadInstr<U[N]>& memory_ref() const { return *m_array_ptr; }
+  const ReadInstr<T[N]>& memory_ref() const { return *m_array_ptr; }
+  const ReadInstr<U>& offset_ref() const { return *m_index_ptr; }
 
   void filter(std::forward_list<std::shared_ptr<Event>>& event_ptrs) const {
-    offset_ref().filter(event_ptrs);
     memory_ref().filter(event_ptrs);
+    offset_ref().filter(event_ptrs);
   }
 };
 
@@ -191,7 +196,7 @@ struct ReadInstrResult<BinaryReadInstr<op, T, U>> {
 };
 
 template<typename T, typename U, size_t N>
-struct ReadInstrResult<DereferenceReadInstr<T, U[N]>> { typedef U Type; };
+struct ReadInstrResult<DereferenceReadInstr<T[N], U>> { typedef T Type; };
 
 /// Optional control flow over the exact type of a read instruction
 

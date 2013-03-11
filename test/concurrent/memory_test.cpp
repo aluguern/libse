@@ -4,68 +4,46 @@
 
 using namespace se;
 
-TEST(MemoryAddrTest, Equality) {
-  uintptr_t ptr = 0x03fa;
+TEST(MemoryAddrTest, UniqueAddr) {
+  const MemoryAddr addr_a = MemoryAddr::alloc<int>();
+  const MemoryAddr addr_b = MemoryAddr::alloc<int>();
 
-  const MemoryAddr addr_a(ptr);
-  const MemoryAddr addr_b(ptr);
-
-  EXPECT_EQ(addr_a, addr_b);
+  EXPECT_TRUE(addr_a == addr_a);
+  EXPECT_FALSE(addr_a == addr_b);
 }
 
-TEST(MemoryAddrTest, ConstructorUintptr) {
-  uintptr_t ptr = 0x03fa;
-  const MemoryAddr addr(ptr);
+TEST(MemoryAddrTest, Offset) {
+  const MemoryAddr addr = MemoryAddr::alloc<bool>();
+  const MemoryAddr offset_addr = addr + sizeof(long long);
+  const MemoryAddr other_addr = MemoryAddr::alloc<long long>();
 
-  EXPECT_EQ(1, addr.ptrs().size());
-}
-
-TEST(MemoryAddrTest, Join) {
-  uintptr_t ptr_a = 0x03fa;
-  uintptr_t ptr_b = 0x03fb;
-
-  const MemoryAddr addr_a(ptr_a);
-  const MemoryAddr addr_b(ptr_b);
-
-  const MemoryAddr join_addr = MemoryAddr::join(addr_a, addr_b);
-  EXPECT_EQ(2, join_addr.ptrs().size());
+  EXPECT_EQ(other_addr, offset_addr);
 }
 
 TEST(MemoryAddrTest, DefaultIsShared) {
-  uintptr_t ptr_a = 0x03fa;
-
-  const MemoryAddr addr(ptr_a);
+  const MemoryAddr addr = MemoryAddr::alloc<int>();
   EXPECT_TRUE(addr.is_shared());
 }
 
 TEST(MemoryAddrTest, JoinBothAreNotShared) {
-  uintptr_t ptr_a = 0x03fa;
-  uintptr_t ptr_b = 0x03fb;
-
-  const MemoryAddr addr_a(ptr_a, false);
-  const MemoryAddr addr_b(ptr_b, false);
+  const MemoryAddr addr_a = MemoryAddr::alloc<int>(false);
+  const MemoryAddr addr_b = MemoryAddr::alloc<long>(false);
 
   const MemoryAddr join_addr = MemoryAddr::join(addr_a, addr_b);
   EXPECT_FALSE(join_addr.is_shared());
 }
 
 TEST(MemoryAddrTest, JoinLeftIsShared) {
-  uintptr_t ptr_a = 0x03fa;
-  uintptr_t ptr_b = 0x03fb;
-
-  const MemoryAddr addr_a(ptr_a, true);
-  const MemoryAddr addr_b(ptr_b, false);
+  const MemoryAddr addr_a = MemoryAddr::alloc<int>(true);
+  const MemoryAddr addr_b = MemoryAddr::alloc<long>(false);
 
   const MemoryAddr join_addr = MemoryAddr::join(addr_a, addr_b);
   EXPECT_TRUE(join_addr.is_shared());
 }
 
 TEST(MemoryAddrTest, JoinRightIsShared) {
-  uintptr_t ptr_a = 0x03fa;
-  uintptr_t ptr_b = 0x03fb;
-
-  const MemoryAddr addr_a(ptr_a, false);
-  const MemoryAddr addr_b(ptr_b, true);
+  const MemoryAddr addr_a = MemoryAddr::alloc<int>(false);
+  const MemoryAddr addr_b = MemoryAddr::alloc<long>(true);
 
   const MemoryAddr join_addr = MemoryAddr::join(addr_a, addr_b);
   EXPECT_TRUE(join_addr.is_shared());

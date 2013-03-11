@@ -19,22 +19,30 @@
 namespace se {
 
 template<typename T>
-inline std::unique_ptr<ReadInstr<T>> alloc_read_instr(const ConcurrentVar<T>& var) {
-  const std::shared_ptr<ReadInstr<bool>> condition = recorder_ptr()->path_condition().top();
-  std::unique_ptr<ReadEvent<T>> event_ptr(
-    new ReadEvent<T>(recorder_ptr()->thread_id(), var.addr(), condition));
+inline std::unique_ptr<ReadInstr<T>> alloc_read_instr(const DeclVar<T>& var) {
+  const std::shared_ptr<ReadInstr<bool>> condition_ptr =
+    recorder_ptr()->path_condition().top();
 
-  return std::unique_ptr<ReadInstr<T>>(new BasicReadInstr<T>(std::move(event_ptr)));
+  std::unique_ptr<ReadEvent<T>> event_ptr(
+    new ReadEvent<T>(recorder_ptr()->thread_id(), var.addr(), condition_ptr));
+
+  return std::unique_ptr<ReadInstr<T>>(
+    new BasicReadInstr<T>(std::move(event_ptr)));
 }
 
 template<typename T>
 inline std::unique_ptr<ReadInstr<typename
-  std::enable_if<std::is_arithmetic<T>::value, T>::type>> alloc_read_instr(const T& literal) {
-  const std::shared_ptr<ReadInstr<bool>> condition = recorder_ptr()->path_condition().top();
-  return std::unique_ptr<ReadInstr<T>>(new LiteralReadInstr<T>(literal, condition));
+  std::enable_if<std::is_arithmetic<T>::value, T>::type>>
+  alloc_read_instr(const T& literal) {
+
+  const std::shared_ptr<ReadInstr<bool>> condition_ptr =
+    recorder_ptr()->path_condition().top();
+
+  return std::unique_ptr<ReadInstr<T>>(
+    new LiteralReadInstr<T>(literal, condition_ptr));
 }
 
-template<typename T> struct UnwrapType<ConcurrentVar<T>> { typedef T base; };
+template<typename T> struct UnwrapType<DeclVar<T>> { typedef T base; };
 
 #define CONCURRENT_UNARY_OP(op, opcode) \
   template<typename T>\

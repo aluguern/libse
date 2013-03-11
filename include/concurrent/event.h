@@ -100,17 +100,34 @@ public:
   }
 };
 
+/// Event that writes `sizeof(T)` bytes to memory
 template<typename T>
 class WriteEvent : public Event {
 private:
+  // Is null if memory is directly written
+  const std::unique_ptr<ReadInstr<T>> m_deref_instr_ptr;
+
   // Never null
   const std::unique_ptr<ReadInstr<T>> m_instr_ptr;
 
 public:
+  /// Direct memory write
   WriteEvent(unsigned thread_id, const MemoryAddr& addr,
     std::unique_ptr<ReadInstr<T>> instr_ptr,
     const std::shared_ptr<ReadInstr<bool>>& condition_ptr = nullptr) :
     Event(thread_id, addr, false, &TypeInfo<T>::s_type, condition_ptr),
+    m_deref_instr_ptr(), m_instr_ptr(std::move(instr_ptr)) {
+
+    assert(nullptr != m_instr_ptr);
+  }
+
+  /// Indirect memory write
+  WriteEvent(unsigned thread_id, const MemoryAddr& addr,
+    std::unique_ptr<ReadInstr<T>> deref_instr_ptr,
+    std::unique_ptr<ReadInstr<T>> instr_ptr,
+    const std::shared_ptr<ReadInstr<bool>>& condition_ptr = nullptr) :
+    Event(thread_id, addr, false, &TypeInfo<T>::s_type, condition_ptr),
+    m_deref_instr_ptr(std::move(deref_instr_ptr)),
     m_instr_ptr(std::move(instr_ptr)) {
 
     assert(nullptr != m_instr_ptr);
@@ -119,8 +136,15 @@ public:
   ~WriteEvent() {}
 
   const ReadInstr<T>& instr_ref() const { return *m_instr_ptr; }
+
+  /// Is memory accessed directly?
+  const bool is_direct() const { return m_deref_instr_ptr == nullptr; }
+
+  /// \pre: is_direct() is false
+  const ReadInstr<T>& deref_instr_ref() const { return *m_deref_instr_ptr; }
 };
 
+/// Event that reads `sizeof(T)` bytes from memory
 template<typename T>
 class ReadEvent : public Event {
 public:
