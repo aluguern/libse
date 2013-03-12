@@ -138,7 +138,7 @@ public:
   const ReadInstr<T>& instr_ref() const { return *m_instr_ptr; }
 
   /// Is memory accessed directly?
-  const bool is_direct() const { return m_deref_instr_ptr == nullptr; }
+  const bool is_direct() const { return !static_cast<bool>(m_deref_instr_ptr); }
 
   /// \pre: is_direct() is false
   const ReadInstr<T>& deref_instr_ref() const { return *m_deref_instr_ptr; }

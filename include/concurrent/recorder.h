@@ -82,7 +82,7 @@ public:
      m_event_ptrs.insert_after(m_event_ptrs.cbefore_begin(),
        /* range */ read_event_ptrs.cbegin(), read_event_ptrs.cend());
 
-    bool is_direct = deref_instr_ptr == nullptr;
+    bool is_direct = !static_cast<bool>(deref_instr_ptr);
 
     // Append new write event that writes a memory location
     std::shared_ptr<WriteEvent<T>> write_event_ptr(new WriteEvent<T>(
