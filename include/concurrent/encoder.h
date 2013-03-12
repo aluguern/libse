@@ -64,6 +64,8 @@ public:
 /// Encoder for read instructions 
 class Z3ReadEncoder {
 public:
+  Z3ReadEncoder() {}
+
   template<typename T>
   z3::expr encode(const LiteralReadInstr<T>& instr, Z3& helper) const {
     return helper.literal(instr);
