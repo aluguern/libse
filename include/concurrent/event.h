@@ -86,7 +86,7 @@ public:
   const MemoryAddr& addr() const { return m_addr; }
   bool is_read() const { return m_is_read; }
   bool is_write() const { return !m_is_read; }
-  const Type& type() { return *m_type_ptr; }
+  const Type& type() const { return *m_type_ptr; }
 
   /// Condition that guards the event
 
