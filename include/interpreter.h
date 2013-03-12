@@ -107,7 +107,7 @@ protected:
   }
 
   static BinaryOperator find_binary_operator(Operator op) {
-    return m_binary_operators[op - UNARY_END];
+    return m_binary_operators[op - NARY_BEGIN];
   }
 
   static NaryOperator find_nary_operator(Operator op) {
@@ -127,6 +127,7 @@ template<typename T>
 const typename Interpreter<T>::
   BinaryOperator Interpreter<T>::m_binary_operators[] =
                         { &__BinaryOperator<T, ADD>::build,
+                          &__BinaryOperator<T, SUB>::build,
                           &__BinaryOperator<T, LAND>::build,
                           &__BinaryOperator<T, LOR>::build,
                           &__BinaryOperator<T, EQL>::build,

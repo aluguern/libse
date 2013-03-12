@@ -49,7 +49,7 @@ static std::string SPACE = " ";
 
 // Internal array which maps an Operator to its corresponding string
 // representation. Therefore, both data types need to be coordinated.
-static std::string operators[] = { "!", "+", "&&", "||", "==", "<" };
+static std::string operators[] = { "!", "+", "-", "&&", "||", "==", "<" };
 
 /// Expr subclass identifier
 
