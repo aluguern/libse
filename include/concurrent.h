@@ -13,6 +13,7 @@
 
 #include "concurrent/event.h"
 #include "concurrent/instr.h"
+#include "concurrent/encoder.h"
 #include "concurrent/recorder.h"
 #include "concurrent/var.h"
 
@@ -71,8 +72,10 @@ template<typename T> struct UnwrapType<DeclVar<T>> { typedef T base; };
   }\
 
 CONCURRENT_UNARY_OP(!, NOT)
+CONCURRENT_UNARY_OP(-, SUB)
 
 CONCURRENT_BINARY_OP(+, ADD)
+CONCURRENT_BINARY_OP(-, SUB)
 CONCURRENT_BINARY_OP(&&, LAND)
 CONCURRENT_BINARY_OP(||, LOR)
 CONCURRENT_BINARY_OP(==, EQL)
