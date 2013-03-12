@@ -5,7 +5,8 @@ using namespace se;
 
 TEST(OpTest, OperatorsOrder) {
   EXPECT_EQ(NOT + 1, ADD);
-  EXPECT_EQ(ADD + 1, LAND);
+  EXPECT_EQ(ADD + 1, SUB);
+  EXPECT_EQ(SUB + 1, LAND);
   EXPECT_EQ(LOR + 1, EQL);
   EXPECT_EQ(EQL + 1, LSS);
 }
@@ -29,6 +30,11 @@ TEST(OpTest, AttrFunctions) {
   EXPECT_TRUE(OperatorInfo<ADD>::is_associative());
   EXPECT_TRUE(OperatorInfo<ADD>::has_identity());
   EXPECT_FALSE(OperatorInfo<ADD>::is_unary());
+
+  EXPECT_FALSE(OperatorInfo<SUB>::is_commutative());
+  EXPECT_FALSE(OperatorInfo<SUB>::is_associative());
+  EXPECT_TRUE(OperatorInfo<SUB>::has_identity());
+  EXPECT_FALSE(OperatorInfo<SUB>::is_unary());
 
   EXPECT_TRUE(OperatorInfo<LAND>::is_commutative());
   EXPECT_TRUE(OperatorInfo<LAND>::is_associative());
@@ -84,8 +90,7 @@ TEST(OpTest, AttrFunctions) {
 // See diagram in include/op.h
 TEST(OpTest, OperatorEnumLayout) {
   EXPECT_EQ(NOT, UNARY_BEGIN);
-  EXPECT_EQ(ADD, UNARY_END);
+  EXPECT_EQ(SUB, UNARY_END);
   EXPECT_EQ(ADD, NARY_BEGIN);
   EXPECT_EQ(LSS, NARY_END);
 }
-

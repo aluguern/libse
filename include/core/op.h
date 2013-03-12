@@ -77,11 +77,11 @@ inline bool get_unary_attr(const OperatorAttr attr) {
 ///     |                Future Use             |
 ///     + - - - - - - - - - - - - - - - - - - - + <- UNARY_BEGIN
 ///     |                                       |
-///     |        Unary Operators (e.g. ADD)     |
+///     |    Unary Operators (e.g. NOT, ADD)    |
 ///     |                                       |
 ///     + - - - - - - - - - - - - - - - - - - - + <- NARY_BEGIN
 ///     |                                       |
-///     |    Unary & Nary Operators (e.g. ADD)  |
+///     |   Unary & Nary Operators (e.g. ADD)   |
 ///     |                                       |
 ///     + - - - - - - - - - - - - - - - - - - - + <- UNARY_END
 ///     |                                       |  
@@ -106,6 +106,8 @@ enum Operator : unsigned short {
 
   /// \verbatim +\endverbatim
   ADD,
+  /// \verbatim -\endverbatim
+  SUB,
 
   /// \verbatim &&\endverbatim
   LAND,
@@ -179,6 +181,7 @@ template<Operator op> class OperatorInfo {};
 // TODO: Consider using another bit mask for floats etc.
 OPERATOR_INFO_DEF(NOT,  UNARY_ATTR | CLEAR_ATTR)
 OPERATOR_INFO_DEF(ADD,  LASSOC_ATTR | RASSOC_ATTR | COMM_ATTR | HAS_ID_ELEMENT_ATTR)
+OPERATOR_INFO_DEF(SUB,  LASSOC_ATTR | HAS_ID_ELEMENT_ATTR)
 OPERATOR_INFO_DEF(LAND, LASSOC_ATTR | RASSOC_ATTR | COMM_ATTR | HAS_ID_ELEMENT_ATTR)
 OPERATOR_INFO_DEF(LOR,  LASSOC_ATTR | RASSOC_ATTR | COMM_ATTR | HAS_ID_ELEMENT_ATTR)
 OPERATOR_INFO_DEF(EQL,  LASSOC_ATTR | RASSOC_ATTR | COMM_ATTR)

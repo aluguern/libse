@@ -12,10 +12,9 @@ namespace se {
 /// Evaluate built-in arithmetic and boolean expressions
 template<Operator op> class Eval;
 
-#define EVAL_UNARY(op, opname) \
+#define EVAL_UNARY_ONLY(op, opcode) \
   template<>\
-  class Eval<opname> {\
-  public:\
+  struct Eval<opcode> {\
     template<typename T>\
     static inline auto eval(const T arg) ->\
       decltype(op arg) { return op arg; }\
@@ -25,26 +24,46 @@ template<Operator op> class Eval;
       decltype(op arg) { return op arg; }\
   };
 
-#define EVAL_BINARY(op, opname) \
+#define EVAL_BINARY_ONLY(op, opcode) \
   template<>\
-  class Eval<opname> {\
-  public:\
+  struct Eval<opcode> {\
     template<typename T, typename U>\
     static inline auto eval(const T larg, const U rarg) ->\
-      decltype(larg + rarg) { return larg op rarg; }\
+      decltype(larg op rarg) { return larg op rarg; }\
     \
     template<typename T, typename U>\
     static constexpr auto const_eval(const T larg, const U rarg) ->\
       decltype(larg op rarg) { return larg op rarg; }\
   };
 
-EVAL_UNARY(!, NOT)
+#define EVAL_UNARY_AND_BINARY(op, opcode) \
+  template<>\
+  struct Eval<opcode> {\
+    template<typename T>\
+    static inline auto eval(const T arg) ->\
+      decltype(op arg) { return op arg; }\
+    \
+    template<typename T>\
+    static constexpr auto const_eval(const T arg) ->\
+      decltype(op arg) { return op arg; }\
+    template<typename T, typename U>\
+    \
+    static inline auto eval(const T larg, const U rarg) ->\
+      decltype(larg op rarg) { return larg op rarg; }\
+    \
+    template<typename T, typename U>\
+    static constexpr auto const_eval(const T larg, const U rarg) ->\
+      decltype(larg op rarg) { return larg op rarg; }\
+  };
 
-EVAL_BINARY(+, ADD)
-EVAL_BINARY(&&, LAND)
-EVAL_BINARY(||, LOR)
-EVAL_BINARY(==, EQL)
-EVAL_BINARY(<, LSS)
+EVAL_UNARY_ONLY       (!, NOT)
+
+EVAL_BINARY_ONLY      (+, ADD)
+EVAL_UNARY_AND_BINARY (-, SUB)
+EVAL_BINARY_ONLY      (&&, LAND)
+EVAL_BINARY_ONLY      (||, LOR)
+EVAL_BINARY_ONLY      (==, EQL)
+EVAL_BINARY_ONLY      (<, LSS)
 
 }
 
