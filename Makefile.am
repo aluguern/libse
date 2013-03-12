@@ -78,6 +78,7 @@ pkginclude_HEADERS = \
   include/concurrent/memory.h \
   include/concurrent/event.h \
   include/concurrent/instr.h \
+  include/concurrent/encoder.h \
   include/concurrent/recorder.h \
   include/concurrent/var.h \
   include/concurrent/relation.h \
@@ -125,6 +126,7 @@ test_se_SOURCES = \
   test/concurrent/memory_test.cpp \
   test/concurrent/event_test.cpp \
   test/concurrent/instr_test.cpp \
+  test/concurrent/encoder_test.cpp \
   test/concurrent/recorder_test.cpp \
   test/concurrent/var_test.cpp \
   test/concurrent/relation_test.cpp \

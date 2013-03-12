@@ -3,6 +3,7 @@
 #include <sstream>
 
 #include "concurrent/instr.h"
+#include "concurrent/encoder.h"
 
 using namespace se;
 
@@ -24,15 +25,6 @@ TEST(InstrTest, LiteralReadInstrWithCondition) {
 TEST(InstrTest, LiteralReadInstrInitializer) {
   const LiteralReadInstr<unsigned long> ulong_instr;
   EXPECT_EQ(0UL, ulong_instr.literal());
-}
-
-TEST(InstrTest, LiteralReadInstrInitializerWithArray) {
-  const LiteralReadInstr<unsigned long[5]> array_instr;
-  EXPECT_EQ(0UL, array_instr.literal()[0]);
-  EXPECT_EQ(0UL, array_instr.literal()[1]);
-  EXPECT_EQ(0UL, array_instr.literal()[2]);
-  EXPECT_EQ(0UL, array_instr.literal()[3]);
-  EXPECT_EQ(0UL, array_instr.literal()[4]);
 }
 
 TEST(InstrTest, LiteralReadInstrWithoutCondition) {

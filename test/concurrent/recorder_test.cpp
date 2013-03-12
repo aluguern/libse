@@ -1,6 +1,7 @@
 #include "gtest/gtest.h"
 
 #include "concurrent/recorder.h"
+#include "concurrent/encoder.h"
 
 using namespace se;
 

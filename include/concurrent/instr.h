@@ -14,10 +14,22 @@
 
 #include "concurrent/event.h"
 
+namespace z3 { class expr; }
+
 namespace se {
+
+class Z3;
+class Z3ReadEncoder;
 
 /// Non-copyable class that identifies a built-in memory read instruction
 
+/// `T` refers to the type of the lvalue or rvalue being read. For example,
+/// the right-hand side of the assignment `char y = xs[2]` consists of a
+/// read instruction of the array pointer (i.e. `ReadInstr<char[]>`) followed
+/// by another read instruction of its offset (i.e. `ReadInstr<size_t>`);
+/// together, both read instructions must be coalesced into an object
+/// whose type is `ReadInstr<char>` because variable `y` is of type `char`.
+///
 /// Any operands of a subclass of ReadInstr<T> must be only accessible
 /// through a constant reference. If a subclass of ReadInstr<T> refers
 /// to an event, then it must be of type ReadEvent<T>.
@@ -31,9 +43,13 @@ public:
   virtual ~ReadInstr() {}
 
   virtual void filter(std::forward_list<std::shared_ptr<Event>>&) const = 0;
+  virtual z3::expr encode(const Z3ReadEncoder& encoder, Z3& helper) const = 0;
 
   virtual std::shared_ptr<ReadInstr<bool>> condition_ptr() const = 0;
 };
+
+#define DECL_ENCODE_FN \
+  z3::expr encode(const Z3ReadEncoder& encoder, Z3& helper) const;
 
 template<typename T>
 class LiteralReadInstr : public ReadInstr<T> {
@@ -61,6 +77,8 @@ public:
   const T& literal() const { return m_literal; }
 
   void filter(std::forward_list<std::shared_ptr<Event>>&) const { /* skip */ }
+
+  DECL_ENCODE_FN
 };
 
 template<typename T>
@@ -86,6 +104,8 @@ public:
   void filter(std::forward_list<std::shared_ptr<Event>>& event_ptrs) const {
     event_ptrs.push_front(m_event_ptr);
   }
+
+  DECL_ENCODE_FN
 };
 
 template<Operator op, typename U>
@@ -111,6 +131,8 @@ public:
   void filter(std::forward_list<std::shared_ptr<Event>>& event_ptrs) const {
     operand_ref().filter(event_ptrs);
   }
+
+  DECL_ENCODE_FN
 };
 
 template<Operator op, typename U, typename V>
@@ -146,6 +168,8 @@ public:
     loperand_ref().filter(event_ptrs);
     roperand_ref().filter(event_ptrs);
   }
+
+  DECL_ENCODE_FN
 };
 
 /// Load memory at an offset of type U through a memory address of type T
@@ -175,6 +199,8 @@ public:
     memory_ref().filter(event_ptrs);
     offset_ref().filter(event_ptrs);
   }
+
+  DECL_ENCODE_FN
 };
 
 template<typename ...T> struct ReadInstrResult;

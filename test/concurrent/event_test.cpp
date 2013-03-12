@@ -2,6 +2,7 @@
 
 #include "concurrent/event.h"
 #include "concurrent/instr.h"
+#include "concurrent/encoder.h"
 
 using namespace se;
 
