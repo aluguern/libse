@@ -26,6 +26,10 @@ TEST(EncoderTest, Z3BvLiteral) {
   const short literal = 3;
   const LiteralReadInstr<short> instr(literal);
 
+  EXPECT_TRUE(z3.literal(instr).is_bv());
+  EXPECT_EQ(TypeInfo<short>::s_type.bv_size(),
+    z3.literal(instr).get_sort().bv_size());
+
   z3.solver.push();
 
   z3.solver.add(z3.literal(instr) != literal);
@@ -45,6 +49,10 @@ TEST(EncoderTest, Z3BvConstant) {
   const MemoryAddr addr = MemoryAddr::alloc<int>();
   const ReadEvent<int> event(thread_id, addr);
 
+  EXPECT_TRUE(z3.constant(event).is_bv());
+  EXPECT_EQ(TypeInfo<int>::s_type.bv_size(),
+    z3.constant(event).get_sort().bv_size());
+
   z3.solver.add(z3.constant(event) != z3.constant(event));
 
   // Proves that both bit vector constants are equal
@@ -56,11 +64,22 @@ TEST(EncoderTest, Z3ArrayConstant) {
 
   const unsigned thread_id = 3;
   const MemoryAddr addr = MemoryAddr::alloc<int[5]>();
-  const ReadEvent<int[5]> event(thread_id, addr);
+  const ReadEvent<int[5]> read_event(thread_id, addr);
+
+  const z3::expr event_expr(z3.constant(read_event));
+  EXPECT_TRUE(event_expr.is_array());
+
+  EXPECT_TRUE(event_expr.get_sort().array_range().is_bv());
+  EXPECT_EQ(TypeInfo<size_t>::s_type.bv_size(),
+    event_expr.get_sort().array_domain().bv_size());
+
+  EXPECT_TRUE(event_expr.get_sort().array_domain().is_bv());
+  EXPECT_EQ(TypeInfo<int>::s_type.bv_size(),
+    event_expr.get_sort().array_range().bv_size());
 
   z3.solver.push();
 
-  z3.solver.add(z3.constant(event) != z3.constant(event));
+  z3.solver.add(event_expr != z3.constant(read_event));
 
   // Proves that both bit vector constants are equal
   EXPECT_EQ(z3::unsat, z3.solver.check());
@@ -72,7 +91,7 @@ TEST(EncoderTest, Z3ArrayConstant) {
   // 1:
   z3.solver.push();
 
-  z3.solver.add(z3.constant(event) == z3.constant(event));
+  z3.solver.add(event_expr == z3.constant(read_event));
   EXPECT_EQ(z3::sat, z3.solver.check());
 
   z3.solver.pop();
@@ -83,8 +102,8 @@ TEST(EncoderTest, Z3ArrayConstant) {
   const int index = 3;
   const int value_a = 7;
   const int value_b = 8;
-  z3::expr array_a(z3::store(z3.constant(event), index, value_a));
-  z3::expr array_b(z3::store(z3.constant(event), index, value_b));
+  z3::expr array_a(z3::store(event_expr, index, value_a));
+  z3::expr array_b(z3::store(z3.constant(read_event), index, value_b));
 
   z3.solver.add(array_a == array_b);
   EXPECT_EQ(z3::unsat, z3.solver.check());
@@ -102,8 +121,8 @@ TEST(EncoderTest, Z3ArrayConstant) {
   // 4:
   z3.solver.push();
 
-  z3.solver.add(z3.constant(event) == array_b);
-  z3.solver.add(z3::select(z3.constant(event), index) == value_b);
+  z3.solver.add(z3.constant(read_event) == array_b);
+  z3.solver.add(z3::select(event_expr, index) == value_b);
   EXPECT_EQ(z3::sat, z3.solver.check());
 
   z3.solver.pop();
@@ -111,11 +130,45 @@ TEST(EncoderTest, Z3ArrayConstant) {
   // 5:
   z3.solver.push();
 
-  z3.solver.add(z3.constant(event) == array_b);
-  z3.solver.add(z3::select(z3.constant(event), index) != value_b);
+  z3.solver.add(z3.constant(read_event) == array_b);
+  z3.solver.add(z3::select(event_expr, index) != value_b);
   EXPECT_EQ(z3::unsat, z3.solver.check());
 
   z3.solver.pop();
+}
+
+TEST(EncoderTest, Z3IndirectWriteEventConstant) {
+  const unsigned thread_id = 3;
+  const size_t array_size = 5;
+
+  Z3 z3;
+
+  const MemoryAddr pointer_addr = MemoryAddr::alloc<char[array_size]>();
+  std::unique_ptr<ReadEvent<char[array_size]>> pointer_event_ptr(new ReadEvent<char[array_size]>(thread_id, pointer_addr));
+  std::unique_ptr<ReadInstr<char[array_size]>> pointer_read_instr(new BasicReadInstr<char[array_size]>(std::move(pointer_event_ptr)));
+
+  std::unique_ptr<ReadInstr<size_t>> offset_read_instr(new LiteralReadInstr<size_t>(7));
+
+  std::unique_ptr<DerefReadInstr<char[array_size], size_t>> deref_read_instr_ptr(
+    new DerefReadInstr<char[array_size], size_t>(
+      std::move(pointer_read_instr), std::move(offset_read_instr)));
+
+  std::unique_ptr<ReadInstr<char>> read_instr_ptr(new LiteralReadInstr<char>('X'));
+
+  const MemoryAddr write_addr = MemoryAddr::alloc<char>();
+  const IndirectWriteEvent<char, size_t, array_size> write_event(thread_id, write_addr,
+    std::move(deref_read_instr_ptr), std::move(read_instr_ptr));
+
+  const z3::expr event_expr(z3.constant(write_event));
+  EXPECT_TRUE(event_expr.is_array());
+
+  EXPECT_TRUE(event_expr.get_sort().array_range().is_bv());
+  EXPECT_EQ(TypeInfo<size_t>::s_type.bv_size(),
+    event_expr.get_sort().array_domain().bv_size());
+
+  EXPECT_TRUE(event_expr.get_sort().array_domain().is_bv());
+  EXPECT_EQ(TypeInfo<char>::s_type.bv_size(),
+    event_expr.get_sort().array_range().bv_size());
 }
 
 TEST(EncoderTest, Z3Clock) {
@@ -331,7 +384,7 @@ TEST(EncoderTest, Z3ReadEncoderForDerefReadInstrAsInteger) {
   EXPECT_TRUE(array_read_instr.encode(encoder, z3).is_array());
 }
 
-TEST(EncoderTest, Z3EncoderDirect) {
+TEST(EncoderTest, Z3EncoderDirectWriteEvent) {
   const unsigned thread_id = 3;
 
   const Z3Encoder encoder;
@@ -352,7 +405,7 @@ TEST(EncoderTest, Z3EncoderDirect) {
   EXPECT_EQ(z3::unsat, z3.solver.check());
 }
 
-TEST(EncoderTest, Z3EncoderDirectThroughDispatch) {
+TEST(EncoderTest, Z3EncoderDirectWriteEventThroughDispatch) {
   const unsigned thread_id = 3;
 
   const Z3Encoder encoder;
@@ -374,7 +427,7 @@ TEST(EncoderTest, Z3EncoderDirectThroughDispatch) {
   EXPECT_EQ(z3::unsat, z3.solver.check());
 }
 
-TEST(EncoderTest, Z3EncoderIndirect) {
+TEST(EncoderTest, Z3EncoderIndirectWriteEvent) {
   const unsigned thread_id = 3;
   const size_t array_size = 5;
 
@@ -397,7 +450,8 @@ TEST(EncoderTest, Z3EncoderIndirect) {
   const IndirectWriteEvent<char, size_t, array_size> write_event(thread_id, write_addr,
     std::move(deref_read_instr_ptr), std::move(read_instr_ptr));
 
-  z3::expr new_array(encoder.encode(write_event, z3));
+  z3.solver.add(encoder.encode(write_event, z3));
+  z3::expr new_array(z3.constant(write_event));
 
   z3.solver.push();
 
@@ -414,7 +468,7 @@ TEST(EncoderTest, Z3EncoderIndirect) {
   z3.solver.pop();
 }
 
-TEST(EncoderTest, Z3EncoderIndirectThroughDispatch) {
+TEST(EncoderTest, Z3EncoderIndirectWriteEventThroughDispatch) {
   const unsigned thread_id = 3;
   const size_t array_size = 5;
 
@@ -439,7 +493,8 @@ TEST(EncoderTest, Z3EncoderIndirectThroughDispatch) {
 
   const Event& event = write_event;
 
-  z3::expr new_array(event.encode(encoder, z3));
+  z3.solver.add(event.encode(encoder, z3));
+  z3::expr new_array(z3.constant(write_event));
 
   z3.solver.push();
 
@@ -454,4 +509,35 @@ TEST(EncoderTest, Z3EncoderIndirectThroughDispatch) {
   EXPECT_EQ(z3::unsat, z3.solver.check());
 
   z3.solver.pop();
+}
+
+TEST(EncoderTest, Z3EncoderReadEvent) {
+  const unsigned thread_id = 3;
+
+  const Z3Encoder encoder;
+  Z3 z3;
+
+  const MemoryAddr addr = MemoryAddr::alloc<int>();
+  const ReadEvent<int> read_event(thread_id, addr);
+
+  z3.solver.add(encoder.encode(read_event, z3));
+
+  // Proves that read events are encoded as false
+  EXPECT_EQ(z3::unsat, z3.solver.check());
+}
+
+TEST(EncoderTest, Z3EncoderReadEventThroughDispatch) {
+  const unsigned thread_id = 3;
+
+  const Z3Encoder encoder;
+  Z3 z3;
+
+  const MemoryAddr addr = MemoryAddr::alloc<int>();
+  const ReadEvent<int> read_event(thread_id, addr);
+  const Event& event = read_event;
+
+  z3.solver.add(event.encode(encoder, z3));
+
+  // Proves that read events are encoded as a false
+  EXPECT_EQ(z3::unsat, z3.solver.check());
 }

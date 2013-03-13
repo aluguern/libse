@@ -52,6 +52,15 @@ public:
     return context.constant(create_symbol(event), array_sort);
   }
 
+  template<typename T, typename U, size_t N>
+  z3::expr constant(const IndirectWriteEvent<T, U, N>& event) {
+    z3::sort domain_sort(context.bv_sort(TypeInfo<size_t>::s_type.bv_size()));
+    z3::sort range_sort(context.bv_sort(TypeInfo<T>::s_type.bv_size()));
+    z3::sort array_sort(context.array_sort(domain_sort, range_sort));
+
+    return context.constant(create_symbol(event), array_sort);
+  }
+
   z3::expr clock(const Event& event) {
     z3::sort sort(context.int_sort());
     z3::expr clock(context.constant(create_symbol(event), sort));
@@ -126,6 +135,8 @@ public:
 };
 
 /// Encoder for direct and indirect write events
+
+/// Every member function returns a Z3 expression whose sort is Boolean.
 class Z3Encoder {
 private:
   const Z3WriteEncoder m_write_encoder;
@@ -136,21 +147,22 @@ public:
 
   template<typename T>
   z3::expr encode(const ReadEvent<T>& event, Z3& helper) const {
-    return helper.constant(event);
+    return helper.context.bool_val(false);
   }
 
   template<typename T>
   z3::expr encode(const DirectWriteEvent<T>& event, Z3& helper) const {
-    z3::expr rhs_expr(event.instr_ref().encode(m_read_encoder, helper));
     z3::expr lhs_expr(helper.constant(event));
+    z3::expr rhs_expr(event.instr_ref().encode(m_read_encoder, helper));
     return lhs_expr == rhs_expr;
   }
 
   template<typename T, typename U, size_t N>
   z3::expr encode(const IndirectWriteEvent<T, U, N>& event, Z3& helper) const {
+    z3::expr lhs_expr(helper.constant(event));
     z3::expr rhs_expr(event.instr_ref().encode(m_read_encoder, helper));
-    return m_write_encoder.encode(event.deref_instr_ref(), m_read_encoder,
-      rhs_expr, helper);
+    return lhs_expr == m_write_encoder.encode(event.deref_instr_ref(),
+      m_read_encoder, rhs_expr, helper);
   }
 };
 

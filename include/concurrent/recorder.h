@@ -11,6 +11,7 @@
 
 #include "concurrent/event.h"
 #include "concurrent/instr.h"
+#include "concurrent/encoder.h"
 
 namespace se {
 
@@ -42,7 +43,9 @@ private:
   const unsigned m_thread_id;
 
   PathCondition m_path_condition;
-  std::forward_list<std::shared_ptr<Event>> m_write_event_ptrs;
+
+  // List of smart pointers to read and write events
+  std::forward_list<std::shared_ptr<Event>> m_event_prts;
 
   template<typename T>
   void process_read_instr(const ReadInstr<T>& instr) {
@@ -51,19 +54,19 @@ private:
     instr.filter(read_event_ptrs);
 
     // Append these pointers to the per-thread event list
-     m_write_event_ptrs.insert_after(m_write_event_ptrs.cbefore_begin(),
+     m_event_prts.insert_after(m_event_prts.cbefore_begin(),
        /* range */ read_event_ptrs.cbegin(), read_event_ptrs.cend());
   }
 
 public:
   Recorder(unsigned thread_id) : m_thread_id(thread_id),
-    m_path_condition(), m_write_event_ptrs() {}
+    m_path_condition(), m_event_prts() {}
 
   unsigned thread_id() const { return m_thread_id; }
   PathCondition& path_condition() { return m_path_condition; }
 
   std::forward_list<std::shared_ptr<Event>>& event_ptrs() {
-    return m_write_event_ptrs;
+    return m_event_prts;
   }
 
   /// Records a direct memory write event
@@ -78,7 +81,7 @@ public:
     std::shared_ptr<WriteEvent<T>> write_event_ptr(new DirectWriteEvent<T>(
         m_thread_id, addr, std::move(instr_ptr), path_condition().top()));
 
-    m_write_event_ptrs.push_front(write_event_ptr);
+    m_event_prts.push_front(write_event_ptr);
     return write_event_ptr;
   }
 
@@ -97,8 +100,17 @@ public:
         std::move(deref_instr_ptr), std::move(instr_ptr),
           path_condition().top()));
 
-    m_write_event_ptrs.push_front(write_event_ptr);
+    m_event_prts.push_front(write_event_ptr);
     return write_event_ptr;
+  }
+
+  void encode(const Z3Encoder& encoder, Z3& helper) {
+    for (std::shared_ptr<Event> event_ptr : m_event_prts) {
+      if (event_ptr->is_write()) {
+        z3::expr equality(event_ptr->encode(encoder, helper)); 
+        helper.solver.add(equality);
+      }
+    }
   }
 };
 

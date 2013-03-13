@@ -1,5 +1,7 @@
 #include "gtest/gtest.h"
 
+#include <sstream>
+
 #include "concurrent.h"
 #include "concurrent/memory.h"
 
@@ -205,4 +207,26 @@ TEST(ConcurrencyTest, OverwriteDeclVarArrayElementWithVar) {
   DeclVar<char> var;
   DeclVar<char[5]> array_var;
   array_var[2] = var;
+}
+
+TEST(ConcurrencyTest, Recorder) {
+  Event::reset_id();
+  const unsigned thread_id = 3;
+
+  std::shared_ptr<Recorder> recorder_ptr(new Recorder(thread_id));
+  set_recorder(recorder_ptr);
+
+  DeclVar<char> var;
+  DeclVar<char[5]> array_var;
+  array_var[2] = static_cast<char>(0xa2);
+  array_var[3] = var;
+
+  Z3 z3;
+  Z3Encoder encoder;
+  recorder_ptr->encode(encoder, z3);
+
+  std::stringstream out;
+  out << z3.solver;
+  EXPECT_EQ("(solver\n  (= k!11 (store k!6 #x0000000000000003 k!8))\n"
+            "  (= k!5 (store k!2 #x0000000000000002 #xa2)))", out.str());
 }
