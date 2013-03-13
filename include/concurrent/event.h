@@ -13,10 +13,15 @@
 
 #include "concurrent/memory.h"
 
+namespace z3 { class expr; }
+
 namespace se {
 
 template<typename T>
 class ReadInstr;
+
+class Z3;
+class Z3Encoder;
 
 /// Untyped read or write event
 
@@ -98,7 +103,12 @@ public:
   bool operator==(const Event& other) const {
     return m_event_id == other.m_event_id;
   }
+
+  virtual z3::expr encode(const Z3Encoder& encoder, Z3& helper) const = 0;
 };
+
+#define DECL_ENCODER_FN \
+  z3::expr encode(const Z3Encoder& encoder, Z3& helper) const;
 
 /// Event that writes `sizeof(T)` bytes to memory
 template<typename T>
@@ -133,6 +143,8 @@ public:
     WriteEvent<T>(thread_id, addr, std::move(instr_ptr), condition_ptr) {}
 
   ~DirectWriteEvent() {}
+
+  DECL_ENCODER_FN
 };
 
 template<typename T, typename U> class DerefReadInstr;
@@ -160,6 +172,8 @@ public:
   const DerefReadInstr<T[N], U>& deref_instr_ref() const {
     return *m_deref_instr_ptr;
   }
+
+  DECL_ENCODER_FN
 };
 
 /// Event that reads `sizeof(T)` bytes from memory
@@ -171,6 +185,8 @@ public:
     Event(thread_id, addr, true, &TypeInfo<T>::s_type, condition_ptr) {}
 
   ~ReadEvent() {}
+
+  DECL_ENCODER_FN
 };
 
 }

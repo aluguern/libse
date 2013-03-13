@@ -93,22 +93,22 @@ public:
   }
 };
 
-#define ENCODE_FN \
+#define READ_ENCODER_FN \
   encode(const Z3ReadEncoder& encoder, Z3& helper) const {\
     return encoder.encode(*this, helper);\
   }
 
-template<typename T> z3::expr LiteralReadInstr<T>::ENCODE_FN
-template<typename T> z3::expr BasicReadInstr<T>::ENCODE_FN
+template<typename T> z3::expr LiteralReadInstr<T>::READ_ENCODER_FN
+template<typename T> z3::expr BasicReadInstr<T>::READ_ENCODER_FN
 
 template<Operator op, typename T>
-z3::expr UnaryReadInstr<op, T>::ENCODE_FN
+z3::expr UnaryReadInstr<op, T>::READ_ENCODER_FN
 
 template<Operator op, typename T, typename U>
-z3::expr BinaryReadInstr<op, T, U>::ENCODE_FN
+z3::expr BinaryReadInstr<op, T, U>::READ_ENCODER_FN
 
 template<typename T, typename U, size_t N>
-z3::expr DerefReadInstr<T[N], U>::ENCODE_FN
+z3::expr DerefReadInstr<T[N], U>::READ_ENCODER_FN
 
 /// Encoder for a read instruction in the left-hand side of an assignment
 class Z3WriteEncoder {
@@ -135,19 +135,38 @@ public:
   Z3Encoder() : m_read_encoder(), m_write_encoder() {}
 
   template<typename T>
+  z3::expr encode(const ReadEvent<T>& event, Z3& helper) const {
+    return helper.constant(event);
+  }
+
+  template<typename T>
   z3::expr encode(const DirectWriteEvent<T>& event, Z3& helper) const {
     z3::expr rhs_expr(event.instr_ref().encode(m_read_encoder, helper));
     z3::expr lhs_expr(helper.constant(event));
     return lhs_expr == rhs_expr;
-  } 
+  }
 
   template<typename T, typename U, size_t N>
   z3::expr encode(const IndirectWriteEvent<T, U, N>& event, Z3& helper) const {
     z3::expr rhs_expr(event.instr_ref().encode(m_read_encoder, helper));
     return m_write_encoder.encode(event.deref_instr_ref(), m_read_encoder,
       rhs_expr, helper);
-  } 
+  }
 };
+
+#define ENCODER_FN \
+  encode(const Z3Encoder& encoder, Z3& helper) const {\
+    return encoder.encode(*this, helper);\
+  }
+
+template<typename T>
+z3::expr ReadEvent<T>::ENCODER_FN
+
+template<typename T>
+z3::expr DirectWriteEvent<T>::ENCODER_FN
+
+template<typename T, typename U, size_t N>
+z3::expr IndirectWriteEvent<T, U, N>::ENCODER_FN
 
 }
 

@@ -48,7 +48,7 @@ public:
   virtual std::shared_ptr<ReadInstr<bool>> condition_ptr() const = 0;
 };
 
-#define DECL_ENCODE_FN \
+#define DECL_READ_ENCODER_FN \
   z3::expr encode(const Z3ReadEncoder& encoder, Z3& helper) const;
 
 template<typename T>
@@ -79,7 +79,7 @@ public:
 
   void filter(std::forward_list<std::shared_ptr<Event>>&) const { /* skip */ }
 
-  DECL_ENCODE_FN
+  DECL_READ_ENCODER_FN
 };
 
 template<typename T>
@@ -106,7 +106,7 @@ public:
     event_ptrs.push_front(m_event_ptr);
   }
 
-  DECL_ENCODE_FN
+  DECL_READ_ENCODER_FN
 };
 
 template<Operator op, typename U>
@@ -133,7 +133,7 @@ public:
     operand_ref().filter(event_ptrs);
   }
 
-  DECL_ENCODE_FN
+  DECL_READ_ENCODER_FN
 };
 
 template<Operator op, typename U, typename V>
@@ -170,7 +170,7 @@ public:
     roperand_ref().filter(event_ptrs);
   }
 
-  DECL_ENCODE_FN
+  DECL_READ_ENCODER_FN
 };
 
 /// Load memory at an offset of type U through a memory address of type T
@@ -201,7 +201,7 @@ public:
     offset_ref().filter(event_ptrs);
   }
 
-  DECL_ENCODE_FN
+  DECL_READ_ENCODER_FN
 };
 
 template<typename ...T> struct ReadInstrResult;
