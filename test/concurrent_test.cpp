@@ -197,3 +197,12 @@ TEST(ConcurrencyTest, OverwriteDeclVarArrayElementWithLiteral) {
   DeclVar<char[5]> array_var;
   array_var[2] = 'Z';
 }
+
+// Type check only right now
+TEST(ConcurrencyTest, OverwriteDeclVarArrayElementWithVar) {
+  Event::reset_id(12);
+
+  DeclVar<char> var;
+  DeclVar<char[5]> array_var;
+  array_var[2] = var;
+}

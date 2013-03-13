@@ -122,8 +122,8 @@ public:
 
   // TODO: Fix return type in presence of move semantics
   template<typename V>
-  void operator=(const V& literal) {
-    operator=(alloc_read_instr(literal));
+  void operator=(const V& v) {
+    operator=(alloc_read_instr(v));
   }
 };
 
