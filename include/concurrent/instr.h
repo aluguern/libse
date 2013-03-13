@@ -10,16 +10,17 @@
 #include <utility>
 #include <forward_list>
 
+#include <z3++.h>
+
 #include "core/type.h"
 
 #include "concurrent/event.h"
-
-namespace z3 { class expr; }
 
 namespace se {
 
 class Z3;
 class Z3ReadEncoder;
+class Z3WriteEncoder;
 
 /// Non-copyable class that identifies a built-in memory read instruction
 
@@ -44,6 +45,8 @@ public:
 
   virtual void filter(std::forward_list<std::shared_ptr<Event>>&) const = 0;
   virtual z3::expr encode(const Z3ReadEncoder& encoder, Z3& helper) const = 0;
+  virtual z3::expr encode(const Z3WriteEncoder& encoder,
+    const z3::expr& expr, Z3& helper) const { return expr; }
 
   virtual std::shared_ptr<ReadInstr<bool>> condition_ptr() const = 0;
 };
@@ -174,11 +177,11 @@ public:
 };
 
 /// Load memory at an offset of type U through a memory address of type T
-template<typename T, typename U> class DereferenceReadInstr;
+template<typename T, typename U> class DerefReadInstr;
 
 /// Select an element in a fixed-size array
 template<typename T, typename U, size_t N>
-class DereferenceReadInstr<T[N], U> : public ReadInstr<T> {
+class DerefReadInstr<T[N], U> : public ReadInstr<T> {
 private:
   const std::unique_ptr<ReadInstr<T[N]>> m_array_ptr;
   const std::unique_ptr<ReadInstr<U>> m_index_ptr;
@@ -189,7 +192,7 @@ protected:
   }
 
 public:
-  DereferenceReadInstr(std::unique_ptr<ReadInstr<T[N]>> array_ptr,
+  DerefReadInstr(std::unique_ptr<ReadInstr<T[N]>> array_ptr,
     std::unique_ptr<ReadInstr<U>> index_ptr) :
     m_array_ptr(std::move(array_ptr)), m_index_ptr(std::move(index_ptr)) {}
 
@@ -202,6 +205,9 @@ public:
   }
 
   DECL_ENCODE_FN
+
+  z3::expr encode(const Z3WriteEncoder& encoder,
+    const z3::expr& expr, Z3& helper) const;
 };
 
 template<typename ...T> struct ReadInstrResult;
@@ -223,7 +229,7 @@ struct ReadInstrResult<BinaryReadInstr<op, T, U>> {
 };
 
 template<typename T, typename U, size_t N>
-struct ReadInstrResult<DereferenceReadInstr<T[N], U>> { typedef T Type; };
+struct ReadInstrResult<DerefReadInstr<T[N], U>> { typedef T Type; };
 
 /// Optional control flow over the exact type of a read instruction
 

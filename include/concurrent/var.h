@@ -151,7 +151,7 @@ public:
       new LiteralReadInstr<size_t>(offset));
 
     std::unique_ptr<ReadInstr<T>> deref_instr_ptr(
-      new DereferenceReadInstr<T[N], size_t>(
+      new DerefReadInstr<T[N], size_t>(
         alloc_read_instr(*this), std::move(offset_ptr)));
 
     const MemoryAddr offset_addr = m_array_addr + offset;

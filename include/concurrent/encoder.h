@@ -5,8 +5,6 @@
 #ifndef LIBSE_CONCURRENT_ENCODER_H_
 #define LIBSE_CONCURRENT_ENCODER_H_
 
-#include <z3++.h>
-
 #include <string>
 
 #include "concurrent/instr.h"
@@ -38,8 +36,7 @@ public:
     return context.bool_val(instr.literal());
   }
 
-  template<typename T>
-  z3::expr constant(const ReadEvent<T>& event) {
+  z3::expr constant(const Event& event) {
     z3::sort sort(context.bv_sort(event.type().bv_size()));
     return context.constant(create_symbol(event), sort);
   }
@@ -88,7 +85,7 @@ public:
   }
 
   template<typename T, typename U, size_t N>
-  z3::expr encode(const DereferenceReadInstr<T[N], U>& instr, Z3& helper) const {
+  z3::expr encode(const DerefReadInstr<T[N], U>& instr, Z3& helper) const {
     return z3::select(instr.memory_ref().encode(*this, helper),
       instr.offset_ref().encode(*this, helper));
   }
@@ -109,7 +106,56 @@ template<Operator op, typename T, typename U>
 z3::expr BinaryReadInstr<op, T, U>::ENCODE_FN
 
 template<typename T, typename U, size_t N>
-z3::expr DereferenceReadInstr<T[N], U>::ENCODE_FN
+z3::expr DerefReadInstr<T[N], U>::ENCODE_FN
+
+/// Encoder for a read instruction in the left-hand side of an assignment
+class Z3WriteEncoder {
+private:
+  const Z3ReadEncoder* const m_read_encoder_ptr;
+
+  friend class Z3Encoder;
+  Z3WriteEncoder(const Z3ReadEncoder* const read_encoder_ptr) :
+    m_read_encoder_ptr(read_encoder_ptr) {}
+
+public:
+  
+  template<typename T, typename U, size_t N>
+  z3::expr encode(const DerefReadInstr<T[N], U>& instr,
+    const z3::expr& rhs_expr, Z3& helper) const {
+
+    return z3::store(instr.memory_ref().encode(*m_read_encoder_ptr, helper),
+      instr.offset_ref().encode(*m_read_encoder_ptr, helper), rhs_expr);
+  }
+};
+
+template<typename T, typename U, size_t N>
+z3::expr DerefReadInstr<T[N], U>::encode(const Z3WriteEncoder& encoder,
+  const z3::expr& expr, Z3& helper) const {
+
+  return encoder.encode(*this, expr, helper);
+}
+
+/// Encoder for write events
+class Z3Encoder {
+private:
+  const Z3WriteEncoder m_write_encoder;
+  const Z3ReadEncoder m_read_encoder;
+
+public:
+  Z3Encoder() : m_read_encoder(), m_write_encoder(&m_read_encoder) {}
+
+  template<typename T>
+  z3::expr encode(const WriteEvent<T>& event, Z3& helper) const {
+    z3::expr rhs_expr = event.instr_ref().encode(m_read_encoder, helper);
+
+    if (event.is_direct()) {
+      z3::expr lhs_expr = helper.constant(event);
+      return lhs_expr == rhs_expr;
+    }
+
+    return event.deref_instr_ref().encode(m_write_encoder, rhs_expr, helper);
+  } 
+};
 
 }
 

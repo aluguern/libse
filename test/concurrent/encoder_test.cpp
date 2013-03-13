@@ -311,7 +311,7 @@ TEST(EncoderTest, Z3ReadEncoderForBinaryReadInstrAsInteger) {
   EXPECT_EQ(z3::unsat, z3.solver.check());
 }
 
-TEST(EncoderTest, Z3ReadEncoderForDereferenceReadInstrAsInteger) {
+TEST(EncoderTest, Z3ReadEncoderForDerefReadInstrAsInteger) {
   const Z3ReadEncoder encoder;
   Z3 z3;
 
@@ -323,10 +323,71 @@ TEST(EncoderTest, Z3ReadEncoderForDereferenceReadInstrAsInteger) {
   std::unique_ptr<ReadInstr<size_t>> offset_ptr(
     new LiteralReadInstr<size_t>(/* out of bounds allowed for now */ 7));
 
-  const DereferenceReadInstr<short[5], size_t> instr(std::move(memory_ptr), std::move(offset_ptr));
+  const DerefReadInstr<short[5], size_t> instr(std::move(memory_ptr), std::move(offset_ptr));
 
   // See also Z3ReadEncoderForBasicReadInstrAsArray test
   const BasicReadInstr<short[5]>& array_read_instr =
     static_cast<const BasicReadInstr<short[5]>&>(instr.memory_ref());
   EXPECT_TRUE(array_read_instr.encode(encoder, z3).is_array());
+}
+
+TEST(EncoderTest, Z3WriteEncoderDirect) {
+  const unsigned thread_id = 3;
+
+  const Z3Encoder encoder;
+  Z3 z3;
+
+  std::unique_ptr<ReadInstr<long>> read_instr_ptr(new LiteralReadInstr<long>(42L));
+
+  const MemoryAddr write_addr = MemoryAddr::alloc<long>();
+  const WriteEvent<long> write_event(thread_id, write_addr, std::move(read_instr_ptr));
+
+  z3::expr equality(encoder.encode(write_event, z3));
+  z3.solver.add(equality);
+
+  EXPECT_EQ(z3::sat, z3.solver.check());
+  
+  z3::expr disequality(z3.constant(write_event) != 42L);
+  z3.solver.add(disequality);
+  EXPECT_EQ(z3::unsat, z3.solver.check());
+}
+
+TEST(EncoderTest, Z3WriteEncoderIndirect) {
+  const unsigned thread_id = 3;
+  const size_t array_size = 5;
+
+  const Z3Encoder encoder;
+  Z3 z3;
+
+  const MemoryAddr pointer_addr = MemoryAddr::alloc<char[array_size]>();
+  std::unique_ptr<ReadEvent<char[array_size]>> pointer_event_ptr(new ReadEvent<char[array_size]>(thread_id, pointer_addr));
+  std::unique_ptr<ReadInstr<char[array_size]>> pointer_read_instr(new BasicReadInstr<char[array_size]>(std::move(pointer_event_ptr)));
+
+  std::unique_ptr<ReadInstr<size_t>> offset_read_instr(new LiteralReadInstr<size_t>(7));
+
+  std::unique_ptr<ReadInstr<char>> deref_read_instr_ptr(
+    new DerefReadInstr<char[array_size], size_t>(
+      std::move(pointer_read_instr), std::move(offset_read_instr)));
+
+  std::unique_ptr<ReadInstr<char>> read_instr_ptr(new LiteralReadInstr<char>('X'));
+
+  const MemoryAddr write_addr = MemoryAddr::alloc<char>();
+  const WriteEvent<char> write_event(thread_id, write_addr,
+    std::move(deref_read_instr_ptr), std::move(read_instr_ptr));
+
+  z3::expr new_array(encoder.encode(write_event, z3));
+
+  z3.solver.push();
+
+  z3.solver.add(z3::select(new_array, 6) != 'X');
+  EXPECT_EQ(z3::sat, z3.solver.check());
+
+  z3.solver.pop();
+
+  z3.solver.push();
+
+  z3.solver.add(z3::select(new_array, 7) != 'X');
+  EXPECT_EQ(z3::unsat, z3.solver.check());
+
+  z3.solver.pop();
 }

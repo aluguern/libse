@@ -177,7 +177,7 @@ TEST(InstrTest, DereferenceFixedSizeArrayReadInstrWithoutCondition) {
   std::unique_ptr<ReadEvent<char[array_size]>> pointer_event_ptr(new ReadEvent<char[array_size]>(thread_id, pointer_addr));
   std::unique_ptr<ReadInstr<char[array_size]>> pointer_read_instr(new BasicReadInstr<char[array_size]>(std::move(pointer_event_ptr)));
 
-  const DereferenceReadInstr<char[array_size], size_t> dereference_instr(std::move(pointer_read_instr), std::move(offset_read_instr));
+  const DerefReadInstr<char[array_size], size_t> dereference_instr(std::move(pointer_read_instr), std::move(offset_read_instr));
 
   const BasicReadInstr<size_t>& offset_instr = dynamic_cast<const BasicReadInstr<size_t>&>(dereference_instr.offset_ref());
   const BasicReadInstr<char[array_size]>& memory_instr = dynamic_cast<const BasicReadInstr<char[array_size]>&>(dereference_instr.memory_ref());
@@ -203,7 +203,7 @@ TEST(InstrTest, DereferenceFixedSizeArrayReadInstrWithCondition) {
   std::unique_ptr<ReadEvent<char[array_size]>> pointer_event_ptr(new ReadEvent<char[array_size]>(thread_id, pointer_addr, condition_ptr));
   std::unique_ptr<ReadInstr<char[array_size]>> pointer_read_instr(new BasicReadInstr<char[array_size]>(std::move(pointer_event_ptr)));
 
-  const DereferenceReadInstr<char[array_size], size_t> dereference_instr(std::move(pointer_read_instr), std::move(offset_read_instr));
+  const DerefReadInstr<char[array_size], size_t> dereference_instr(std::move(pointer_read_instr), std::move(offset_read_instr));
 
   const BasicReadInstr<size_t>& offset_instr = dynamic_cast<const BasicReadInstr<size_t>&>(dereference_instr.offset_ref());
   const BasicReadInstr<char[array_size]>& memory_instr = dynamic_cast<const BasicReadInstr<char[array_size]>&>(dereference_instr.memory_ref());
@@ -216,7 +216,7 @@ TEST(InstrTest, ReadInstrResult) {
   static_assert(std::is_same<size_t, ReadInstrResult<BasicReadInstr<size_t>>::Type>::value, "Wrong result type");
   static_assert(std::is_same<bool, ReadInstrResult<UnaryReadInstr<NOT, long>>::Type>::value, "Wrong result type");
   static_assert(std::is_same<long, ReadInstrResult<BinaryReadInstr<ADD, int, long>>::Type>::value, "Wrong result type");
-  static_assert(std::is_same<char, ReadInstrResult<DereferenceReadInstr<char[5], size_t>>::Type>::value, "Wrong result type");
+  static_assert(std::is_same<char, ReadInstrResult<DerefReadInstr<char[5], size_t>>::Type>::value, "Wrong result type");
 }
 
 TEST(InstrTest, Filter) {
