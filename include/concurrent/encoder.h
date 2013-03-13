@@ -7,6 +7,8 @@
 
 #include <string>
 
+#include <z3++.h>
+
 #include "concurrent/instr.h"
 #include "concurrent/relation.h"
 
@@ -110,50 +112,40 @@ z3::expr DerefReadInstr<T[N], U>::ENCODE_FN
 
 /// Encoder for a read instruction in the left-hand side of an assignment
 class Z3WriteEncoder {
-private:
-  const Z3ReadEncoder* const m_read_encoder_ptr;
-
-  friend class Z3Encoder;
-  Z3WriteEncoder(const Z3ReadEncoder* const read_encoder_ptr) :
-    m_read_encoder_ptr(read_encoder_ptr) {}
-
 public:
+  Z3WriteEncoder() {}
   
   template<typename T, typename U, size_t N>
   z3::expr encode(const DerefReadInstr<T[N], U>& instr,
+    const Z3ReadEncoder& read_encoder,
     const z3::expr& rhs_expr, Z3& helper) const {
 
-    return z3::store(instr.memory_ref().encode(*m_read_encoder_ptr, helper),
-      instr.offset_ref().encode(*m_read_encoder_ptr, helper), rhs_expr);
+    return z3::store(instr.memory_ref().encode(read_encoder, helper),
+      instr.offset_ref().encode(read_encoder, helper), rhs_expr);
   }
 };
 
-template<typename T, typename U, size_t N>
-z3::expr DerefReadInstr<T[N], U>::encode(const Z3WriteEncoder& encoder,
-  const z3::expr& expr, Z3& helper) const {
-
-  return encoder.encode(*this, expr, helper);
-}
-
-/// Encoder for write events
+/// Encoder for direct and indirect write events
 class Z3Encoder {
 private:
   const Z3WriteEncoder m_write_encoder;
   const Z3ReadEncoder m_read_encoder;
 
 public:
-  Z3Encoder() : m_read_encoder(), m_write_encoder(&m_read_encoder) {}
+  Z3Encoder() : m_read_encoder(), m_write_encoder() {}
 
   template<typename T>
-  z3::expr encode(const WriteEvent<T>& event, Z3& helper) const {
-    z3::expr rhs_expr = event.instr_ref().encode(m_read_encoder, helper);
+  z3::expr encode(const DirectWriteEvent<T>& event, Z3& helper) const {
+    z3::expr rhs_expr(event.instr_ref().encode(m_read_encoder, helper));
+    z3::expr lhs_expr(helper.constant(event));
+    return lhs_expr == rhs_expr;
+  } 
 
-    if (event.is_direct()) {
-      z3::expr lhs_expr = helper.constant(event);
-      return lhs_expr == rhs_expr;
-    }
-
-    return event.deref_instr_ref().encode(m_write_encoder, rhs_expr, helper);
+  template<typename T, typename U, size_t N>
+  z3::expr encode(const IndirectWriteEvent<T, U, N>& event, Z3& helper) const {
+    z3::expr rhs_expr(event.instr_ref().encode(m_read_encoder, helper));
+    return m_write_encoder.encode(event.deref_instr_ref(), m_read_encoder,
+      rhs_expr, helper);
   } 
 };
 

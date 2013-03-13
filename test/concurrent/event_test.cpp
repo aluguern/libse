@@ -82,7 +82,7 @@ TEST(EventTest, WriteEventWithCondition) {
   std::unique_ptr<ReadInstr<long>> read_instr_ptr(new LiteralReadInstr<long>(42L));
 
   const MemoryAddr write_addr = MemoryAddr::alloc<long>();
-  const WriteEvent<long> write_event(thread_id, write_addr, std::move(read_instr_ptr), condition_ptr);
+  const DirectWriteEvent<long> write_event(thread_id, write_addr, std::move(read_instr_ptr), condition_ptr);
   const LiteralReadInstr<long>& read_instr = dynamic_cast<const LiteralReadInstr<long>&>(write_event.instr_ref());
 
   EXPECT_TRUE(write_event.is_write());
@@ -101,7 +101,7 @@ TEST(EventTest, WriteEventWithoutCondition) {
 
   const unsigned thread_id = 3;
   const MemoryAddr write_addr = MemoryAddr::alloc<long>();
-  const WriteEvent<long> write_event(thread_id, write_addr, std::move(read_instr_ptr));
+  const DirectWriteEvent<long> write_event(thread_id, write_addr, std::move(read_instr_ptr));
   const LiteralReadInstr<long>& read_instr = dynamic_cast<const LiteralReadInstr<long>&>(write_event.instr_ref());
 
   EXPECT_TRUE(write_event.is_write());
@@ -119,7 +119,7 @@ TEST(EventTest, WriteEventWithoutInstr) {
   const unsigned thread_id = 3;
   const MemoryAddr write_addr = MemoryAddr::alloc<long>();
 
-  EXPECT_EXIT((WriteEvent<long>(thread_id, write_addr, nullptr)),
+  EXPECT_EXIT((DirectWriteEvent<long>(thread_id, write_addr, nullptr)),
     ::testing::KilledBySignal(SIGABRT), "Assertion");
 }
 

@@ -104,44 +104,62 @@ public:
 template<typename T>
 class WriteEvent : public Event {
 private:
-  // Is null if memory is directly written
-  const std::unique_ptr<ReadInstr<T>> m_deref_instr_ptr;
-
   // Never null
   const std::unique_ptr<ReadInstr<T>> m_instr_ptr;
 
-public:
-  /// Direct memory write
+protected:
   WriteEvent(unsigned thread_id, const MemoryAddr& addr,
     std::unique_ptr<ReadInstr<T>> instr_ptr,
     const std::shared_ptr<ReadInstr<bool>>& condition_ptr = nullptr) :
     Event(thread_id, addr, false, &TypeInfo<T>::s_type, condition_ptr),
-    m_deref_instr_ptr(), m_instr_ptr(std::move(instr_ptr)) {
-
-    assert(nullptr != m_instr_ptr);
-  }
-
-  /// Indirect memory write
-  WriteEvent(unsigned thread_id, const MemoryAddr& addr,
-    std::unique_ptr<ReadInstr<T>> deref_instr_ptr,
-    std::unique_ptr<ReadInstr<T>> instr_ptr,
-    const std::shared_ptr<ReadInstr<bool>>& condition_ptr = nullptr) :
-    Event(thread_id, addr, false, &TypeInfo<T>::s_type, condition_ptr),
-    m_deref_instr_ptr(std::move(deref_instr_ptr)),
     m_instr_ptr(std::move(instr_ptr)) {
 
     assert(nullptr != m_instr_ptr);
   }
 
-  ~WriteEvent() {}
+public:
+  virtual ~WriteEvent() {}
 
   const ReadInstr<T>& instr_ref() const { return *m_instr_ptr; }
+};
 
-  /// Is memory accessed directly?
-  const bool is_direct() const { return !static_cast<bool>(m_deref_instr_ptr); }
+/// Memory write without another address load required
+template<typename T>
+class DirectWriteEvent : public WriteEvent<T> {
+public:
+  DirectWriteEvent(unsigned thread_id, const MemoryAddr& addr,
+    std::unique_ptr<ReadInstr<T>> instr_ptr,
+    const std::shared_ptr<ReadInstr<bool>>& condition_ptr = nullptr) :
+    WriteEvent<T>(thread_id, addr, std::move(instr_ptr), condition_ptr) {}
 
-  /// \pre: is_direct() is false
-  const ReadInstr<T>& deref_instr_ref() const { return *m_deref_instr_ptr; }
+  ~DirectWriteEvent() {}
+};
+
+template<typename T, typename U> class DerefReadInstr;
+
+/// Memory write that depends on an address load
+template<typename T, typename U, size_t N>
+class IndirectWriteEvent : public WriteEvent<T> {
+private:
+  // Never null
+  const std::unique_ptr<DerefReadInstr<T[N], U>> m_deref_instr_ptr;
+
+public:
+  IndirectWriteEvent(unsigned thread_id, const MemoryAddr& addr,
+    std::unique_ptr<DerefReadInstr<T[N], U>> deref_instr_ptr,
+    std::unique_ptr<ReadInstr<T>> instr_ptr,
+    const std::shared_ptr<ReadInstr<bool>>& condition_ptr = nullptr) :
+    WriteEvent<T>(thread_id, addr, std::move(instr_ptr), condition_ptr), 
+    m_deref_instr_ptr(std::move(deref_instr_ptr)) {
+
+    assert(nullptr != m_deref_instr_ptr);
+  }
+
+  ~IndirectWriteEvent() {}
+
+  const DerefReadInstr<T[N], U>& deref_instr_ref() const {
+    return *m_deref_instr_ptr;
+  }
 };
 
 /// Event that reads `sizeof(T)` bytes from memory

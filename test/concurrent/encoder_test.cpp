@@ -340,14 +340,14 @@ TEST(EncoderTest, Z3WriteEncoderDirect) {
   std::unique_ptr<ReadInstr<long>> read_instr_ptr(new LiteralReadInstr<long>(42L));
 
   const MemoryAddr write_addr = MemoryAddr::alloc<long>();
-  const WriteEvent<long> write_event(thread_id, write_addr, std::move(read_instr_ptr));
+  const DirectWriteEvent<long> write_event(thread_id, write_addr, std::move(read_instr_ptr));
 
   z3::expr equality(encoder.encode(write_event, z3));
   z3.solver.add(equality);
 
   EXPECT_EQ(z3::sat, z3.solver.check());
   
-  z3::expr disequality(z3.constant(write_event) != 42L);
+  z3::expr disequality(z3.constant(write_event) != 42);
   z3.solver.add(disequality);
   EXPECT_EQ(z3::unsat, z3.solver.check());
 }
@@ -365,14 +365,14 @@ TEST(EncoderTest, Z3WriteEncoderIndirect) {
 
   std::unique_ptr<ReadInstr<size_t>> offset_read_instr(new LiteralReadInstr<size_t>(7));
 
-  std::unique_ptr<ReadInstr<char>> deref_read_instr_ptr(
+  std::unique_ptr<DerefReadInstr<char[array_size], size_t>> deref_read_instr_ptr(
     new DerefReadInstr<char[array_size], size_t>(
       std::move(pointer_read_instr), std::move(offset_read_instr)));
 
   std::unique_ptr<ReadInstr<char>> read_instr_ptr(new LiteralReadInstr<char>('X'));
 
   const MemoryAddr write_addr = MemoryAddr::alloc<char>();
-  const WriteEvent<char> write_event(thread_id, write_addr,
+  const IndirectWriteEvent<char, size_t, array_size> write_event(thread_id, write_addr,
     std::move(deref_read_instr_ptr), std::move(read_instr_ptr));
 
   z3::expr new_array(encoder.encode(write_event, z3));

@@ -25,7 +25,7 @@ TEST(RelationTest, ReadEventPredicate) {
   EXPECT_TRUE(predicate.check(read_event_ptr));
 
   std::unique_ptr<ReadInstr<long>> read_instr_ptr(new LiteralReadInstr<long>(42L));
-  const std::shared_ptr<Event> write_event_ptr(new WriteEvent<long>(thread_id, addr, std::move(read_instr_ptr)));
+  const std::shared_ptr<Event> write_event_ptr(new DirectWriteEvent<long>(thread_id, addr, std::move(read_instr_ptr)));
   EXPECT_FALSE(predicate.check(write_event_ptr));
 }
 
@@ -39,7 +39,7 @@ TEST(RelationTest, WriteEventPredicate) {
   EXPECT_FALSE(predicate.check(read_event_ptr));
 
   std::unique_ptr<ReadInstr<long>> read_instr_ptr(new LiteralReadInstr<long>(42L));
-  const std::shared_ptr<Event> write_event_ptr(new WriteEvent<long>(thread_id, addr, std::move(read_instr_ptr)));
+  const std::shared_ptr<Event> write_event_ptr(new DirectWriteEvent<long>(thread_id, addr, std::move(read_instr_ptr)));
   EXPECT_TRUE(predicate.check(write_event_ptr));
 }
 
@@ -97,7 +97,7 @@ TEST(RelationTest, FilterMemoryAddrRelation) {
   MemoryAddrRelation<Event> relation;
 
   std::unique_ptr<ReadInstr<long>> read_instr_ptr(new LiteralReadInstr<long>(42L));
-  const std::shared_ptr<Event> write_event_ptr(new WriteEvent<long>(thread_id, addr, std::move(read_instr_ptr)));
+  const std::shared_ptr<Event> write_event_ptr(new DirectWriteEvent<long>(thread_id, addr, std::move(read_instr_ptr)));
   const std::shared_ptr<Event> read_event_ptr_i(new ReadEvent<int>(thread_id, addr));
   const std::shared_ptr<Event> read_event_ptr_ii(new ReadEvent<int>(thread_id, addr));
 

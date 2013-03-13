@@ -59,14 +59,14 @@ public:
 };
 
 template<typename T>
-static std::unique_ptr<WriteEvent<T>> init_write_event(const MemoryAddr& addr) {
+static std::unique_ptr<DirectWriteEvent<T>> init_write_event(const MemoryAddr& addr) {
   static constexpr unsigned main_thread_id = 0;
   std::unique_ptr<ReadInstr<T>> zero_instr_ptr(new LiteralReadInstr<T>());
-  return std::unique_ptr<WriteEvent<T>>(new WriteEvent<T>(main_thread_id,
+  return std::unique_ptr<DirectWriteEvent<T>>(new DirectWriteEvent<T>(main_thread_id,
     addr, std::move(zero_instr_ptr)));
 }
 
-/// Scalar variable declaration
+/// Variable declaration by which memory can only be written directly
 template<typename T>
 class DeclVar : public BaseDeclVar<T> {
 private:
@@ -95,22 +95,20 @@ template<typename T, typename U, size_t N>
 class Memory {
 private:
   const MemoryAddr m_addr;
-  std::shared_ptr<WriteEvent<T>>* m_event_ptr;
 
   // Never null
-  std::unique_ptr<ReadInstr<T>> m_deref_instr_ptr;
+  std::unique_ptr<DerefReadInstr<T[N], U>> m_deref_instr_ptr;
 
   friend class DeclVar<T[N]>;
 
-  Memory(std::shared_ptr<WriteEvent<T>>* event_ptr,
-    const MemoryAddr& addr, std::unique_ptr<ReadInstr<T>> deref_instr_ptr) :
-    m_event_ptr(event_ptr), m_addr(addr),
-    m_deref_instr_ptr(std::move(deref_instr_ptr)) {
+  Memory(const MemoryAddr& addr,
+    std::unique_ptr<DerefReadInstr<T[N], U>> deref_instr_ptr) :
+    m_addr(addr), m_deref_instr_ptr(std::move(deref_instr_ptr)) {
 
     assert(nullptr != m_deref_instr_ptr);
   }
 
-  Memory(Memory&& other) : m_addr(other.m_addr), m_event_ptr(other.m_event_ptr),
+  Memory(Memory&& other) : m_addr(other.m_addr),
     m_deref_instr_ptr(std::move(other.m_deref_instr_ptr)) {}
 
 public:
@@ -118,8 +116,8 @@ public:
   void operator=(std::unique_ptr<ReadInstr<T>> instr_ptr) {
     assert(nullptr != instr_ptr);
 
-    *m_event_ptr = recorder_ptr()->instr(m_addr,
-      std::move(m_deref_instr_ptr), std::move(instr_ptr));
+    recorder_ptr()->instr(m_addr, std::move(m_deref_instr_ptr),
+      std::move(instr_ptr));
   }
 
   // TODO: Fix return type in presence of move semantics
@@ -133,7 +131,6 @@ public:
 template<typename T, size_t N>
 class DeclVar<T[N]> : public BaseDeclVar<T[N]> {
 private:
-  std::shared_ptr<WriteEvent<T>> m_event_ptr;
   const MemoryAddr m_array_addr;
 
 public:
@@ -141,22 +138,19 @@ public:
 
   DeclVar(bool is_shared = true) :
     BaseDeclVar<T[N]>(MemoryAddr::alloc<T*>(false)),
-    m_event_ptr(init_write_event<T>(m_addr)),
     m_array_addr(MemoryAddr::alloc<T>(is_shared, N)) {}
 
-  const WriteEvent<T>& write_event_ref() const { return *m_event_ptr; }
-
   Memory<T, size_t, N> operator[](size_t offset) {
+
     std::unique_ptr<ReadInstr<size_t>> offset_ptr(
       new LiteralReadInstr<size_t>(offset));
 
-    std::unique_ptr<ReadInstr<T>> deref_instr_ptr(
-      new DerefReadInstr<T[N], size_t>(
-        alloc_read_instr(*this), std::move(offset_ptr)));
+    std::unique_ptr<DerefReadInstr<T[N], size_t>> deref_instr_ptr(
+      new DerefReadInstr<T[N], size_t>(alloc_read_instr(*this),
+        std::move(offset_ptr)));
 
     const MemoryAddr offset_addr = m_array_addr + offset;
-    return Memory<T, size_t, N>(&m_event_ptr, offset_addr,
-      std::move(deref_instr_ptr));
+    return Memory<T, size_t, N>(offset_addr, std::move(deref_instr_ptr));
   }
 };
 

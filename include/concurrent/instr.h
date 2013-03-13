@@ -10,17 +10,16 @@
 #include <utility>
 #include <forward_list>
 
-#include <z3++.h>
-
 #include "core/type.h"
 
 #include "concurrent/event.h"
+
+namespace z3 { class expr; }
 
 namespace se {
 
 class Z3;
 class Z3ReadEncoder;
-class Z3WriteEncoder;
 
 /// Non-copyable class that identifies a built-in memory read instruction
 
@@ -45,8 +44,6 @@ public:
 
   virtual void filter(std::forward_list<std::shared_ptr<Event>>&) const = 0;
   virtual z3::expr encode(const Z3ReadEncoder& encoder, Z3& helper) const = 0;
-  virtual z3::expr encode(const Z3WriteEncoder& encoder,
-    const z3::expr& expr, Z3& helper) const { return expr; }
 
   virtual std::shared_ptr<ReadInstr<bool>> condition_ptr() const = 0;
 };
@@ -205,9 +202,6 @@ public:
   }
 
   DECL_ENCODE_FN
-
-  z3::expr encode(const Z3WriteEncoder& encoder,
-    const z3::expr& expr, Z3& helper) const;
 };
 
 template<typename ...T> struct ReadInstrResult;

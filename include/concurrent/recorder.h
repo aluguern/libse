@@ -42,17 +42,28 @@ private:
   const unsigned m_thread_id;
 
   PathCondition m_path_condition;
-  std::forward_list<std::shared_ptr<Event>> m_event_ptrs;
+  std::forward_list<std::shared_ptr<Event>> m_write_event_ptrs;
+
+  template<typename T>
+  void process_read_instr(const ReadInstr<T>& instr) {
+    // Extract from ReadInstr<T> pointer all pointers to ReadEvent<T> objects
+    std::forward_list<std::shared_ptr<Event>> read_event_ptrs;
+    instr.filter(read_event_ptrs);
+
+    // Append these pointers to the per-thread event list
+     m_write_event_ptrs.insert_after(m_write_event_ptrs.cbefore_begin(),
+       /* range */ read_event_ptrs.cbegin(), read_event_ptrs.cend());
+  }
 
 public:
   Recorder(unsigned thread_id) : m_thread_id(thread_id),
-    m_path_condition(), m_event_ptrs() {}
+    m_path_condition(), m_write_event_ptrs() {}
 
   unsigned thread_id() const { return m_thread_id; }
   PathCondition& path_condition() { return m_path_condition; }
 
   std::forward_list<std::shared_ptr<Event>>& event_ptrs() {
-    return m_event_ptrs;
+    return m_write_event_ptrs;
   }
 
   /// Records a direct memory write event
@@ -62,37 +73,31 @@ public:
   std::shared_ptr<WriteEvent<T>> instr(const MemoryAddr& addr,
     std::unique_ptr<ReadInstr<T>> instr_ptr) {
 
-    std::unique_ptr<ReadInstr<T>> null_ptr;
-    return instr(addr, std::move(null_ptr), std::move(instr_ptr));
+    process_read_instr(*instr_ptr);
+
+    std::shared_ptr<WriteEvent<T>> write_event_ptr(new DirectWriteEvent<T>(
+        m_thread_id, addr, std::move(instr_ptr), path_condition().top()));
+
+    m_write_event_ptrs.push_front(write_event_ptr);
+    return write_event_ptr;
   }
 
-  /// Records a memory write event
+  /// Records an indirect memory write event
 
   /// \returns a shared pointer to the newly recorded WriteEvent<T>
-  template<typename T>
+  template<typename T, typename U, size_t N>
   std::shared_ptr<WriteEvent<T>> instr(const MemoryAddr& addr,
-    std::unique_ptr<ReadInstr<T>> deref_instr_ptr,
+    std::unique_ptr<DerefReadInstr<T[N], U>> deref_instr_ptr,
     std::unique_ptr<ReadInstr<T>> instr_ptr) {
 
-    // Extract from ReadInstr<T> pointer all pointers to ReadEvent<T> objects
-    std::forward_list<std::shared_ptr<Event>> read_event_ptrs;
-    instr_ptr->filter(read_event_ptrs);
+    process_read_instr(*instr_ptr);
 
-    // Append these pointers to the per-thread event list
-     m_event_ptrs.insert_after(m_event_ptrs.cbefore_begin(),
-       /* range */ read_event_ptrs.cbegin(), read_event_ptrs.cend());
+    std::shared_ptr<WriteEvent<T>> write_event_ptr(
+      new IndirectWriteEvent<T, U, N>(m_thread_id, addr,
+        std::move(deref_instr_ptr), std::move(instr_ptr),
+          path_condition().top()));
 
-    bool is_direct = !static_cast<bool>(deref_instr_ptr);
-
-    // Append new write event that writes a memory location
-    std::shared_ptr<WriteEvent<T>> write_event_ptr(new WriteEvent<T>(
-      m_thread_id, addr, std::move(deref_instr_ptr), std::move(instr_ptr),
-      path_condition().top()));
-
-    assert(is_direct == write_event_ptr->is_direct());
-
-    m_event_ptrs.push_front(write_event_ptr);
-
+    m_write_event_ptrs.push_front(write_event_ptr);
     return write_event_ptr;
   }
 };
