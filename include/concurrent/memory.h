@@ -26,6 +26,7 @@ private:
     m_ptrs{ ptr }, m_is_shared(is_shared) {}
 
   template<typename T> friend class MemoryAddrRelation;
+  friend class SingletonMemoryAddrHash;
   const std::unordered_set<uintptr_t>& ptrs() const { return m_ptrs; }
 
 public:

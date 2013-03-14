@@ -59,41 +59,85 @@ private:
   __Relation m_relation;
 
 public:
-  virtual ~Relation() {}
-
   void add(const T& a, const U& b) {
     m_relation.insert(typename __Relation::value_type(a, b));
   }
 
-  /// Filter relation pairs
+  /// Filter pairs based on key and predicate
 
   /// The output is stored in the last argument and is defined to be the set
-  /// `{ b | (a, b) in R and p(b) is true}` where `R` is the set of pairs `T x U`.
-  void find(const T& a, const Predicate<U>& p, std::unordered_set<U, UHash>& result) const {
+  /// `{ b | (a, b) in R and predicate(b) = true}` where `R` is the set of
+  /// pairs `T x U`.
+  void find(const T& a, const Predicate<U>& predicate,
+    std::unordered_set<U, UHash>& result) const {
+
     const std::pair<typename __Relation::const_iterator,
       typename __Relation::const_iterator> range(m_relation.equal_range(a));
 
     for (typename __Relation::const_iterator iter = range.first;
          iter != range.second; iter++) {
 
-      if (p.check(iter->second)) {
+      if (predicate.check(iter->second)) {
         result.insert(iter->second);
       }
     }
   }
+
+  /// Finds pairs for a given key and partitions them according to the predicate
+
+  /// The output is stored in the last argument and is defined to be the pair
+  /// of sets `({ b | (a, b) in R and predicate(b) = true}, { b | (a, b) in R
+  /// and predicate(b) = false}` where `R` is the set of pairs `T x U`.
+  void partition(const T& a, const Predicate<U>& predicate,
+    std::pair</* true */ std::unordered_set<U, UHash>,
+      /* false */ std::unordered_set<U, UHash>>& result) const {
+
+    const std::pair<typename __Relation::const_iterator,
+      typename __Relation::const_iterator> range(m_relation.equal_range(a));
+
+    for (typename __Relation::const_iterator iter = range.first;
+         iter != range.second; iter++) {
+
+      if (predicate.check(iter->second)) {
+        result.first.insert(iter->second);
+      } else {
+        result.second.insert(iter->second);
+      }
+    }
+  }
 };
+
+/// \internal
+struct SingletonMemoryAddrHash {
+  size_t operator()(const se::MemoryAddr& addr) const  {
+    assert(1 == addr.ptrs().size());
+    return *(addr.ptrs().cbegin());
+  }
+};
+
+typedef std::unordered_set<MemoryAddr, SingletonMemoryAddrHash> MemoryAddrSet;
 
 template<typename T = Event>
 class MemoryAddrRelation {
 static_assert(std::is_base_of<Event, T>::value, "T must be a subclass of Event");
 
 private:
-  Relation<uintptr_t, std::shared_ptr<T>> relation;
+  Relation<uintptr_t, std::shared_ptr<T>> m_relation;
+
+  // Each memory address is guaranteed to have only one pointer
+  MemoryAddrSet m_addrs;
 
 public:
+  MemoryAddrRelation() : m_relation(), m_addrs() {}
+
+  /// Set of related but opaque memory addresses
+  const MemoryAddrSet addrs() const { return m_addrs; }
+
   void relate(const std::shared_ptr<T>& event_ptr) {
+    const bool is_shared = event_ptr->addr().is_shared();
     for (uintptr_t ptr : event_ptr->addr().ptrs()) {
-      relation.add(ptr, event_ptr);
+      m_addrs.insert(MemoryAddr(ptr, is_shared));
+      m_relation.add(ptr, event_ptr);
     }
   }
 
@@ -102,8 +146,24 @@ public:
 
     std::unordered_set<std::shared_ptr<T>> result;
     for (uintptr_t ptr : addr.ptrs()) {
-      relation.find(ptr, predicate, result);
+      m_relation.find(ptr, predicate, result);
     }
+    return result;
+  }
+
+  /// Finds all read/write events that are associated with the given address
+  std::pair<std::unordered_set<std::shared_ptr<T>>,
+    std::unordered_set<std::shared_ptr<T>>>
+  partition(const MemoryAddr& addr) const {
+
+    typedef std::unordered_set<std::shared_ptr<T>> EventPtrSet;
+    std::pair<EventPtrSet, EventPtrSet> result(std::make_pair(
+      EventPtrSet(), EventPtrSet()));
+
+    for (uintptr_t ptr : addr.ptrs()) {
+      m_relation.partition(ptr, ReadEventPredicate::predicate(), result);
+    }
+
     return result;
   }
 };

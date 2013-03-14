@@ -59,6 +59,21 @@ TEST(EncoderTest, Z3BvConstant) {
   EXPECT_EQ(z3::unsat, z3.solver.check());
 }
 
+TEST(EncoderTest, Z3BoolConstant) {
+  Z3 z3;
+
+  const unsigned thread_id = 3;
+  const MemoryAddr addr = MemoryAddr::alloc<bool>();
+  const ReadEvent<bool> event(thread_id, addr);
+
+  EXPECT_TRUE(z3.constant(event).is_bool());
+
+  z3.solver.add(z3.constant(event) != z3.constant(event));
+
+  // Proves that both Boolean constants are equal
+  EXPECT_EQ(z3::unsat, z3.solver.check());
+}
+
 TEST(EncoderTest, Z3ArrayConstant) {
   Z3 z3;
 
@@ -135,6 +150,20 @@ TEST(EncoderTest, Z3ArrayConstant) {
   EXPECT_EQ(z3::unsat, z3.solver.check());
 
   z3.solver.pop();
+}
+
+TEST(EncoderTest, ReadFromSymbol) {
+  const unsigned write_thread_id = 7;
+  const unsigned read_thread_id = 8;
+
+  Z3 z3;
+
+  const MemoryAddr addr = MemoryAddr::alloc<short>();
+  std::unique_ptr<ReadInstr<short>> instr_ptr(new LiteralReadInstr<short>(5));
+  const DirectWriteEvent<short> write_event(write_thread_id, addr, std::move(instr_ptr));
+  const ReadEvent<short> read_event(read_thread_id, addr);
+
+  EXPECT_TRUE(z3.constant(write_event, read_event).is_bool());
 }
 
 TEST(EncoderTest, Z3IndirectWriteEventConstant) {
@@ -539,5 +568,36 @@ TEST(EncoderTest, Z3EncoderReadEventThroughDispatch) {
   z3.solver.add(event.encode(encoder, z3));
 
   // Proves that read events are encoded as a false
+  EXPECT_EQ(z3::unsat, z3.solver.check());
+}
+
+TEST(EncoderTest, Z3OrderEncoderForRfWithoutCondition) {
+  const unsigned write_thread_id = 7;
+  const unsigned read_thread_id = 8;
+
+  const Z3OrderEncoder encoder;
+  Z3 z3;
+
+  MemoryAddrRelation<Event> relation;
+
+  const MemoryAddr addr = MemoryAddr::alloc<short>();
+  std::unique_ptr<ReadInstr<short>> instr_ptr(new LiteralReadInstr<short>(5));
+  const std::shared_ptr<Event> write_event_ptr(
+    new DirectWriteEvent<short>(write_thread_id, addr, std::move(instr_ptr)));
+  const std::shared_ptr<Event> read_event_ptr(
+    new ReadEvent<short>(read_thread_id, addr));
+
+  relation.relate(write_event_ptr);
+  relation.relate(read_event_ptr);
+
+  z3.solver.add(encoder.rfe_encode(relation, z3));
+  EXPECT_EQ(z3::sat, z3.solver.check());
+
+  Z3ReadEncoder read_encoder;
+
+  z3.solver.add(z3.constant(*read_event_ptr) == 3);
+  EXPECT_EQ(z3::sat, z3.solver.check());
+
+  z3.solver.add(z3.constant(*write_event_ptr) != 3);
   EXPECT_EQ(z3::unsat, z3.solver.check());
 }

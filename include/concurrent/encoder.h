@@ -43,6 +43,19 @@ public:
     return context.constant(create_symbol(event), sort);
   }
 
+  z3::expr constant(const ReadEvent<bool>& event) {
+    return context.constant(create_symbol(event), context.bool_sort());
+  }
+
+  /// Creates a unique Boolean constant for two events
+  z3::expr constant(const Event& event_a, const Event& event_b) {
+    const std::string name = std::to_string(event_a.event_id()) + ":" +
+      std::to_string(event_b.event_id());
+
+    z3::symbol symbol(context.str_symbol(name.c_str()));
+    return context.constant(symbol, context.bool_sort());
+  }
+
   template<typename T, size_t N>
   z3::expr constant(const ReadEvent<T[N]>& event) {
     z3::sort domain_sort(context.bv_sort(TypeInfo<size_t>::s_type.bv_size()));
@@ -179,6 +192,65 @@ z3::expr DirectWriteEvent<T>::ENCODER_FN
 
 template<typename T, typename U, size_t N>
 z3::expr IndirectWriteEvent<T, U, N>::ENCODER_FN
+
+class Z3OrderEncoder {
+private:
+  Z3ReadEncoder m_read_encoder;
+
+  z3::expr event_condition(const Event& event, Z3& z3) const {
+    if (event.condition_ptr()) {
+      return event.condition_ptr()->encode(m_read_encoder, z3);
+    }
+
+    return z3.context.bool_val(true);
+  }
+
+public:
+  Z3OrderEncoder() : m_read_encoder() {}
+
+  z3::expr rfe_encode(const MemoryAddrRelation<Event>& relation, Z3& z3) const {
+    const MemoryAddrSet& addrs = relation.addrs();
+
+    typedef std::shared_ptr<Event> EventPtr;
+    typedef std::unordered_set<EventPtr> EventPtrSet;
+
+    for (const MemoryAddr& addr : addrs) {
+      const std::pair<EventPtrSet, EventPtrSet> result =
+        relation.partition(addr);
+      const EventPtrSet& read_event_ptrs = result.first;
+      const EventPtrSet& write_event_ptrs = result.second;
+
+      z3::expr rfe_expr(z3.context.bool_val(true));
+      for (const EventPtr& read_event_ptr : read_event_ptrs) {
+        const Event& read_event = *read_event_ptr;
+        const z3::expr read_event_condition(event_condition(read_event, z3));
+
+        z3::expr wr_schedules(z3.context.bool_val(false));
+        for (const EventPtr& write_event_ptr : write_event_ptrs) {
+          const Event& write_event = *write_event_ptr;
+
+          if (write_event.thread_id() == read_event.thread_id()) {
+            continue;
+          }
+
+          const z3::expr wr_order(z3.clock(write_event) < z3.clock(read_event));
+          const z3::expr wr_schedule(z3.constant(write_event, read_event));
+          const z3::expr wr_equality(z3.constant(write_event) ==
+            z3.constant(read_event));
+
+          wr_schedules = wr_schedules or wr_schedule;
+          rfe_expr = rfe_expr and
+            implies(wr_schedule, wr_order and wr_equality) and
+            implies(wr_order, event_condition(write_event, z3) and
+              read_event_condition);
+        }
+
+        rfe_expr = rfe_expr and implies(read_event_condition, wr_schedules);
+      }
+      return rfe_expr;
+    }
+  }
+};
 
 }
 
