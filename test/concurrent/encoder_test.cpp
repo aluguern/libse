@@ -627,3 +627,68 @@ TEST(EncoderTest, Z3OrderEncoderForWsWithoutCondition) {
   z3.solver.add(z3.clock(*major_write_event_ptr) == z3.clock(*minor_write_event_ptr));
   EXPECT_EQ(z3::unsat, z3.solver.check());
 }
+
+TEST(EncoderTest, Z3OrderEncoderForFrWithoutCondition) {
+  const unsigned write_thread_id = 7;
+  const unsigned read_thread_id = 8;
+
+  const Z3Encoder value_encoder;
+  const Z3OrderEncoder order_encoder;
+  Z3 z3;
+
+  MemoryAddrRelation<Event> relation;
+
+  const MemoryAddr addr = MemoryAddr::alloc<short>();
+  std::unique_ptr<ReadInstr<short>> major_instr_ptr(new LiteralReadInstr<short>(5));
+  const std::shared_ptr<Event> major_write_event_ptr(
+    new DirectWriteEvent<short>(write_thread_id, addr, std::move(major_instr_ptr)));
+
+  std::unique_ptr<ReadInstr<short>> minor_instr_ptr(new LiteralReadInstr<short>(7));
+  const std::shared_ptr<Event> minor_write_event_ptr(
+    new DirectWriteEvent<short>(write_thread_id, addr, std::move(minor_instr_ptr)));
+
+  const std::shared_ptr<Event> read_event_ptr(
+    new ReadEvent<short>(read_thread_id, addr));
+
+  relation.relate(major_write_event_ptr);
+  relation.relate(minor_write_event_ptr);
+  relation.relate(read_event_ptr);
+
+  z3.solver.add(major_write_event_ptr->encode(value_encoder, z3));
+  z3.solver.add(minor_write_event_ptr->encode(value_encoder, z3));
+  z3.solver.add(order_encoder.rfe_encode(relation, z3));
+  z3.solver.add(order_encoder.fr_encode(relation, z3));
+  EXPECT_EQ(z3::sat, z3.solver.check());
+
+  z3.solver.push();
+
+  z3.solver.add(z3.constant(*major_write_event_ptr, *read_event_ptr));
+  z3.solver.add(z3.constant(*read_event_ptr) == 5);
+  EXPECT_EQ(z3::sat, z3.solver.check());
+
+  z3.solver.pop();
+
+  z3.solver.push();
+
+  z3.solver.add(z3.constant(*major_write_event_ptr, *read_event_ptr));
+  z3.solver.add(z3.constant(*read_event_ptr) == 7);
+  EXPECT_EQ(z3::unsat, z3.solver.check());
+
+  z3.solver.pop();
+
+  z3.solver.push();
+
+  z3.solver.add(z3.constant(*minor_write_event_ptr, *read_event_ptr));
+  z3.solver.add(z3.constant(*read_event_ptr) == 7);
+  EXPECT_EQ(z3::sat, z3.solver.check());
+
+  z3.solver.pop();
+
+  z3.solver.push();
+
+  z3.solver.add(z3.constant(*minor_write_event_ptr, *read_event_ptr));
+  z3.solver.add(z3.constant(*read_event_ptr) == 5);
+  EXPECT_EQ(z3::unsat, z3.solver.check());
+
+  z3.solver.pop();
+}

@@ -236,12 +236,11 @@ public:
           const z3::expr wr_schedule(z3.constant(write_event, read_event));
           const z3::expr wr_equality(z3.constant(write_event) ==
             z3.constant(read_event));
+          const z3::expr write_event_condition(event_condition(write_event, z3));
 
           wr_schedules = wr_schedules or wr_schedule;
-          rfe_expr = rfe_expr and
-            implies(wr_schedule, wr_order and wr_equality) and
-            implies(wr_order, event_condition(write_event, z3) and
-              read_event_condition);
+          rfe_expr = rfe_expr and implies(wr_schedule, wr_order and
+            write_event_condition and read_event_condition and wr_equality);
         }
 
         rfe_expr = rfe_expr and implies(read_event_condition, wr_schedules);
@@ -278,6 +277,45 @@ public:
     }
 
     return ws_expr;
+  }
+
+  z3::expr fr_encode(const MemoryAddrRelation<Event>& relation, Z3& z3) const {
+    const MemoryAddrSet& addrs = relation.addrs();
+
+    z3::expr fr_expr(z3.context.bool_val(true));
+    for (const MemoryAddr& addr : addrs) {
+      const std::pair<EventPtrSet, EventPtrSet> result =
+        relation.partition(addr);
+      const EventPtrSet& read_event_ptrs = result.first;
+      const EventPtrSet& write_event_ptrs = result.second;
+
+      for (const EventPtr& write_event_ptr_x : write_event_ptrs) {
+        for (const EventPtr& write_event_ptr_y : write_event_ptrs) {
+          const Event& write_event_x = *write_event_ptr_x;
+          const Event& write_event_y = *write_event_ptr_y;
+
+          if (write_event_x == write_event_y) {
+            continue;
+          }
+
+          for (const EventPtr& read_event_ptr : read_event_ptrs) {
+            const Event& read_event = *read_event_ptr;
+
+            if (write_event_y.thread_id() == read_event.thread_id()) {
+              continue;
+            }
+
+            const z3::expr xr_schedule(z3.constant(write_event_x, read_event));
+            const z3::expr ry_order(z3.clock(read_event) < z3.clock(write_event_y));
+            const z3::expr y_condition(event_condition(write_event_y, z3));
+
+            fr_expr = fr_expr and implies(xr_schedule and y_condition, ry_order);
+          }
+        }
+      }
+    }
+
+    return fr_expr;
   }
 };
 
