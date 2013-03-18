@@ -8,6 +8,8 @@
 using namespace se;
 
 TEST(ConcurrencyTest, AllocLiteralReadInstrWithConstant) {
+  init_recorder();
+
   std::unique_ptr<ReadInstr<long>> read_instr_ptr(alloc_read_instr(42L));
 
   const LiteralReadInstr<long>& literal_read_instr =
@@ -16,6 +18,8 @@ TEST(ConcurrencyTest, AllocLiteralReadInstrWithConstant) {
 }
 
 TEST(ConcurrencyTest, AllocLiteralReadInstrWithVariable) {
+  init_recorder();
+
   long literal = 42;
   std::unique_ptr<ReadInstr<long>> read_instr_ptr(alloc_read_instr(literal));
 
@@ -25,10 +29,12 @@ TEST(ConcurrencyTest, AllocLiteralReadInstrWithVariable) {
 }
 
 TEST(ConcurrencyTest, AllocLiteralReadInstrWithCondition) {
+  init_recorder();
   Event::reset_id(7);
 
   const DeclVar<char> var;
 
+  init_recorder();
   recorder_ptr()->path_condition().push(3L < var);
 
   std::unique_ptr<ReadInstr<long long>> read_instr_ptr(alloc_read_instr(42LL));
@@ -48,6 +54,8 @@ TEST(ConcurrencyTest, AllocLiteralReadInstrWithCondition) {
 }
 
 TEST(ConcurrencyTest, UnaryOperatorNOT) {
+  init_recorder();
+
   const unsigned thread_id = 3;
   const MemoryAddr condition_addr = MemoryAddr::alloc<bool>();
 
@@ -62,6 +70,8 @@ TEST(ConcurrencyTest, UnaryOperatorNOT) {
 }
 
 TEST(ConcurrencyTest, BinaryOperatorADD) {
+  init_recorder();
+
   const unsigned thread_id = 3;
   const MemoryAddr condition_addr = MemoryAddr::alloc<bool>();
 
@@ -79,6 +89,7 @@ TEST(ConcurrencyTest, BinaryOperatorADD) {
 }
 
 TEST(ConcurrencyTest, AllocDeclVar) {
+  init_recorder();
   Event::reset_id(42);
 
   const DeclVar<int> var;
@@ -91,6 +102,7 @@ TEST(ConcurrencyTest, AllocDeclVar) {
 }
 
 TEST(ConcurrencyTest, BinaryOperatorLSSAllocAllocWithoutCondition) {
+  init_recorder();
   Event::reset_id(14);
 
   DeclVar<int> var;
@@ -112,6 +124,7 @@ TEST(ConcurrencyTest, BinaryOperatorLSSAllocAllocWithoutCondition) {
 }
 
 TEST(ConcurrencyTest, BinaryOperatorLSSAllocLiteralWithoutCondition) {
+  init_recorder();
   Event::reset_id(14);
 
   DeclVar<int> var;
@@ -132,6 +145,7 @@ TEST(ConcurrencyTest, BinaryOperatorLSSAllocLiteralWithoutCondition) {
 }
 
 TEST(ConcurrencyTest, BinaryOperatorLSSLiteralAllocWithoutCondition) {
+  init_recorder();
   Event::reset_id(14);
 
   DeclVar<int> var;
@@ -152,6 +166,7 @@ TEST(ConcurrencyTest, BinaryOperatorLSSLiteralAllocWithoutCondition) {
 }
 
 TEST(ConcurrencyTest, DeclVarAssignmentWithoutCondition) {
+  init_recorder();
   Event::reset_id(7);
 
   DeclVar<char> char_integer;
@@ -169,6 +184,7 @@ TEST(ConcurrencyTest, DeclVarAssignmentWithoutCondition) {
 }
 
 TEST(ConcurrencyTest, DeclVarOtherAssignmentWithoutCondition) {
+  init_recorder();
   Event::reset_id(12);
 
   DeclVar<char> char_integer;
@@ -186,6 +202,7 @@ TEST(ConcurrencyTest, DeclVarOtherAssignmentWithoutCondition) {
 
 // Type check only right now
 TEST(ConcurrencyTest, OverwriteDeclVarArrayElementWithReadInstrPointer) {
+  init_recorder();
   Event::reset_id(12);
 
   DeclVar<char[5]> array_var;
@@ -194,6 +211,7 @@ TEST(ConcurrencyTest, OverwriteDeclVarArrayElementWithReadInstrPointer) {
 
 // Type check only right now
 TEST(ConcurrencyTest, OverwriteDeclVarArrayElementWithLiteral) {
+  init_recorder();
   Event::reset_id(12);
 
   DeclVar<char[5]> array_var;
@@ -202,6 +220,7 @@ TEST(ConcurrencyTest, OverwriteDeclVarArrayElementWithLiteral) {
 
 // Type check only right now
 TEST(ConcurrencyTest, OverwriteDeclVarArrayElementWithVar) {
+  init_recorder();
   Event::reset_id(12);
 
   DeclVar<char> var;
@@ -210,11 +229,12 @@ TEST(ConcurrencyTest, OverwriteDeclVarArrayElementWithVar) {
 }
 
 TEST(ConcurrencyTest, Recorder) {
+  init_recorder();
   Event::reset_id();
   const unsigned thread_id = 3;
 
-  std::shared_ptr<Recorder> recorder_ptr(new Recorder(thread_id));
-  set_recorder(recorder_ptr);
+  init_recorder();
+  push_recorder(thread_id);
 
   DeclVar<char> var;
   DeclVar<char[5]> array_var;
@@ -223,7 +243,7 @@ TEST(ConcurrencyTest, Recorder) {
 
   Z3 z3;
   Z3Encoder encoder;
-  recorder_ptr->encode(encoder, z3);
+  recorder_ptr()->encode(encoder, z3);
 
   std::stringstream out;
   out << z3.solver;

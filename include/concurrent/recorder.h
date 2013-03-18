@@ -115,8 +115,10 @@ public:
 };
 
 /// Static object which can record events and path conditions
+extern void init_recorder();
 extern std::shared_ptr<Recorder> recorder_ptr();
-extern void set_recorder(const std::shared_ptr<Recorder>& recorder_ptr);
+extern void push_recorder(unsigned thread_id);
+extern void pop_recorder();
 
 }
 
