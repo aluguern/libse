@@ -205,15 +205,14 @@ private:
     return z3.context.bool_val(true);
   }
 
+  typedef std::shared_ptr<Event> EventPtr;
+  typedef std::unordered_set<EventPtr> EventPtrSet;
+
 public:
   Z3OrderEncoder() : m_read_encoder() {}
 
   z3::expr rfe_encode(const MemoryAddrRelation<Event>& relation, Z3& z3) const {
     const MemoryAddrSet& addrs = relation.addrs();
-
-    typedef std::shared_ptr<Event> EventPtr;
-    typedef std::unordered_set<EventPtr> EventPtrSet;
-
     for (const MemoryAddr& addr : addrs) {
       const std::pair<EventPtrSet, EventPtrSet> result =
         relation.partition(addr);
@@ -249,6 +248,36 @@ public:
       }
       return rfe_expr;
     }
+  }
+
+  z3::expr ws_encode(const MemoryAddrRelation<Event>& relation, Z3& z3) const {
+    const MemoryAddrSet& addrs = relation.addrs();
+
+    z3::expr ws_expr(z3.context.bool_val(true));
+    for (const MemoryAddr& addr : addrs) {
+      const EventPtrSet write_event_ptrs = relation.find(addr,
+        WriteEventPredicate::predicate());
+      for (const EventPtr& write_event_ptr_x : write_event_ptrs) {
+        for (const EventPtr& write_event_ptr_y : write_event_ptrs) {
+          const Event& x = *write_event_ptr_x;
+          const Event& y = *write_event_ptr_y;
+
+          if (x.thread_id() == y.thread_id()) {
+            continue;
+          }
+
+          const z3::expr xy_order(z3.clock(x) < z3.clock(y));
+          const z3::expr yx_order(z3.clock(y) < z3.clock(x));
+          const z3::expr x_condition(event_condition(x, z3));
+          const z3::expr y_condition(event_condition(y, z3));
+
+          ws_expr = ws_expr and implies(x_condition and y_condition,
+            xy_order or yx_order);
+        }
+      }
+    }
+
+    return ws_expr;
   }
 };
 

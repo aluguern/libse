@@ -593,11 +593,37 @@ TEST(EncoderTest, Z3OrderEncoderForRfWithoutCondition) {
   z3.solver.add(encoder.rfe_encode(relation, z3));
   EXPECT_EQ(z3::sat, z3.solver.check());
 
-  Z3ReadEncoder read_encoder;
-
   z3.solver.add(z3.constant(*read_event_ptr) == 3);
   EXPECT_EQ(z3::sat, z3.solver.check());
 
   z3.solver.add(z3.constant(*write_event_ptr) != 3);
+  EXPECT_EQ(z3::unsat, z3.solver.check());
+}
+
+TEST(EncoderTest, Z3OrderEncoderForWsWithoutCondition) {
+  const unsigned write_thread_major_id = 7;
+  const unsigned write_thread_minor_id = 8;
+
+  const Z3OrderEncoder encoder;
+  Z3 z3;
+
+  MemoryAddrRelation<Event> relation;
+
+  const MemoryAddr addr = MemoryAddr::alloc<short>();
+  std::unique_ptr<ReadInstr<short>> major_instr_ptr(new LiteralReadInstr<short>(5));
+  const std::shared_ptr<Event> major_write_event_ptr(
+    new DirectWriteEvent<short>(write_thread_major_id, addr, std::move(major_instr_ptr)));
+
+  std::unique_ptr<ReadInstr<short>> minor_instr_ptr(new LiteralReadInstr<short>(7));
+  const std::shared_ptr<Event> minor_write_event_ptr(
+    new DirectWriteEvent<short>(write_thread_minor_id, addr, std::move(minor_instr_ptr)));
+
+  relation.relate(major_write_event_ptr);
+  relation.relate(minor_write_event_ptr);
+
+  z3.solver.add(encoder.ws_encode(relation, z3));
+  EXPECT_EQ(z3::sat, z3.solver.check());
+
+  z3.solver.add(z3.clock(*major_write_event_ptr) == z3.clock(*minor_write_event_ptr));
   EXPECT_EQ(z3::unsat, z3.solver.check());
 }

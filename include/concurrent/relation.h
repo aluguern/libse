@@ -142,7 +142,7 @@ public:
   }
 
   std::unordered_set<std::shared_ptr<T>> find(const MemoryAddr& addr,
-    const Predicate<std::shared_ptr<T>>& predicate) {
+    const Predicate<std::shared_ptr<T>>& predicate) const {
 
     std::unordered_set<std::shared_ptr<T>> result;
     for (uintptr_t ptr : addr.ptrs()) {
