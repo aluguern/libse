@@ -242,7 +242,7 @@ TEST(ConcurrencyTest, Recorder) {
   array_var[3] = var;
 
   Z3 z3;
-  Z3Encoder encoder;
+  Z3ValueEncoder encoder;
   recorder_ptr()->encode(encoder, z3);
 
   std::stringstream out;

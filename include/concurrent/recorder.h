@@ -104,7 +104,7 @@ public:
     return write_event_ptr;
   }
 
-  void encode(const Z3Encoder& encoder, Z3& helper) {
+  void encode(const Z3ValueEncoder& encoder, Z3& helper) {
     for (std::shared_ptr<Event> event_ptr : m_event_prts) {
       if (event_ptr->is_write()) {
         z3::expr equality(event_ptr->encode(encoder, helper)); 

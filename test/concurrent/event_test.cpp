@@ -17,7 +17,7 @@ public:
     const std::shared_ptr<ReadInstr<bool>>& condition_ptr = nullptr) :
         Event(thread_id, addr, true, &TypeInfo<int>::s_type, condition_ptr) {}
 
-  z3::expr encode(const Z3Encoder& encoder, Z3& helper) const {
+  z3::expr encode(const Z3ValueEncoder& encoder, Z3& helper) const {
     return helper.constant(*this);
   }
 };

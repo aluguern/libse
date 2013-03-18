@@ -413,10 +413,10 @@ TEST(EncoderTest, Z3ReadEncoderForDerefReadInstrAsInteger) {
   EXPECT_TRUE(array_read_instr.encode(encoder, z3).is_array());
 }
 
-TEST(EncoderTest, Z3EncoderDirectWriteEvent) {
+TEST(EncoderTest, Z3ValueEncoderDirectWriteEvent) {
   const unsigned thread_id = 3;
 
-  const Z3Encoder encoder;
+  const Z3ValueEncoder encoder;
   Z3 z3;
 
   std::unique_ptr<ReadInstr<long>> read_instr_ptr(new LiteralReadInstr<long>(42L));
@@ -434,10 +434,10 @@ TEST(EncoderTest, Z3EncoderDirectWriteEvent) {
   EXPECT_EQ(z3::unsat, z3.solver.check());
 }
 
-TEST(EncoderTest, Z3EncoderDirectWriteEventThroughDispatch) {
+TEST(EncoderTest, Z3ValueEncoderDirectWriteEventThroughDispatch) {
   const unsigned thread_id = 3;
 
-  const Z3Encoder encoder;
+  const Z3ValueEncoder encoder;
   Z3 z3;
 
   std::unique_ptr<ReadInstr<long>> read_instr_ptr(new LiteralReadInstr<long>(42L));
@@ -456,11 +456,11 @@ TEST(EncoderTest, Z3EncoderDirectWriteEventThroughDispatch) {
   EXPECT_EQ(z3::unsat, z3.solver.check());
 }
 
-TEST(EncoderTest, Z3EncoderIndirectWriteEvent) {
+TEST(EncoderTest, Z3ValueEncoderIndirectWriteEvent) {
   const unsigned thread_id = 3;
   const size_t array_size = 5;
 
-  const Z3Encoder encoder;
+  const Z3ValueEncoder encoder;
   Z3 z3;
 
   const MemoryAddr pointer_addr = MemoryAddr::alloc<char[array_size]>();
@@ -497,11 +497,11 @@ TEST(EncoderTest, Z3EncoderIndirectWriteEvent) {
   z3.solver.pop();
 }
 
-TEST(EncoderTest, Z3EncoderIndirectWriteEventThroughDispatch) {
+TEST(EncoderTest, Z3ValueEncoderIndirectWriteEventThroughDispatch) {
   const unsigned thread_id = 3;
   const size_t array_size = 5;
 
-  const Z3Encoder encoder;
+  const Z3ValueEncoder encoder;
   Z3 z3;
 
   const MemoryAddr pointer_addr = MemoryAddr::alloc<char[array_size]>();
@@ -540,10 +540,10 @@ TEST(EncoderTest, Z3EncoderIndirectWriteEventThroughDispatch) {
   z3.solver.pop();
 }
 
-TEST(EncoderTest, Z3EncoderReadEvent) {
+TEST(EncoderTest, Z3ValueEncoderReadEvent) {
   const unsigned thread_id = 3;
 
-  const Z3Encoder encoder;
+  const Z3ValueEncoder encoder;
   Z3 z3;
 
   const MemoryAddr addr = MemoryAddr::alloc<int>();
@@ -555,10 +555,10 @@ TEST(EncoderTest, Z3EncoderReadEvent) {
   EXPECT_EQ(z3::unsat, z3.solver.check());
 }
 
-TEST(EncoderTest, Z3EncoderReadEventThroughDispatch) {
+TEST(EncoderTest, Z3ValueEncoderReadEventThroughDispatch) {
   const unsigned thread_id = 3;
 
-  const Z3Encoder encoder;
+  const Z3ValueEncoder encoder;
   Z3 z3;
 
   const MemoryAddr addr = MemoryAddr::alloc<int>();
@@ -632,7 +632,7 @@ TEST(EncoderTest, Z3OrderEncoderForFrWithoutCondition) {
   const unsigned write_thread_id = 7;
   const unsigned read_thread_id = 8;
 
-  const Z3Encoder value_encoder;
+  const Z3ValueEncoder value_encoder;
   const Z3OrderEncoder order_encoder;
   Z3 z3;
 

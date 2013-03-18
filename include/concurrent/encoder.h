@@ -147,16 +147,16 @@ public:
   }
 };
 
-/// Encoder for direct and indirect write events
+/// Encoder for the values of direct and indirect write events
 
 /// Every member function returns a Z3 expression whose sort is Boolean.
-class Z3Encoder {
+class Z3ValueEncoder {
 private:
   const Z3WriteEncoder m_write_encoder;
   const Z3ReadEncoder m_read_encoder;
 
 public:
-  Z3Encoder() : m_read_encoder(), m_write_encoder() {}
+  Z3ValueEncoder() : m_read_encoder(), m_write_encoder() {}
 
   template<typename T>
   z3::expr encode(const ReadEvent<T>& event, Z3& helper) const {
@@ -179,19 +179,19 @@ public:
   }
 };
 
-#define ENCODER_FN \
-  encode(const Z3Encoder& encoder, Z3& helper) const {\
+#define VALUE_ENCODER_FN \
+  encode(const Z3ValueEncoder& encoder, Z3& helper) const {\
     return encoder.encode(*this, helper);\
   }
 
 template<typename T>
-z3::expr ReadEvent<T>::ENCODER_FN
+z3::expr ReadEvent<T>::VALUE_ENCODER_FN
 
 template<typename T>
-z3::expr DirectWriteEvent<T>::ENCODER_FN
+z3::expr DirectWriteEvent<T>::VALUE_ENCODER_FN
 
 template<typename T, typename U, size_t N>
-z3::expr IndirectWriteEvent<T, U, N>::ENCODER_FN
+z3::expr IndirectWriteEvent<T, U, N>::VALUE_ENCODER_FN
 
 class Z3OrderEncoder {
 private:
