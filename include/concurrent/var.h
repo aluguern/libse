@@ -230,6 +230,10 @@ private:
     m_local_read_ptr(other.m_local_read_ptr) {}
 
 public:
+  std::unique_ptr<DerefReadInstr<Range[N], Domain>> deref_instr_ptr() {
+    return std::move(m_memory.m_deref_instr_ptr);
+  }
+
   void operator=(std::unique_ptr<ReadInstr<Range>> instr_ptr) {
     m_memory = std::move(instr_ptr);
 

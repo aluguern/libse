@@ -31,6 +31,13 @@ inline std::unique_ptr<ReadInstr<T>> alloc_read_instr(const SharedVar<T>& shared
     make_read_event<T>(shared_var.addr())));
 }
 
+template<typename Range, typename Domain, size_t N>
+inline std::unique_ptr<ReadInstr<Range>> alloc_read_instr(
+  LocalMemory<Range, Domain, N>&& local_memory) {
+
+  return std::move(local_memory.deref_instr_ptr());
+}
+
 template<typename T>
 inline std::unique_ptr<ReadInstr<typename
   std::enable_if<std::is_arithmetic<T>::value, T>::type>>
@@ -46,6 +53,9 @@ inline std::unique_ptr<ReadInstr<typename
 template<typename T> struct UnwrapType<LocalVar<T>> { typedef T base; };
 template<typename T> struct UnwrapType<SharedVar<T>> { typedef T base; };
 
+template<typename Range, typename Domain, size_t N>
+struct UnwrapType<LocalMemory<Range, Domain, N>> { typedef Range base; };
+
 #define CONCURRENT_UNARY_OP(op, opcode) \
   template<typename T>\
   inline auto operator op(std::unique_ptr<ReadInstr<T>> instr) ->\
@@ -56,6 +66,27 @@ template<typename T> struct UnwrapType<SharedVar<T>> { typedef T base; };
   }\
 
 #define CONCURRENT_BINARY_OP(op, opcode) \
+  template<typename T, typename U>\
+  inline auto operator op(T&& larg, U&& rarg) ->\
+    std::unique_ptr<ReadInstr<typename ReturnType<opcode, typename\
+      UnwrapType<T>::base, typename UnwrapType<U>::base>::result_type>> {\
+    \
+    return alloc_read_instr(std::move(larg)) op alloc_read_instr(std::move(rarg));\
+  }\
+  template<typename T, typename U>\
+  inline auto operator op(std::unique_ptr<ReadInstr<T>> larg, U&& rarg) ->\
+    std::unique_ptr<ReadInstr<typename ReturnType<opcode, T,\
+      typename UnwrapType<U>::base>::result_type>> {\
+    \
+    return std::move(larg) op alloc_read_instr(std::move(rarg));\
+  }\
+  template<typename T, typename U>\
+  inline auto operator op(T&& larg, std::unique_ptr<ReadInstr<U>> rarg) ->\
+    std::unique_ptr<ReadInstr<typename ReturnType<opcode,\
+      typename UnwrapType<U>::base, U>::result_type>> {\
+    \
+    return alloc_read_instr(std::move(larg)) op std::move(rarg);\
+  }\
   template<typename T, typename U>\
   inline auto operator op(const T& larg, const U& rarg) ->\
     std::unique_ptr<ReadInstr<typename ReturnType<opcode, typename\
