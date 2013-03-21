@@ -15,9 +15,13 @@
 namespace se {
 
 template<typename T> class LocalVar;
+template<typename T> class SharedVar;
 
 template<typename T>
 std::unique_ptr<ReadInstr<T>> alloc_read_instr(const LocalVar<T>& var);
+
+template<typename T>
+std::unique_ptr<ReadInstr<T>> alloc_read_instr(const SharedVar<T>& var);
 
 template<typename T>
 std::unique_ptr<ReadInstr<typename std::enable_if<
@@ -99,7 +103,8 @@ public:
 template<typename T>
 class DeclVar : public BaseDeclVar<T> {
 public:
-  typedef T BasicType;
+  typedef T DirectType;
+  typedef T IndirectType;
 
   /// Declare a variable that only allows direct memory writes
 
@@ -117,7 +122,8 @@ private:
   std::shared_ptr<IndirectWriteEvent<T, size_t, N>> m_indirect_write_event_ptr;
 
 public:
-  typedef T BasicType;
+  typedef T* DirectType;
+  typedef T IndirectType;
 
   /// Declare a fixed-sized array
 
@@ -131,7 +137,7 @@ public:
 
   const MemoryAddr& array_addr() { return m_array_addr; }
 
-  const WriteEvent<T>& indirect_write_event_ref() const {
+  const IndirectWriteEvent<T, size_t, N>& indirect_write_event_ref() const {
     return *m_indirect_write_event_ptr;
   }
 
@@ -148,6 +154,9 @@ class Memory {
 private:
   template<typename _Range, typename _Domain, size_t _N>
   friend class LocalMemory;
+
+  template<typename _Range, typename _Domain, size_t _N>
+  friend class SharedMemory;
 
   const MemoryAddr m_element_addr;
 
@@ -247,12 +256,17 @@ public:
     return m_local_read.m_read_event_ptr;
   }
 
-  const WriteEvent<typename DeclVar<T>::BasicType>& direct_write_event_ref() const {
+  const DirectWriteEvent<typename DeclVar<T>::DirectType>&
+  direct_write_event_ref() const {
     return m_var.direct_write_event_ref();
   }
 
-  LocalVar<T>& operator=(const LocalVar<T>& other) {
-    return operator=(alloc_read_instr(other));
+  LocalVar<T>& operator=(const LocalVar<T>& local_var) {
+    return operator=(alloc_read_instr(local_var));
+  }
+
+  LocalVar<T>& operator=(const SharedVar<T>& shared_var) {
+    return operator=(alloc_read_instr(shared_var));
   }
 
   LocalVar<T>& operator=(const T literal) {
@@ -289,10 +303,102 @@ public:
       std::move(deref_instr_ptr), &m_local_read);
   }
 
-  template<typename Range = T,
-    class = typename std::enable_if<std::is_array<Range>::value>::type>
-  const WriteEvent<typename DeclVar<Range>::BasicType>&
-  indirect_write_event_ref() const { return m_var.indirect_write_event_ref(); }
+  template<typename U = T, size_t N = std::extent<U>::value,
+    class = typename std::enable_if<std::is_array<U>::value and 0 < N>::type>
+  const IndirectWriteEvent</* range */ typename DeclVar<U>::IndirectType,
+    /* domain */ size_t, N>& indirect_write_event_ref() const {
+
+    return m_var.indirect_write_event_ref();
+  }
+};
+
+/// \internal
+template<typename Range, typename Domain, size_t N>
+class SharedMemory {
+private:
+  template<typename U> friend class SharedVar;
+
+  Memory<Range, Domain, N> m_memory;
+ 
+  SharedMemory(DeclVar<Range[N]>* const var_ptr, const MemoryAddr& element_addr,
+    std::unique_ptr<DerefReadInstr<Range[N], Domain>> deref_instr_ptr) :
+    m_memory(var_ptr, element_addr, std::move(deref_instr_ptr)) {}
+
+  SharedMemory(SharedMemory&& other) : m_memory(std::move(other.m_memory)) {}
+
+public:
+  void operator=(std::unique_ptr<ReadInstr<Range>> instr_ptr) {
+    m_memory = std::move(instr_ptr);
+  }
+
+  template<typename U>
+  void operator=(const U& v) { operator=(alloc_read_instr(v)); }
+};
+
+/// Shared variable accessible to multiple threads
+template<typename T>
+class SharedVar {
+private:
+  DeclVar<T> m_var;
+
+public:
+  SharedVar() : m_var(true) {}
+
+  const MemoryAddr& addr() const { return m_var.addr(); }
+
+  const DirectWriteEvent<typename DeclVar<T>::DirectType>&
+  direct_write_event_ref() const {
+    return m_var.direct_write_event_ref();
+  }
+
+  SharedVar<T>& operator=(const LocalVar<T>& local_var) {
+    return operator=(alloc_read_instr(local_var));
+  }
+
+  SharedVar<T>& operator=(const SharedVar<T>& shared_var) {
+    return operator=(alloc_read_instr(shared_var));
+  }
+
+  SharedVar<T>& operator=(const T literal) {
+    return operator=(alloc_read_instr(literal));
+  }
+
+  SharedVar<T>& operator=(std::unique_ptr<ReadInstr<T>> instr_ptr) {
+    const std::shared_ptr<DirectWriteEvent<T>> write_event_ptr(
+      recorder_ptr()->instr(addr(), std::move(instr_ptr)));
+
+    m_var.set_direct_write_event_ptr(write_event_ptr);
+
+    return *this;
+  }
+
+  template<size_t N = std::extent<T>::value,
+    class = typename std::enable_if<std::is_array<T>::value and 0 < N>::type>
+  SharedMemory<typename std::remove_extent<T>::type, size_t, N>
+  operator[](size_t offset) {
+
+    typedef typename std::remove_extent<T>::type Range;
+    typedef size_t Domain;
+
+    std::unique_ptr<ReadInstr<Domain>> offset_ptr(
+      new LiteralReadInstr<Domain>(offset));
+
+    std::unique_ptr<DerefReadInstr<Range[N], Domain>> deref_instr_ptr(
+      new DerefReadInstr<Range[N], Domain>(alloc_read_instr(*this),
+        std::move(offset_ptr)));
+
+    const MemoryAddr offset_addr = m_var.array_addr() + offset;
+    return SharedMemory<Range, Domain, N>(&m_var, offset_addr,
+      std::move(deref_instr_ptr));
+  }
+
+  template<typename U = T, size_t N = std::extent<U>::value,
+    class = typename std::enable_if<std::is_array<U>::value and 0 < N>::type>
+  const IndirectWriteEvent</* range */ typename DeclVar<U>::IndirectType,
+    /* domain */ size_t, N>& indirect_write_event_ref() const {
+
+    return m_var.indirect_write_event_ref();
+  }
 };
 
 }

@@ -49,7 +49,7 @@ private:
 
   template<typename T>
   void process_read_instr(const ReadInstr<T>& instr) {
-    // Extract from ReadInstr<T> pointer all pointers to ReadEvent<T> objects
+    // Extract from ReadInstr<T> all pointers to ReadEvent<T> objects
     std::forward_list<std::shared_ptr<Event>> read_event_ptrs;
     instr.filter(read_event_ptrs);
 

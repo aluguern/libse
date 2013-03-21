@@ -375,3 +375,181 @@ TEST(ConcurrencyTest, LocalRecorder) {
   EXPECT_EQ("(solver\n  (= k!13 (store k!10 #x0000000000000004 k!2))\n"
             "  (= k!9 (store k!6 #x0000000000000002 #xa2)))", out.str());
 }
+
+TEST(ConcurrencyTest, AllocSharedVar) {
+  init_recorder();
+  Event::reset_id(42);
+
+  const SharedVar<int> var;
+
+  const DirectWriteEvent<int>& write_event = var.direct_write_event_ref();
+  EXPECT_EQ(2*42+1, write_event.event_id());
+
+  const LiteralReadInstr<int>& zero_instr = static_cast<const LiteralReadInstr<int>&>(write_event.instr_ref());
+  EXPECT_EQ(0, zero_instr.literal());
+
+  std::unique_ptr<ReadInstr<int>> read_instr_ptr(alloc_read_instr(var));
+
+  const BasicReadInstr<int>& basic_read_instr =
+    dynamic_cast<const BasicReadInstr<int>&>(*read_instr_ptr);
+  EXPECT_EQ(2*43, basic_read_instr.event_ptr()->event_id());
+}
+
+TEST(ConcurrencyTest, SharedVarScalarAssignmentWithoutCondition) {
+  init_recorder();
+  Event::reset_id(7);
+
+  SharedVar<short> var;
+  EXPECT_EQ(2*7+1, var.direct_write_event_ref().event_id());
+
+  var = 5;
+
+  const LiteralReadInstr<short>& read_instr = dynamic_cast<const LiteralReadInstr<short>&>(var.direct_write_event_ref().instr_ref());
+
+  EXPECT_EQ(5, read_instr.literal());
+  EXPECT_TRUE(var.addr().is_shared());
+  EXPECT_EQ(2*8+1, var.direct_write_event_ref().event_id());
+}
+
+TEST(ConcurrencyTest, SharedVarAssignmentWithoutCondition) {
+  init_recorder();
+  Event::reset_id(7);
+
+  SharedVar<char> char_integer;
+  SharedVar<long> long_integer;
+
+  EXPECT_EQ(2*7+1, char_integer.direct_write_event_ref().event_id());
+  EXPECT_EQ(2*8+1, long_integer.direct_write_event_ref().event_id());
+
+  long_integer = 3L + char_integer;
+
+  EXPECT_EQ(2*7+1, char_integer.direct_write_event_ref().event_id());
+  EXPECT_EQ(2*10+1, long_integer.direct_write_event_ref().event_id());
+
+  const BinaryReadInstr<ADD, long, char>& add_instr =
+    dynamic_cast<const BinaryReadInstr<ADD, long, char>&>(long_integer.direct_write_event_ref().instr_ref());
+  const LiteralReadInstr<long>& loperand = dynamic_cast<const LiteralReadInstr<long>&>(add_instr.loperand_ref());
+  const BasicReadInstr<char>& roperand = dynamic_cast<const BasicReadInstr<char>&>(add_instr.roperand_ref());
+
+  EXPECT_EQ(3L, loperand.literal());
+  EXPECT_EQ(2*9, roperand.event_ptr()->event_id());
+}
+
+TEST(ConcurrencyTest, SharedVarOtherAssignmentWithoutCondition) {
+  init_recorder();
+  Event::reset_id(12);
+
+  SharedVar<char> char_integer;
+  SharedVar<long> long_integer;
+  SharedVar<long> another_long_integer;
+
+  EXPECT_EQ(2*12+1, char_integer.direct_write_event_ref().event_id());
+  EXPECT_EQ(2*13+1, long_integer.direct_write_event_ref().event_id());
+  EXPECT_EQ(2*14+1, another_long_integer.direct_write_event_ref().event_id());
+
+  // See also SharedVarAssignmentWithoutCondition
+  long_integer = 3L + char_integer;
+
+  EXPECT_EQ(2*12+1, char_integer.direct_write_event_ref().event_id());
+  EXPECT_EQ(2*16+1, long_integer.direct_write_event_ref().event_id());
+  EXPECT_EQ(2*14+1, another_long_integer.direct_write_event_ref().event_id());
+
+  another_long_integer = long_integer;
+
+  EXPECT_EQ(2*12+1, char_integer.direct_write_event_ref().event_id());
+  EXPECT_EQ(2*16+1, long_integer.direct_write_event_ref().event_id());
+  EXPECT_EQ(2*18+1, another_long_integer.direct_write_event_ref().event_id());
+
+  const BasicReadInstr<long>& read_instr = dynamic_cast<const BasicReadInstr<long>&>(another_long_integer.direct_write_event_ref().instr_ref());
+  EXPECT_EQ(2*17, read_instr.event_ptr()->event_id());
+}
+
+TEST(ConcurrencyTest, OverwriteSharedVarArrayElementWithReadInstrPointer) {
+  init_recorder();
+  Event::reset_id(12);
+
+  SharedVar<char[5]> array_var;
+
+  EXPECT_EQ(2*12+1, array_var.direct_write_event_ref().event_id());
+
+  array_var[2] = std::unique_ptr<ReadInstr<char>>(new LiteralReadInstr<char>('Z'));
+
+  EXPECT_EQ(2*12+1, array_var.direct_write_event_ref().event_id());
+
+  const BasicReadInstr<char[5]>& array_read_instr = static_cast<const BasicReadInstr<char[5]>&>(array_var.indirect_write_event_ref().deref_instr_ref().memory_ref());
+  EXPECT_EQ(2*13, array_read_instr.event_ptr()->event_id());
+
+  EXPECT_EQ(2*14+1, array_var.indirect_write_event_ref().event_id());
+
+  const LiteralReadInstr<char>& read_instr = dynamic_cast<const LiteralReadInstr<char>&>(array_var.indirect_write_event_ref().instr_ref());
+  EXPECT_EQ('Z', read_instr.literal());
+}
+
+TEST(ConcurrencyTest, OverwriteSharedVarArrayElementWithLiteral) {
+  init_recorder();
+  Event::reset_id(12);
+
+  SharedVar<char[5]> array_var;
+
+  EXPECT_EQ(2*12+1, array_var.direct_write_event_ref().event_id());
+
+  array_var[2] = 'Z';
+
+  EXPECT_EQ(2*12+1, array_var.direct_write_event_ref().event_id());
+
+  const BasicReadInstr<char[5]>& array_read_instr = static_cast<const BasicReadInstr<char[5]>&>(array_var.indirect_write_event_ref().deref_instr_ref().memory_ref());
+  EXPECT_EQ(2*13, array_read_instr.event_ptr()->event_id());
+
+  EXPECT_EQ(2*14+1, array_var.indirect_write_event_ref().event_id());
+
+  const LiteralReadInstr<char>& read_instr = dynamic_cast<const LiteralReadInstr<char>&>(array_var.indirect_write_event_ref().instr_ref());
+  EXPECT_EQ('Z', read_instr.literal());
+}
+
+TEST(ConcurrencyTest, OverwriteSharedVarArrayElementWithVar) {
+  init_recorder();
+  Event::reset_id(12);
+
+  SharedVar<char> var;
+
+  EXPECT_EQ(2*12+1, var.direct_write_event_ref().event_id());
+
+  SharedVar<char[5]> array_var;
+
+  EXPECT_EQ(2*13+1, array_var.direct_write_event_ref().event_id());
+
+  array_var[2] = var;
+
+  EXPECT_EQ(2*13+1, array_var.direct_write_event_ref().event_id());
+
+  const BasicReadInstr<char[5]>& array_read_instr = static_cast<const BasicReadInstr<char[5]>&>(array_var.indirect_write_event_ref().deref_instr_ref().memory_ref());
+  EXPECT_EQ(2*14, array_read_instr.event_ptr()->event_id());
+
+  EXPECT_EQ(2*16+1, array_var.indirect_write_event_ref().event_id());
+
+  const BasicReadInstr<char>& read_instr = dynamic_cast<const BasicReadInstr<char>&>(array_var.indirect_write_event_ref().instr_ref());
+  EXPECT_EQ(2*15, read_instr.event_ptr()->event_id());
+}
+
+TEST(ConcurrencyTest, SharedRecorder) {
+  init_recorder();
+  Event::reset_id();
+  const unsigned thread_id = 3;
+
+  push_recorder(thread_id);
+
+  SharedVar<char> var;
+  SharedVar<char[5]> array_var;
+
+  array_var[2] = static_cast<char>(0xa2);
+  array_var[4] = var;
+
+  Z3 z3;
+  Z3ValueEncoder encoder;
+  recorder_ptr()->encode(encoder, z3);
+
+  std::stringstream out;
+  out << z3.solver;
+  EXPECT_EQ("(solver\n  (= k!13 (store k!8 #x0000000000000004 k!10))\n"
+            "  (= k!7 (store k!4 #x0000000000000002 #xa2)))", out.str());
+}

@@ -26,6 +26,12 @@ inline std::unique_ptr<ReadInstr<T>> alloc_read_instr(const LocalVar<T>& local_v
 }
 
 template<typename T>
+inline std::unique_ptr<ReadInstr<T>> alloc_read_instr(const SharedVar<T>& shared_var) {
+  return std::unique_ptr<ReadInstr<T>>(new BasicReadInstr<T>(
+    make_read_event<T>(shared_var.addr())));
+}
+
+template<typename T>
 inline std::unique_ptr<ReadInstr<typename
   std::enable_if<std::is_arithmetic<T>::value, T>::type>>
   alloc_read_instr(const T& literal) {
@@ -37,8 +43,8 @@ inline std::unique_ptr<ReadInstr<typename
     new LiteralReadInstr<T>(literal, condition_ptr));
 }
 
-template<typename T> struct UnwrapType<DeclVar<T>> { typedef T base; };
 template<typename T> struct UnwrapType<LocalVar<T>> { typedef T base; };
+template<typename T> struct UnwrapType<SharedVar<T>> { typedef T base; };
 
 #define CONCURRENT_UNARY_OP(op, opcode) \
   template<typename T>\
