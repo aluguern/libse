@@ -20,15 +20,9 @@
 namespace se {
 
 template<typename T>
-inline std::unique_ptr<ReadInstr<T>> alloc_read_instr(const DeclVar<T>& var) {
-  const std::shared_ptr<ReadInstr<bool>> condition_ptr =
-    recorder_ptr()->path_condition().top();
-
-  std::unique_ptr<ReadEvent<T>> event_ptr(
-    new ReadEvent<T>(recorder_ptr()->thread_id(), var.addr(), condition_ptr));
-
-  return std::unique_ptr<ReadInstr<T>>(
-    new BasicReadInstr<T>(std::move(event_ptr)));
+inline std::unique_ptr<ReadInstr<T>> alloc_read_instr(const LocalVar<T>& local_var) {
+  return std::unique_ptr<ReadInstr<T>>(new BasicReadInstr<T>(
+    local_var.read_event_ptr()));
 }
 
 template<typename T>
@@ -44,6 +38,7 @@ inline std::unique_ptr<ReadInstr<typename
 }
 
 template<typename T> struct UnwrapType<DeclVar<T>> { typedef T base; };
+template<typename T> struct UnwrapType<LocalVar<T>> { typedef T base; };
 
 #define CONCURRENT_UNARY_OP(op, opcode) \
   template<typename T>\
@@ -61,6 +56,20 @@ template<typename T> struct UnwrapType<DeclVar<T>> { typedef T base; };
       UnwrapType<T>::base, typename UnwrapType<U>::base>::result_type>> {\
     \
     return alloc_read_instr(larg) op alloc_read_instr(rarg);\
+  }\
+  template<typename T, typename U>\
+  inline auto operator op(std::unique_ptr<ReadInstr<T>> larg, const U& rarg) ->\
+    std::unique_ptr<ReadInstr<typename ReturnType<opcode, T,\
+      typename UnwrapType<U>::base>::result_type>> {\
+    \
+    return std::move(larg) op alloc_read_instr(rarg);\
+  }\
+  template<typename T, typename U>\
+  inline auto operator op(const T& larg, std::unique_ptr<ReadInstr<U>> rarg) ->\
+    std::unique_ptr<ReadInstr<typename ReturnType<opcode,\
+      typename UnwrapType<U>::base, U>::result_type>> {\
+    \
+    return alloc_read_instr(larg) op std::move(rarg);\
   }\
   template<typename T, typename U>\
   inline auto operator op(std::unique_ptr<ReadInstr<T>> linstr,\

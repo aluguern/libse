@@ -32,10 +32,12 @@ TEST(ConcurrencyTest, AllocLiteralReadInstrWithCondition) {
   init_recorder();
   Event::reset_id(7);
 
-  const DeclVar<char> var;
+  const unsigned thread_id = 3;
+  const MemoryAddr addr = MemoryAddr::alloc<char>();
+  std::unique_ptr<ReadEvent<char>> event_ptr(new ReadEvent<char>(thread_id, addr));
+  std::unique_ptr<ReadInstr<char>> basic_read_instr_ptr(new BasicReadInstr<char>(std::move(event_ptr)));
 
-  init_recorder();
-  recorder_ptr()->path_condition().push(3L < var);
+  recorder_ptr()->path_condition().push(3L < std::move(basic_read_instr_ptr));
 
   std::unique_ptr<ReadInstr<long long>> read_instr_ptr(alloc_read_instr(42LL));
 
@@ -46,15 +48,16 @@ TEST(ConcurrencyTest, AllocLiteralReadInstrWithCondition) {
   const BinaryReadInstr<LSS, long, char>& lss_instr =
     dynamic_cast<const BinaryReadInstr<LSS, long, char>&>(*read_instr_ptr->condition_ptr());
 
-  const LiteralReadInstr<long>& left_child = dynamic_cast<const LiteralReadInstr<long>&>(lss_instr.loperand_ref());
-  const BasicReadInstr<char>& right_child = dynamic_cast<const BasicReadInstr<char>&>(lss_instr.roperand_ref());
-  EXPECT_EQ(3L, left_child.literal());
+  const LiteralReadInstr<long>& loperand = dynamic_cast<const LiteralReadInstr<long>&>(lss_instr.loperand_ref());
+  const BasicReadInstr<char>& roperand = dynamic_cast<const BasicReadInstr<char>&>(lss_instr.roperand_ref());
+  EXPECT_EQ(3L, loperand.literal());
 
-  EXPECT_EQ(2*8, right_child.event_ptr()->event_id());
+  EXPECT_EQ(2*7, roperand.event_ptr()->event_id());
 }
 
-TEST(ConcurrencyTest, UnaryOperatorNOT) {
+TEST(ConcurrencyTest, UnaryOperatorNOTWithCondition) {
   init_recorder();
+  Event::reset_id(14);
 
   const unsigned thread_id = 3;
   const MemoryAddr condition_addr = MemoryAddr::alloc<bool>();
@@ -67,10 +70,45 @@ TEST(ConcurrencyTest, UnaryOperatorNOT) {
   std::unique_ptr<ReadEvent<int>> event_ptr(new ReadEvent<int>(thread_id, addr, condition));
   std::unique_ptr<ReadInstr<int>> basic_read_instr(new BasicReadInstr<int>(std::move(event_ptr)));
   std::unique_ptr<ReadInstr<bool>> instr_ptr(! std::move(basic_read_instr));
+
+  const UnaryReadInstr<NOT, int>& instr = dynamic_cast<const UnaryReadInstr<NOT, int>&>(*instr_ptr);
+
+  const BasicReadInstr<int>& operand = dynamic_cast<const BasicReadInstr<int>&>(instr.operand_ref());
+  EXPECT_TRUE(2*15 == operand.event_ptr()->event_id());
 }
 
-TEST(ConcurrencyTest, BinaryOperatorADD) {
+TEST(ConcurrencyTest, BinaryOperatorLSSWithoutCondition) {
   init_recorder();
+  Event::reset_id(14);
+
+  const unsigned thread_id = 3;
+  const MemoryAddr addr = MemoryAddr::alloc<int>();
+
+  std::unique_ptr<ReadEvent<int>> event_ptr_a(new ReadEvent<int>(thread_id, addr));
+  std::unique_ptr<ReadInstr<int>> basic_read_instr_ptr_a(new BasicReadInstr<int>(std::move(event_ptr_a)));
+
+  std::unique_ptr<ReadEvent<int>> event_ptr_b(new ReadEvent<int>(thread_id, addr));
+  std::unique_ptr<ReadInstr<int>> basic_read_instr_ptr_b(new BasicReadInstr<int>(std::move(event_ptr_b)));
+
+  std::unique_ptr<ReadInstr<bool>> instr_ptr(std::move(basic_read_instr_ptr_a) < std::move(basic_read_instr_ptr_b));
+
+  const BinaryReadInstr<LSS, int, int>& instr =
+    dynamic_cast<const BinaryReadInstr<LSS, int, int>&>(*instr_ptr);
+
+  const BasicReadInstr<int>& loperand = dynamic_cast<const BasicReadInstr<int>&>(instr.loperand_ref());
+  const BasicReadInstr<int>& roperand = dynamic_cast<const BasicReadInstr<int>&>(instr.roperand_ref());
+
+  // Make no assumption about the order in which operands are evaluated
+  const size_t left_id = loperand.event_ptr()->event_id();
+  const size_t right_id = roperand.event_ptr()->event_id();
+  EXPECT_TRUE(2*14 == left_id || 2*15 == left_id);
+  EXPECT_TRUE(2*14 == right_id || 2*15 == right_id);
+  EXPECT_NE(left_id, right_id);
+}
+
+TEST(ConcurrencyTest, BinaryOperatorADDWithCondition) {
+  init_recorder();
+  Event::reset_id(14);
 
   const unsigned thread_id = 3;
   const MemoryAddr condition_addr = MemoryAddr::alloc<bool>();
@@ -81,18 +119,80 @@ TEST(ConcurrencyTest, BinaryOperatorADD) {
 
   const MemoryAddr addr_a = MemoryAddr::alloc<int>();
   const MemoryAddr addr_b = MemoryAddr::alloc<long>();
+
   std::unique_ptr<ReadEvent<int>> event_ptr_a(new ReadEvent<int>(thread_id, addr_a, condition));
   std::unique_ptr<ReadEvent<long>> event_ptr_b(new ReadEvent<long>(thread_id, addr_b, condition));
+
   std::unique_ptr<ReadInstr<int>> basic_read_instr_a(new BasicReadInstr<int>(std::move(event_ptr_a)));
   std::unique_ptr<ReadInstr<long>> instr_ptr(std::move(basic_read_instr_a) /* explicit move */ +
     std::unique_ptr<ReadInstr<long>>(new BasicReadInstr<long>(std::move(event_ptr_b))) /* implicit move */);
+
+  const BinaryReadInstr<ADD, int, long>& instr = dynamic_cast<const BinaryReadInstr<ADD, int, long>&>(*instr_ptr);
+
+  const BasicReadInstr<int>& loperand = dynamic_cast<const BasicReadInstr<int>&>(instr.loperand_ref());
+  const BasicReadInstr<long>& roperand = dynamic_cast<const BasicReadInstr<long>&>(instr.roperand_ref());
+
+  // Make no assumption about the order in which operands are evaluated
+  const size_t left_id = loperand.event_ptr()->event_id();
+  const size_t right_id = roperand.event_ptr()->event_id();
+  EXPECT_TRUE(2*15 == left_id || 2*16 == left_id);
+  EXPECT_TRUE(2*15 == right_id || 2*16 == right_id);
+  EXPECT_NE(left_id, right_id);
 }
 
-TEST(ConcurrencyTest, AllocDeclVar) {
+TEST(ConcurrencyTest, BinaryOperatorLSSReadInstrPointerLiteralWithoutCondition) {
+  init_recorder();
+  Event::reset_id(14);
+
+  const unsigned thread_id = 3;
+  const MemoryAddr addr = MemoryAddr::alloc<int>();
+  std::unique_ptr<ReadEvent<int>> event_ptr(new ReadEvent<int>(thread_id, addr));
+  std::unique_ptr<ReadInstr<int>> basic_read_instr_ptr(new BasicReadInstr<int>(std::move(event_ptr)));
+
+  std::unique_ptr<ReadInstr<bool>> lss_instr_ptr(std::move(basic_read_instr_ptr) < 3);
+
+  const BinaryReadInstr<LSS, int, int>& lss_instr =
+    dynamic_cast<const BinaryReadInstr<LSS, int, int>&>(*lss_instr_ptr);
+
+  const BasicReadInstr<int>& loperand = dynamic_cast<const BasicReadInstr<int>&>(lss_instr.loperand_ref());
+  const LiteralReadInstr<int>& roperand = dynamic_cast<const LiteralReadInstr<int>&>(lss_instr.roperand_ref());
+
+  // Make no assumption about the order in which operands are evaluated
+  const size_t left_id = loperand.event_ptr()->event_id();
+  EXPECT_EQ(2*14, left_id);
+
+  EXPECT_EQ(3, roperand.literal());
+}
+
+TEST(ConcurrencyTest, BinaryOperatorLSSLiteralReadInstrPointerWithoutCondition) {
+  init_recorder();
+  Event::reset_id(14);
+
+  const unsigned thread_id = 3;
+  const MemoryAddr addr = MemoryAddr::alloc<int>();
+  std::unique_ptr<ReadEvent<int>> event_ptr(new ReadEvent<int>(thread_id, addr));
+  std::unique_ptr<ReadInstr<int>> basic_read_instr_ptr(new BasicReadInstr<int>(std::move(event_ptr)));
+
+  std::unique_ptr<ReadInstr<bool>> lss_instr_ptr(3 < std::move(basic_read_instr_ptr));
+
+  const BinaryReadInstr<LSS, int, int>& lss_instr =
+    dynamic_cast<const BinaryReadInstr<LSS, int, int>&>(*lss_instr_ptr);
+
+  const LiteralReadInstr<int>& loperand = dynamic_cast<const LiteralReadInstr<int>&>(lss_instr.loperand_ref());
+  const BasicReadInstr<int>& roperand = dynamic_cast<const BasicReadInstr<int>&>(lss_instr.roperand_ref());
+
+  EXPECT_EQ(3, loperand.literal());
+
+  // Make no assumption about the order in which operands are evaluated
+  const size_t right_id = roperand.event_ptr()->event_id();
+  EXPECT_EQ(2*14, right_id);
+}
+
+TEST(ConcurrencyTest, AllocLocalVar) {
   init_recorder();
   Event::reset_id(42);
 
-  const DeclVar<int> var;
+  const LocalVar<int> var;
 
   std::unique_ptr<ReadInstr<int>> read_instr_ptr(alloc_read_instr(var));
 
@@ -101,145 +201,107 @@ TEST(ConcurrencyTest, AllocDeclVar) {
   EXPECT_EQ(2*43, basic_read_instr.event_ptr()->event_id());
 }
 
-TEST(ConcurrencyTest, BinaryOperatorLSSAllocAllocWithoutCondition) {
-  init_recorder();
-  Event::reset_id(14);
-
-  DeclVar<int> var;
-
-  std::unique_ptr<ReadInstr<bool>> lss_instr_ptr(var < var);
-
-  const BinaryReadInstr<LSS, int, int>& lss_instr =
-    dynamic_cast<const BinaryReadInstr<LSS, int, int>&>(*lss_instr_ptr);
-
-  const BasicReadInstr<int>& left_child = dynamic_cast<const BasicReadInstr<int>&>(lss_instr.loperand_ref());
-  const BasicReadInstr<int>& right_child = dynamic_cast<const BasicReadInstr<int>&>(lss_instr.roperand_ref());
-
-  // Make no assumption about the order in which operands are evaluated
-  const size_t left_id = left_child.event_ptr()->event_id();
-  const size_t right_id = right_child.event_ptr()->event_id();
-  EXPECT_TRUE(2*15 == left_id || 2*16 == left_id);
-  EXPECT_TRUE(2*15 == right_id || 2*16 == right_id);
-  EXPECT_NE(left_id, right_id);
-}
-
-TEST(ConcurrencyTest, BinaryOperatorLSSAllocLiteralWithoutCondition) {
-  init_recorder();
-  Event::reset_id(14);
-
-  DeclVar<int> var;
-
-  std::unique_ptr<ReadInstr<bool>> lss_instr_ptr(var < 3);
-
-  const BinaryReadInstr<LSS, int, int>& lss_instr =
-    dynamic_cast<const BinaryReadInstr<LSS, int, int>&>(*lss_instr_ptr);
-
-  const BasicReadInstr<int>& left_child = dynamic_cast<const BasicReadInstr<int>&>(lss_instr.loperand_ref());
-  const LiteralReadInstr<int>& right_child = dynamic_cast<const LiteralReadInstr<int>&>(lss_instr.roperand_ref());
-
-  // Make no assumption about the order in which operands are evaluated
-  const size_t left_id = left_child.event_ptr()->event_id();
-  EXPECT_EQ(2*15, left_id);
-
-  EXPECT_EQ(3, right_child.literal());
-}
-
-TEST(ConcurrencyTest, BinaryOperatorLSSLiteralAllocWithoutCondition) {
-  init_recorder();
-  Event::reset_id(14);
-
-  DeclVar<int> var;
-
-  std::unique_ptr<ReadInstr<bool>> lss_instr_ptr(3 < var);
-
-  const BinaryReadInstr<LSS, int, int>& lss_instr =
-    dynamic_cast<const BinaryReadInstr<LSS, int, int>&>(*lss_instr_ptr);
-
-  const LiteralReadInstr<int>& left_child = dynamic_cast<const LiteralReadInstr<int>&>(lss_instr.loperand_ref());
-  const BasicReadInstr<int>& right_child = dynamic_cast<const BasicReadInstr<int>&>(lss_instr.roperand_ref());
-
-  EXPECT_EQ(3, left_child.literal());
-
-  // Make no assumption about the order in which operands are evaluated
-  const size_t right_id = right_child.event_ptr()->event_id();
-  EXPECT_EQ(2*15, right_id);
-}
-
-TEST(ConcurrencyTest, DeclVarAssignmentWithoutCondition) {
+TEST(ConcurrencyTest, LocalVarScalarAssignmentWithoutCondition) {
   init_recorder();
   Event::reset_id(7);
 
-  DeclVar<char> char_integer;
-  DeclVar<long> long_integer;
+  LocalVar<short> var;
+  EXPECT_EQ(2*8, var.read_event_ptr()->event_id());
+
+  var = 5;
+
+  const LiteralReadInstr<short>& read_instr = dynamic_cast<const LiteralReadInstr<short>&>(var.direct_write_event_ref().instr_ref());
+
+  EXPECT_EQ(5, read_instr.literal());
+  EXPECT_FALSE(var.addr().is_shared());
+  EXPECT_EQ(2*10, var.read_event_ptr()->event_id());
+}
+
+TEST(ConcurrencyTest, LocalVarAssignmentWithoutCondition) {
+  init_recorder();
+  Event::reset_id(7);
+
+  LocalVar<char> char_integer;
+  LocalVar<long> long_integer;
+
+  const size_t char_read_event_id = 2*8;
+  EXPECT_EQ(char_read_event_id, char_integer.read_event_ptr()->event_id());
 
   long_integer = 3L + char_integer;
 
   const BinaryReadInstr<ADD, long, char>& add_instr =
-    dynamic_cast<const BinaryReadInstr<ADD, long, char>&>(long_integer.write_event_ref().instr_ref());
+    dynamic_cast<const BinaryReadInstr<ADD, long, char>&>(long_integer.direct_write_event_ref().instr_ref());
   const LiteralReadInstr<long>& loperand = dynamic_cast<const LiteralReadInstr<long>&>(add_instr.loperand_ref());
   const BasicReadInstr<char>& roperand = dynamic_cast<const BasicReadInstr<char>&>(add_instr.roperand_ref());
 
   EXPECT_EQ(3L, loperand.literal());
-  EXPECT_EQ(2*9, roperand.event_ptr()->event_id());
+  EXPECT_EQ(char_read_event_id, roperand.event_ptr()->event_id());
 }
 
-TEST(ConcurrencyTest, DeclVarOtherAssignmentWithoutCondition) {
+TEST(ConcurrencyTest, LocalVarOtherAssignmentWithoutCondition) {
   init_recorder();
   Event::reset_id(12);
 
-  DeclVar<char> char_integer;
-  DeclVar<long> long_integer;
-  DeclVar<long> another_long_integer;
+  LocalVar<char> char_integer;
+  LocalVar<long> long_integer;
+  LocalVar<long> another_long_integer;
 
+  // See also LocalVarAssignmentWithoutCondition
   long_integer = 3L + char_integer;
 
   another_long_integer = long_integer;
 
-  const BasicReadInstr<long>& read_instr = dynamic_cast<const BasicReadInstr<long>&>(another_long_integer.write_event_ref().instr_ref());
+  const BasicReadInstr<long>& read_instr = dynamic_cast<const BasicReadInstr<long>&>(another_long_integer.direct_write_event_ref().instr_ref());
+  EXPECT_EQ(2*19, read_instr.event_ptr()->event_id());
 
-  EXPECT_EQ(2*17, read_instr.event_ptr()->event_id());
 }
 
-// Type check only right now
-TEST(ConcurrencyTest, OverwriteDeclVarArrayElementWithReadInstrPointer) {
+TEST(ConcurrencyTest, OverwriteLocalVarArrayElementWithReadInstrPointer) {
   init_recorder();
   Event::reset_id(12);
 
-  DeclVar<char[5]> array_var;
+  LocalVar<char[5]> array_var;
   array_var[2] = std::unique_ptr<ReadInstr<char>>(new LiteralReadInstr<char>('Z'));
+
+  const LiteralReadInstr<char>& read_instr = dynamic_cast<const LiteralReadInstr<char>&>(array_var.indirect_write_event_ref().instr_ref());
+  EXPECT_EQ('Z', read_instr.literal());
 }
 
-// Type check only right now
-TEST(ConcurrencyTest, OverwriteDeclVarArrayElementWithLiteral) {
+TEST(ConcurrencyTest, OverwriteLocalVarArrayElementWithLiteral) {
   init_recorder();
   Event::reset_id(12);
 
-  DeclVar<char[5]> array_var;
+  LocalVar<char[5]> array_var;
   array_var[2] = 'Z';
+
+  const LiteralReadInstr<char>& read_instr = dynamic_cast<const LiteralReadInstr<char>&>(array_var.indirect_write_event_ref().instr_ref());
+  EXPECT_EQ('Z', read_instr.literal());
 }
 
-// Type check only right now
-TEST(ConcurrencyTest, OverwriteDeclVarArrayElementWithVar) {
+TEST(ConcurrencyTest, OverwriteLocalVarArrayElementWithVar) {
   init_recorder();
   Event::reset_id(12);
 
-  DeclVar<char> var;
-  DeclVar<char[5]> array_var;
+  LocalVar<char> var;
+  LocalVar<char[5]> array_var;
   array_var[2] = var;
+
+  const BasicReadInstr<char>& read_instr = dynamic_cast<const BasicReadInstr<char>&>(array_var.indirect_write_event_ref().instr_ref());
+  EXPECT_EQ(2*13, read_instr.event_ptr()->event_id());
 }
 
-TEST(ConcurrencyTest, Recorder) {
+TEST(ConcurrencyTest, LocalRecorder) {
   init_recorder();
   Event::reset_id();
   const unsigned thread_id = 3;
 
-  init_recorder();
   push_recorder(thread_id);
 
-  DeclVar<char> var;
-  DeclVar<char[5]> array_var;
+  LocalVar<char> var;
+  LocalVar<char[5]> array_var;
+
   array_var[2] = static_cast<char>(0xa2);
-  array_var[3] = var;
+  array_var[4] = var;
 
   Z3 z3;
   Z3ValueEncoder encoder;
@@ -247,6 +309,6 @@ TEST(ConcurrencyTest, Recorder) {
 
   std::stringstream out;
   out << z3.solver;
-  EXPECT_EQ("(solver\n  (= k!11 (store k!6 #x0000000000000003 k!8))\n"
-            "  (= k!5 (store k!2 #x0000000000000002 #xa2)))", out.str());
+  EXPECT_EQ("(solver\n  (= k!13 (store k!10 #x0000000000000004 k!2))\n"
+            "  (= k!9 (store k!6 #x0000000000000002 #xa2)))", out.str());
 }

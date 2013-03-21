@@ -28,7 +28,7 @@ public:
   Z3() : context(), solver(context) {}
 
   template<typename T, class = typename std::enable_if<
-    std::is_arithmetic<T>::value>::type>
+    std::is_arithmetic<T>::value or std::is_pointer<T>::value>::type>
   z3::expr literal(const LiteralReadInstr<T>& instr) {
     const char* str = std::to_string(instr.literal()).c_str();
     return context.bv_val(str, TypeInfo<T>::s_type.bv_size());
@@ -121,6 +121,7 @@ public:
   }
 
 template<typename T> z3::expr LiteralReadInstr<T>::READ_ENCODER_FN
+template<typename T> z3::expr LiteralReadInstr<T*>::READ_ENCODER_FN
 template<typename T> z3::expr BasicReadInstr<T>::READ_ENCODER_FN
 
 template<Operator op, typename T>

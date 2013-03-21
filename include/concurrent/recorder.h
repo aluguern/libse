@@ -70,15 +70,13 @@ public:
   }
 
   /// Records a direct memory write event
-
-  /// \returns a shared pointer to the newly recorded WriteEvent<T>
   template<typename T>
-  std::shared_ptr<WriteEvent<T>> instr(const MemoryAddr& addr,
+  std::shared_ptr<DirectWriteEvent<T>> instr(const MemoryAddr& addr,
     std::unique_ptr<ReadInstr<T>> instr_ptr) {
 
     process_read_instr(*instr_ptr);
 
-    std::shared_ptr<WriteEvent<T>> write_event_ptr(new DirectWriteEvent<T>(
+    std::shared_ptr<DirectWriteEvent<T>> write_event_ptr(new DirectWriteEvent<T>(
         m_thread_id, addr, std::move(instr_ptr), path_condition().top()));
 
     m_event_prts.push_front(write_event_ptr);
@@ -86,16 +84,14 @@ public:
   }
 
   /// Records an indirect memory write event
-
-  /// \returns a shared pointer to the newly recorded WriteEvent<T>
   template<typename T, typename U, size_t N>
-  std::shared_ptr<WriteEvent<T>> instr(const MemoryAddr& addr,
+  std::shared_ptr<IndirectWriteEvent<T, U, N>> instr(const MemoryAddr& addr,
     std::unique_ptr<DerefReadInstr<T[N], U>> deref_instr_ptr,
     std::unique_ptr<ReadInstr<T>> instr_ptr) {
 
     process_read_instr(*instr_ptr);
 
-    std::shared_ptr<WriteEvent<T>> write_event_ptr(
+    std::shared_ptr<IndirectWriteEvent<T, U, N>> write_event_ptr(
       new IndirectWriteEvent<T, U, N>(m_thread_id, addr,
         std::move(deref_instr_ptr), std::move(instr_ptr),
           path_condition().top()));

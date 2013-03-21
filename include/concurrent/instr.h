@@ -83,6 +83,37 @@ public:
 };
 
 template<typename T>
+class LiteralReadInstr<T*> : public ReadInstr<T*> {
+private:
+  const uintptr_t m_literal;
+  const std::shared_ptr<ReadInstr<bool>> m_condition;
+
+protected:
+  std::shared_ptr<ReadInstr<bool>> condition_ptr() const {
+    return m_condition;
+  }
+
+public:
+  LiteralReadInstr(const T* literal,
+    const std::shared_ptr<ReadInstr<bool>>& condition = nullptr) :
+    m_literal(static_cast<uintptr_t>(m_literal)), m_condition(condition) {}
+
+  /// Null pointer
+  LiteralReadInstr(const std::shared_ptr<ReadInstr<bool>>& condition = nullptr) :
+    m_literal(0), m_condition(condition) {}
+
+  LiteralReadInstr(const LiteralReadInstr& other) = delete;
+
+  ~LiteralReadInstr() {}
+
+  const uintptr_t literal() const { return m_literal; }
+
+  void filter(std::forward_list<std::shared_ptr<Event>>&) const { /* skip */ }
+
+  DECL_READ_ENCODER_FN
+};
+
+template<typename T>
 class BasicReadInstr : public ReadInstr<T> {
 private:
   std::shared_ptr<ReadEvent<T>> m_event_ptr;
@@ -93,8 +124,13 @@ protected:
   }
 
 public:
+  /// Unique read event for shared variable access
   BasicReadInstr(std::unique_ptr<ReadEvent<T>> event_ptr) :
     m_event_ptr(std::move(event_ptr)) {}
+
+  /// Shared read event for local variable access
+  BasicReadInstr(std::shared_ptr<ReadEvent<T>> event_ptr) :
+    m_event_ptr(event_ptr) {}
 
   BasicReadInstr(const BasicReadInstr& other) = delete;
 
