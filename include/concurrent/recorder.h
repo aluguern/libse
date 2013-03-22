@@ -45,7 +45,7 @@ private:
   PathCondition m_path_condition;
 
   // List of smart pointers to read and write events
-  std::forward_list<std::shared_ptr<Event>> m_event_prts;
+  std::forward_list<std::shared_ptr<Event>> m_event_ptrs;
 
   template<typename T>
   void process_read_instr(const ReadInstr<T>& instr) {
@@ -54,19 +54,19 @@ private:
     instr.filter(read_event_ptrs);
 
     // Append these pointers to the per-thread event list
-     m_event_prts.insert_after(m_event_prts.cbefore_begin(),
+     m_event_ptrs.insert_after(m_event_ptrs.cbefore_begin(),
        /* range */ read_event_ptrs.cbegin(), read_event_ptrs.cend());
   }
 
 public:
   Recorder(unsigned thread_id) : m_thread_id(thread_id),
-    m_path_condition(), m_event_prts() {}
+    m_path_condition(), m_event_ptrs() {}
 
   unsigned thread_id() const { return m_thread_id; }
   PathCondition& path_condition() { return m_path_condition; }
 
   std::forward_list<std::shared_ptr<Event>>& event_ptrs() {
-    return m_event_prts;
+    return m_event_ptrs;
   }
 
   /// Records a direct memory write event
@@ -79,7 +79,7 @@ public:
     std::shared_ptr<DirectWriteEvent<T>> write_event_ptr(new DirectWriteEvent<T>(
         m_thread_id, addr, std::move(instr_ptr), path_condition().top()));
 
-    m_event_prts.push_front(write_event_ptr);
+    m_event_ptrs.push_front(write_event_ptr);
     return write_event_ptr;
   }
 
@@ -96,15 +96,15 @@ public:
         std::move(deref_instr_ptr), std::move(instr_ptr),
           path_condition().top()));
 
-    m_event_prts.push_front(write_event_ptr);
+    m_event_ptrs.push_front(write_event_ptr);
     return write_event_ptr;
   }
 
-  void encode(const Z3ValueEncoder& encoder, Z3& helper) {
-    for (std::shared_ptr<Event> event_ptr : m_event_prts) {
+  void encode(const Z3ValueEncoder& encoder, Z3& z3) const {
+    for (std::shared_ptr<Event> event_ptr : m_event_ptrs) {
       if (event_ptr->is_write()) {
-        z3::expr equality(event_ptr->encode(encoder, helper)); 
-        helper.solver.add(equality);
+        z3::expr equality(event_ptr->encode(encoder, z3)); 
+        z3.solver.add(equality);
       }
     }
   }
