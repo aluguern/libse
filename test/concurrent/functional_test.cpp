@@ -30,6 +30,25 @@ TEST(ConcurrentFunctionalTest, LocalArray) {
             "  (not (= (select k!3 #x0000000000000002) #x5a)))", out.str());
 }
 
+TEST(ConcurrentFunctionalTest, LocalScalarAndArray) {
+  // Setup
+  Event::reset_id();
+  init_recorder();
+
+  Z3 z3;
+  MemoryAddrRelation<Event> relation;
+  const Z3ValueEncoder value_encoder;
+
+  LocalVar<char[5]> a;
+  LocalVar<char> b;
+  a[2] = 'Z';
+  b = a[2];
+
+  recorder_ptr()->encode(value_encoder, z3);
+  z3.solver.add(value_encoder.encode(!(b == 'Z'), z3));
+  EXPECT_EQ(z3::unsat, z3.solver.check());
+}
+
 TEST(ConcurrentFunctionalTest, ThreeThreadsReadWriteScalarSharedVar) {
   // Setup
   Event::reset_id();

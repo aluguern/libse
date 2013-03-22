@@ -284,6 +284,11 @@ public:
     return operator=(alloc_read_instr(local_var));
   }
 
+  template<typename Domain, size_t N>
+  LocalVar<T>& operator=(LocalMemory<T, Domain, N>&& local_memory) {
+    return operator=(alloc_read_instr(std::move(local_memory)));
+  }
+
   LocalVar<T>& operator=(const SharedVar<T>& shared_var) {
     return operator=(alloc_read_instr(shared_var));
   }
