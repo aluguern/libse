@@ -1,10 +1,12 @@
 #include "gtest/gtest.h"
 
 #include "concurrent/var.h"
+#include "concurrent/recorder.h"
 
 using namespace se;
 
 TEST(VarTest, SharedDeclVarInitScalar) {
+  init_recorder();
   Event::reset_id(7);
 
   DeclVar<char> var(true);
@@ -15,6 +17,7 @@ TEST(VarTest, SharedDeclVarInitScalar) {
 }
 
 TEST(VarTest, LocalDeclVarInitScalar) {
+  init_recorder();
   Event::reset_id(7);
 
   DeclVar<char> var(false);

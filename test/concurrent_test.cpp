@@ -194,8 +194,9 @@ TEST(ConcurrencyTest, AllocLocalVar) {
 
   const LocalVar<int> var;
 
+  const size_t write_event_id = 2*42+1;
   const DirectWriteEvent<int>& write_event = var.direct_write_event_ref();
-  EXPECT_EQ(2*42+1, write_event.event_id());
+  EXPECT_EQ(write_event_id, write_event.event_id());
 
   const LiteralReadInstr<int>& zero_instr = static_cast<const LiteralReadInstr<int>&>(write_event.instr_ref());
   EXPECT_EQ(0, zero_instr.literal());
@@ -204,7 +205,7 @@ TEST(ConcurrencyTest, AllocLocalVar) {
 
   const BasicReadInstr<int>& basic_read_instr =
     dynamic_cast<const BasicReadInstr<int>&>(*read_instr_ptr);
-  EXPECT_EQ(2*43, basic_read_instr.event_ptr()->event_id());
+  EXPECT_EQ(write_event_id, basic_read_instr.event_ptr()->event_id());
 }
 
 TEST(ConcurrencyTest, LocalVarScalarAssignmentWithoutCondition) {
@@ -212,17 +213,20 @@ TEST(ConcurrencyTest, LocalVarScalarAssignmentWithoutCondition) {
   Event::reset_id(7);
 
   LocalVar<short> var;
-  EXPECT_EQ(2*7+1, var.direct_write_event_ref().event_id());
-  EXPECT_EQ(2*8, var.read_event_ptr()->event_id());
+  const size_t write_event_id = 2*7+1;
+  EXPECT_EQ(write_event_id, var.direct_write_event_ref().event_id());
+  EXPECT_EQ(write_event_id, var.read_event_ptr()->event_id());
 
   var = 5;
 
   const LiteralReadInstr<short>& read_instr = dynamic_cast<const LiteralReadInstr<short>&>(var.direct_write_event_ref().instr_ref());
 
+  const size_t new_write_event_id = 2*8+1;
+
   EXPECT_EQ(5, read_instr.literal());
   EXPECT_FALSE(var.addr().is_shared());
-  EXPECT_EQ(2*9+1, var.direct_write_event_ref().event_id());
-  EXPECT_EQ(2*10, var.read_event_ptr()->event_id());
+  EXPECT_EQ(new_write_event_id, var.direct_write_event_ref().event_id());
+  EXPECT_EQ(new_write_event_id, var.read_event_ptr()->event_id());
 }
 
 TEST(ConcurrencyTest, LocalVarAssignmentWithoutCondition) {
@@ -232,7 +236,7 @@ TEST(ConcurrencyTest, LocalVarAssignmentWithoutCondition) {
   LocalVar<char> char_integer;
   LocalVar<long> long_integer;
 
-  const size_t char_read_event_id = 2*8;
+  const size_t char_read_event_id = 2*7+1;
   EXPECT_EQ(char_read_event_id, char_integer.read_event_ptr()->event_id());
 
   long_integer = 3L + char_integer;
@@ -254,40 +258,44 @@ TEST(ConcurrencyTest, LocalVarOtherAssignmentWithoutCondition) {
   LocalVar<long> long_integer;
   LocalVar<long> another_long_integer;
 
-  EXPECT_EQ(2*12+1, char_integer.direct_write_event_ref().event_id());
-  EXPECT_EQ(2*13, char_integer.read_event_ptr()->event_id());
+  const size_t char_integer_event_id = 2*12+1;
+  const size_t long_integer_event_id = 2*13+1;
+  const size_t another_long_integer_event_id = 2*14+1;
 
-  EXPECT_EQ(2*14+1, long_integer.direct_write_event_ref().event_id());
-  EXPECT_EQ(2*15, long_integer.read_event_ptr()->event_id());
+  EXPECT_EQ(char_integer_event_id, char_integer.direct_write_event_ref().event_id());
+  EXPECT_EQ(char_integer_event_id, char_integer.read_event_ptr()->event_id());
 
-  EXPECT_EQ(2*16+1, another_long_integer.direct_write_event_ref().event_id());
-  EXPECT_EQ(2*17, another_long_integer.read_event_ptr()->event_id());
+  EXPECT_EQ(long_integer_event_id, long_integer.direct_write_event_ref().event_id());
+  EXPECT_EQ(long_integer_event_id, long_integer.read_event_ptr()->event_id());
+
+  EXPECT_EQ(another_long_integer_event_id, another_long_integer.direct_write_event_ref().event_id());
+  EXPECT_EQ(another_long_integer_event_id, another_long_integer.read_event_ptr()->event_id());
 
   // See also LocalVarAssignmentWithoutCondition
   long_integer = 3L + char_integer;
 
-  EXPECT_EQ(2*12+1, char_integer.direct_write_event_ref().event_id());
-  EXPECT_EQ(2*13, char_integer.read_event_ptr()->event_id());
+  EXPECT_EQ(char_integer_event_id, char_integer.direct_write_event_ref().event_id());
+  EXPECT_EQ(char_integer_event_id, char_integer.read_event_ptr()->event_id());
 
-  EXPECT_EQ(2*18+1, long_integer.direct_write_event_ref().event_id());
-  EXPECT_EQ(2*19, long_integer.read_event_ptr()->event_id());
+  EXPECT_EQ(2*15+1, long_integer.direct_write_event_ref().event_id());
+  EXPECT_EQ(2*15+1, long_integer.read_event_ptr()->event_id());
 
-  EXPECT_EQ(2*16+1, another_long_integer.direct_write_event_ref().event_id());
-  EXPECT_EQ(2*17, another_long_integer.read_event_ptr()->event_id());
+  EXPECT_EQ(another_long_integer_event_id, another_long_integer.direct_write_event_ref().event_id());
+  EXPECT_EQ(another_long_integer_event_id, another_long_integer.read_event_ptr()->event_id());
 
   another_long_integer = long_integer;
 
-  EXPECT_EQ(2*12+1, char_integer.direct_write_event_ref().event_id());
-  EXPECT_EQ(2*13, char_integer.read_event_ptr()->event_id());
+  EXPECT_EQ(char_integer_event_id, char_integer.direct_write_event_ref().event_id());
+  EXPECT_EQ(char_integer_event_id, char_integer.read_event_ptr()->event_id());
 
-  EXPECT_EQ(2*18+1, long_integer.direct_write_event_ref().event_id());
-  EXPECT_EQ(2*19, long_integer.read_event_ptr()->event_id());
+  EXPECT_EQ(2*15+1, long_integer.direct_write_event_ref().event_id());
+  EXPECT_EQ(2*15+1, long_integer.read_event_ptr()->event_id());
 
-  EXPECT_EQ(2*20+1, another_long_integer.direct_write_event_ref().event_id());
-  EXPECT_EQ(2*21, another_long_integer.read_event_ptr()->event_id());
+  EXPECT_EQ(2*16+1, another_long_integer.direct_write_event_ref().event_id());
+  EXPECT_EQ(2*16+1, another_long_integer.read_event_ptr()->event_id());
 
   const BasicReadInstr<long>& read_instr = dynamic_cast<const BasicReadInstr<long>&>(another_long_integer.direct_write_event_ref().instr_ref());
-  EXPECT_EQ(2*19, read_instr.event_ptr()->event_id());
+  EXPECT_EQ(2*15+1, read_instr.event_ptr()->event_id());
   EXPECT_EQ(read_instr.event_ptr(), long_integer.read_event_ptr());
 }
 
@@ -298,13 +306,13 @@ TEST(ConcurrencyTest, OverwriteLocalVarArrayElementWithReadInstrPointer) {
   LocalVar<char[5]> array_var;
 
   EXPECT_EQ(2*12+1, array_var.direct_write_event_ref().event_id());
-  EXPECT_EQ(2*13, array_var.read_event_ptr()->event_id());
+  EXPECT_EQ(2*12+1, array_var.read_event_ptr()->event_id());
 
   array_var[2] = std::unique_ptr<ReadInstr<char>>(new LiteralReadInstr<char>('Z'));
 
   EXPECT_EQ(2*12+1, array_var.direct_write_event_ref().event_id());
-  EXPECT_EQ(2*14+1, array_var.indirect_write_event_ref().event_id());
-  EXPECT_EQ(2*15, array_var.read_event_ptr()->event_id());
+  EXPECT_EQ(2*13+1, array_var.indirect_write_event_ref().event_id());
+  EXPECT_EQ(2*13+1, array_var.read_event_ptr()->event_id());
 
   const LiteralReadInstr<char>& read_instr = dynamic_cast<const LiteralReadInstr<char>&>(array_var.indirect_write_event_ref().instr_ref());
   EXPECT_EQ('Z', read_instr.literal());
@@ -317,13 +325,13 @@ TEST(ConcurrencyTest, OverwriteLocalVarArrayElementWithLiteral) {
   LocalVar<char[5]> array_var;
 
   EXPECT_EQ(2*12+1, array_var.direct_write_event_ref().event_id());
-  EXPECT_EQ(2*13, array_var.read_event_ptr()->event_id());
+  EXPECT_EQ(2*12+1, array_var.read_event_ptr()->event_id());
 
   array_var[2] = 'Z';
 
   EXPECT_EQ(2*12+1, array_var.direct_write_event_ref().event_id());
-  EXPECT_EQ(2*14+1, array_var.indirect_write_event_ref().event_id());
-  EXPECT_EQ(2*15, array_var.read_event_ptr()->event_id());
+  EXPECT_EQ(2*13+1, array_var.indirect_write_event_ref().event_id());
+  EXPECT_EQ(2*13+1, array_var.read_event_ptr()->event_id());
 
   const LiteralReadInstr<char>& read_instr = dynamic_cast<const LiteralReadInstr<char>&>(array_var.indirect_write_event_ref().instr_ref());
   EXPECT_EQ('Z', read_instr.literal());
@@ -336,21 +344,21 @@ TEST(ConcurrencyTest, OverwriteLocalVarArrayElementWithVar) {
   LocalVar<char> var;
 
   EXPECT_EQ(2*12+1, var.direct_write_event_ref().event_id());
-  EXPECT_EQ(2*13, var.read_event_ptr()->event_id());
+  EXPECT_EQ(2*12+1, var.read_event_ptr()->event_id());
 
   LocalVar<char[5]> array_var;
 
-  EXPECT_EQ(2*14+1, array_var.direct_write_event_ref().event_id());
-  EXPECT_EQ(2*15, array_var.read_event_ptr()->event_id());
+  EXPECT_EQ(2*13+1, array_var.direct_write_event_ref().event_id());
+  EXPECT_EQ(2*13+1, array_var.read_event_ptr()->event_id());
 
   array_var[2] = var;
 
-  EXPECT_EQ(2*14+1, array_var.direct_write_event_ref().event_id());
-  EXPECT_EQ(2*16+1, array_var.indirect_write_event_ref().event_id());
-  EXPECT_EQ(2*17, array_var.read_event_ptr()->event_id());
+  EXPECT_EQ(2*13+1, array_var.direct_write_event_ref().event_id());
+  EXPECT_EQ(2*14+1, array_var.indirect_write_event_ref().event_id());
+  EXPECT_EQ(2*14+1, array_var.read_event_ptr()->event_id());
 
   const BasicReadInstr<char>& read_instr = dynamic_cast<const BasicReadInstr<char>&>(array_var.indirect_write_event_ref().instr_ref());
-  EXPECT_EQ(2*13, read_instr.event_ptr()->event_id());
+  EXPECT_EQ(2*12+1, read_instr.event_ptr()->event_id());
 }
 
 TEST(ConcurrencyTest, LocalRecorder) {
@@ -372,8 +380,10 @@ TEST(ConcurrencyTest, LocalRecorder) {
 
   std::stringstream out;
   out << z3.solver;
-  EXPECT_EQ("(solver\n  (= k!13 (store k!10 #x0000000000000004 k!2))\n"
-            "  (= k!9 (store k!6 #x0000000000000002 #xa2)))", out.str());
+  EXPECT_EQ("(solver\n  (= k!7 (store k!5 #x0000000000000004 k!1))\n"
+            "  (= k!5 (store k!3 #x0000000000000002 #xa2))\n"
+            "  (= k!3 ((as const (Array (_ BitVec 64) (_ BitVec 8))) #x00))\n"
+            "  (= k!1 #x00))", out.str());
 }
 
 TEST(ConcurrencyTest, AllocSharedVar) {
@@ -551,5 +561,7 @@ TEST(ConcurrencyTest, SharedRecorder) {
   std::stringstream out;
   out << z3.solver;
   EXPECT_EQ("(solver\n  (= k!13 (store k!8 #x0000000000000004 k!10))\n"
-            "  (= k!7 (store k!4 #x0000000000000002 #xa2)))", out.str());
+            "  (= k!7 (store k!4 #x0000000000000002 #xa2))\n"
+            "  (= k!3 ((as const (Array (_ BitVec 64) (_ BitVec 8))) #x00))\n"
+            "  (= k!1 #x00))", out.str());
 }

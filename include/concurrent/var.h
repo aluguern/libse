@@ -37,6 +37,18 @@ std::unique_ptr<ReadEvent<T>> make_read_event(const MemoryAddr& addr) {
     condition_ptr));
 }
 
+template<typename T>
+std::unique_ptr<ReadEvent<T>> internal_make_read_event(const MemoryAddr& addr,
+  size_t event_id) {
+
+  const unsigned thread_id = recorder_ptr()->thread_id();
+  const std::shared_ptr<ReadInstr<bool>> condition_ptr(recorder_ptr()->
+    path_condition().top());
+
+  return std::unique_ptr<ReadEvent<T>>(new ReadEvent<T>(event_id, thread_id,
+    addr, condition_ptr));
+}
+
 /// Common data about a program variable of type `T`
 
 /// Every object has a \ref BaseDeclVar::addr() "memory address" that identifies
@@ -58,6 +70,11 @@ std::unique_ptr<ReadEvent<T>> make_read_event(const MemoryAddr& addr) {
 template<typename T>
 class BaseDeclVar {
 private:
+  // Identifies memory affected by directly writing the variable. The semantics
+  // of this depend on T. For example, a direct write to a fixed-size array
+  // variable is postulated to initialize each array element. In contrast, a
+  // direct write to a pointer variable only affects the memory at which the
+  // pointer variable resides, not the memory to which it points.
   const MemoryAddr m_addr;
 
   // Never null
@@ -66,12 +83,15 @@ private:
   static constexpr unsigned main_thread_id = 0;
 
   template<typename U>
-  static std::unique_ptr<DirectWriteEvent<U>> make_direct_write_event(
+  static std::shared_ptr<DirectWriteEvent<U>> make_direct_write_event(
     const MemoryAddr& addr) {
 
     std::unique_ptr<ReadInstr<U>> zero_instr_ptr(new LiteralReadInstr<U>());
-    return std::unique_ptr<DirectWriteEvent<U>>(new DirectWriteEvent<U>(main_thread_id,
-      addr, std::move(zero_instr_ptr)));
+    const std::shared_ptr<DirectWriteEvent<U>> direct_write_event_ptr(
+      new DirectWriteEvent<U>(main_thread_id, addr, std::move(zero_instr_ptr)));
+
+    recorder_ptr()->add_event_ptr(direct_write_event_ptr);
+    return direct_write_event_ptr;
   }
 
 protected:
@@ -103,9 +123,6 @@ public:
 template<typename T>
 class DeclVar : public BaseDeclVar<T> {
 public:
-  typedef T DirectType;
-  typedef T IndirectType;
-
   /// Declare a variable that only allows direct memory writes
 
   /// \param is_shared - can other threads modify the variable?
@@ -116,20 +133,17 @@ public:
 
 /// Fixed-sized array declaration
 template<typename T, size_t N>
-class DeclVar<T[N]> : public BaseDeclVar<T*> {
+class DeclVar<T[N]> : public BaseDeclVar<T[N]> {
 private:
   const MemoryAddr m_array_addr;
   std::shared_ptr<IndirectWriteEvent<T, size_t, N>> m_indirect_write_event_ptr;
 
 public:
-  typedef T* DirectType;
-  typedef T IndirectType;
-
   /// Declare a fixed-sized array
 
   /// \param is_array_shared - can other threads modify any array elements?
   DeclVar(bool is_array_shared) :
-    BaseDeclVar<T*>(/* base pointer cannot be modified */ false),
+    BaseDeclVar<T[N]>(/* base pointer cannot be modified */ false),
     m_array_addr(MemoryAddr::alloc<T>(is_array_shared, N)),
     m_indirect_write_event_ptr() {}
 
@@ -237,7 +251,8 @@ public:
   void operator=(std::unique_ptr<ReadInstr<Range>> instr_ptr) {
     m_memory = std::move(instr_ptr);
 
-    m_local_read_ptr->m_read_event_ptr = make_read_event<Range[N]>(m_memory.addr());
+    m_local_read_ptr->m_read_event_ptr = internal_make_read_event<Range[N]>(
+      m_memory.addr(), m_memory.m_var_ptr->indirect_write_event_ref().event_id());
   }
 
   template<typename U>
@@ -252,7 +267,8 @@ private:
   LocalRead<T> m_local_read;
 
 public:
-  LocalVar() : m_var(false), m_local_read(make_read_event<T>(m_var.addr())) {}
+  LocalVar() : m_var(false), m_local_read(internal_make_read_event<T>(
+    m_var.addr(), m_var.direct_write_event_ref().event_id())) {}
 
   const MemoryAddr& addr() const { return m_var.addr(); }
 
@@ -260,8 +276,7 @@ public:
     return m_local_read.m_read_event_ptr;
   }
 
-  const DirectWriteEvent<typename DeclVar<T>::DirectType>&
-  direct_write_event_ref() const {
+  const DirectWriteEvent<T>& direct_write_event_ref() const {
     return m_var.direct_write_event_ref();
   }
 
@@ -282,7 +297,8 @@ public:
       recorder_ptr()->instr(addr(), std::move(instr_ptr)));
 
     m_var.set_direct_write_event_ptr(write_event_ptr);
-    m_local_read.m_read_event_ptr = make_read_event<T>(addr());
+    m_local_read.m_read_event_ptr = internal_make_read_event<T>(addr(),
+      write_event_ptr->event_id());
 
     return *this;
   }
@@ -309,7 +325,7 @@ public:
 
   template<typename U = T, size_t N = std::extent<U>::value,
     class = typename std::enable_if<std::is_array<U>::value and 0 < N>::type>
-  const IndirectWriteEvent</* range */ typename DeclVar<U>::IndirectType,
+  const IndirectWriteEvent</* range */ typename std::remove_extent<T>::type,
     /* domain */ size_t, N>& indirect_write_event_ref() const {
 
     return m_var.indirect_write_event_ref();
@@ -350,8 +366,7 @@ public:
 
   const MemoryAddr& addr() const { return m_var.addr(); }
 
-  const DirectWriteEvent<typename DeclVar<T>::DirectType>&
-  direct_write_event_ref() const {
+  const DirectWriteEvent<T>& direct_write_event_ref() const {
     return m_var.direct_write_event_ref();
   }
 
@@ -398,7 +413,7 @@ public:
 
   template<typename U = T, size_t N = std::extent<U>::value,
     class = typename std::enable_if<std::is_array<U>::value and 0 < N>::type>
-  const IndirectWriteEvent</* range */ typename DeclVar<U>::IndirectType,
+  const IndirectWriteEvent</* range */ typename std::remove_extent<T>::type,
     /* domain */ size_t, N>& indirect_write_event_ref() const {
 
     return m_var.indirect_write_event_ref();

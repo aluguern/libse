@@ -82,10 +82,11 @@ public:
   DECL_READ_ENCODER_FN
 };
 
-template<typename T>
-class LiteralReadInstr<T*> : public ReadInstr<T*> {
+/// Array filled with identical literals
+template<typename T, size_t N>
+class LiteralReadInstr<T[N]> : public ReadInstr<T[N]> {
 private:
-  const uintptr_t m_literal;
+  const T m_element_literal;
   const std::shared_ptr<ReadInstr<bool>> m_condition;
 
 protected:
@@ -94,19 +95,15 @@ protected:
   }
 
 public:
-  LiteralReadInstr(const T* literal,
-    const std::shared_ptr<ReadInstr<bool>>& condition = nullptr) :
-    m_literal(static_cast<uintptr_t>(m_literal)), m_condition(condition) {}
-
-  /// Null pointer
+  /// Initializes every array element to zero
   LiteralReadInstr(const std::shared_ptr<ReadInstr<bool>>& condition = nullptr) :
-    m_literal(0), m_condition(condition) {}
+    m_element_literal(0), m_condition(condition) {}
 
   LiteralReadInstr(const LiteralReadInstr& other) = delete;
 
   ~LiteralReadInstr() {}
 
-  const uintptr_t literal() const { return m_literal; }
+  const T element_literal() const { return m_element_literal; }
 
   void filter(std::forward_list<std::shared_ptr<Event>>&) const { /* skip */ }
 

@@ -24,14 +24,33 @@ private:
     return context.int_symbol(event.event_id());
   }
 
+  template<typename T, size_t N>
+  z3::expr create_array_constant(const Event& event) {
+    z3::sort domain_sort(context.bv_sort(TypeInfo<size_t>::s_type.bv_size()));
+    z3::sort range_sort(context.bv_sort(TypeInfo<T>::s_type.bv_size()));
+    z3::sort array_sort(context.array_sort(domain_sort, range_sort));
+
+    return context.constant(create_symbol(event), array_sort);
+  }
+
 public:
   Z3() : context(), solver(context) {}
 
   template<typename T, class = typename std::enable_if<
-    std::is_arithmetic<T>::value or std::is_pointer<T>::value>::type>
+    std::is_arithmetic<T>::value>::type>
   z3::expr literal(const LiteralReadInstr<T>& instr) {
+
     const char* str = std::to_string(instr.literal()).c_str();
     return context.bv_val(str, TypeInfo<T>::s_type.bv_size());
+  }
+
+  /// Individual array element literal
+  template<typename T, size_t N = std::extent<T>::value,
+    class = typename std::enable_if<std::is_array<T>::value and 0 < N>::type>
+  z3::expr literal(const LiteralReadInstr<T>& instr) {
+
+    typedef typename std::remove_extent<T>::type ElementType;
+    return literal(LiteralReadInstr<ElementType>(instr.element_literal()));
   }
 
   z3::expr literal(const LiteralReadInstr<bool>& instr) {
@@ -58,20 +77,17 @@ public:
 
   template<typename T, size_t N>
   z3::expr constant(const ReadEvent<T[N]>& event) {
-    z3::sort domain_sort(context.bv_sort(TypeInfo<size_t>::s_type.bv_size()));
-    z3::sort range_sort(context.bv_sort(TypeInfo<T>::s_type.bv_size()));
-    z3::sort array_sort(context.array_sort(domain_sort, range_sort));
+    return create_array_constant<T, N>(event);
+  }
 
-    return context.constant(create_symbol(event), array_sort);
+  template<typename T, size_t N>
+  z3::expr constant(const WriteEvent<T[N]>& event) {
+    return create_array_constant<T, N>(event);
   }
 
   template<typename T, typename U, size_t N>
   z3::expr constant(const IndirectWriteEvent<T, U, N>& event) {
-    z3::sort domain_sort(context.bv_sort(TypeInfo<size_t>::s_type.bv_size()));
-    z3::sort range_sort(context.bv_sort(TypeInfo<T>::s_type.bv_size()));
-    z3::sort array_sort(context.array_sort(domain_sort, range_sort));
-
-    return context.constant(create_symbol(event), array_sort);
+    return create_array_constant<T, N>(event);
   }
 
   z3::expr clock(const Event& event) {
@@ -121,7 +137,7 @@ public:
   }
 
 template<typename T> z3::expr LiteralReadInstr<T>::READ_ENCODER_FN
-template<typename T> z3::expr LiteralReadInstr<T*>::READ_ENCODER_FN
+template<typename T, size_t N> z3::expr LiteralReadInstr<T[N]>::READ_ENCODER_FN
 template<typename T> z3::expr BasicReadInstr<T>::READ_ENCODER_FN
 
 template<Operator op, typename T>
@@ -168,6 +184,15 @@ public:
   z3::expr encode(const DirectWriteEvent<T>& event, Z3& helper) const {
     z3::expr lhs_expr(helper.constant(event));
     z3::expr rhs_expr(event.instr_ref().encode(m_read_encoder, helper));
+    return lhs_expr == rhs_expr;
+  }
+
+  template<typename T, size_t N>
+  z3::expr encode(const DirectWriteEvent<T[N]>& event, Z3& helper) const {
+    z3::expr lhs_expr(helper.constant(event));
+    z3::sort domain_sort(lhs_expr.get_sort().array_domain());
+    z3::expr init_expr(event.instr_ref().encode(m_read_encoder, helper));
+    z3::expr rhs_expr(z3::const_array(domain_sort, init_expr));
     return lhs_expr == rhs_expr;
   }
 

@@ -69,6 +69,10 @@ public:
     return m_event_ptrs;
   }
 
+  void add_event_ptr(const std::shared_ptr<Event>& event_ptr) {
+    m_event_ptrs.push_front(event_ptr);
+  }
+
   /// Records a direct memory write event
   template<typename T>
   std::shared_ptr<DirectWriteEvent<T>> instr(const MemoryAddr& addr,

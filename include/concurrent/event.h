@@ -81,6 +81,26 @@ protected:
     assert(type_ptr != nullptr);
   }
 
+  /// Create a unique read or write event with a specific identifier
+
+  /// \param event_id - unique event identifier
+  /// \param addr - memory address read or written by the event
+  /// \param thread_id - unique thread identifier
+  /// \param is_read - does the event cause memory to be read?
+  /// \param type_ptr - pointer to statically allocated memory, never null
+  /// \param condition_ptr - necessary condition for the event to occur
+  ///
+  /// The type_ptr describes the event in terms of its memory characteristics
+  /// such as how many bytes are read or written.
+  Event(size_t event_id, unsigned thread_id, const MemoryAddr& addr,
+    bool is_read, const Type* const type_ptr,
+    const std::shared_ptr<ReadInstr<bool>>& condition_ptr = nullptr) :
+    m_event_id(event_id), m_addr(addr), m_thread_id(thread_id),
+    m_is_read(is_read), m_type_ptr(type_ptr), m_condition_ptr(condition_ptr) {
+
+    assert(type_ptr != nullptr);
+  }
+
 public:
   static void reset_id(size_t id = 0) { s_next_id = id; }
 
@@ -134,6 +154,9 @@ public:
 };
 
 /// Memory write without another address load required
+
+/// If T is an array type, a direct write event has the effect of initializing
+/// every array element to the expression given by WriteEvent<T>::instr_ref().
 template<typename T>
 class DirectWriteEvent : public WriteEvent<T> {
 public:
@@ -179,6 +202,15 @@ public:
 /// Event that reads `sizeof(T)` bytes from memory
 template<typename T>
 class ReadEvent : public Event {
+private:
+  template<typename U>
+  friend std::unique_ptr<ReadEvent<U>> internal_make_read_event(
+    const MemoryAddr& addr, size_t event_id);
+
+  ReadEvent(size_t event_id, unsigned thread_id, const MemoryAddr& addr,
+    const std::shared_ptr<ReadInstr<bool>>& condition_ptr = nullptr) :
+    Event(event_id, thread_id, addr, true, &TypeInfo<T>::s_type, condition_ptr) {}
+
 public:
   ReadEvent(unsigned thread_id, const MemoryAddr& addr,
     const std::shared_ptr<ReadInstr<bool>>& condition_ptr = nullptr) :
