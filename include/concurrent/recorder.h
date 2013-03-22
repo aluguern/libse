@@ -112,6 +112,12 @@ public:
       }
     }
   }
+
+  void relate(MemoryAddrRelation<Event>& relation) const {
+    for (std::shared_ptr<Event> event_ptr : m_event_ptrs) {
+      relation.relate(event_ptr);
+    }
+  }
 };
 
 /// Static object which can record events and path conditions

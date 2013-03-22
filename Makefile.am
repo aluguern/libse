@@ -130,6 +130,7 @@ test_se_SOURCES = \
   test/concurrent/recorder_test.cpp \
   test/concurrent/var_test.cpp \
   test/concurrent/relation_test.cpp \
+  test/concurrent/functional_test.cpp \
   test/concurrent_test.cpp \
   test/value_test.cpp \
   test/any_test.cpp \

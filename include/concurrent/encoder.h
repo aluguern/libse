@@ -203,6 +203,11 @@ public:
     return lhs_expr == m_write_encoder.encode(event.deref_instr_ref(),
       m_read_encoder, rhs_expr, helper);
   }
+
+  template<typename T>
+  z3::expr encode(std::unique_ptr<ReadInstr<T>> instr_ptr, Z3& z3) const {
+    return instr_ptr->encode(m_read_encoder, z3);
+  }
 };
 
 #define VALUE_ENCODER_FN \
@@ -221,7 +226,7 @@ z3::expr IndirectWriteEvent<T, U, N>::VALUE_ENCODER_FN
 
 class Z3OrderEncoder {
 private:
-  Z3ReadEncoder m_read_encoder;
+  const Z3ReadEncoder m_read_encoder;
 
   z3::expr event_condition(const Event& event, Z3& z3) const {
     if (event.condition_ptr()) {
@@ -342,6 +347,12 @@ public:
     }
 
     return fr_expr;
+  }
+
+  void encode(const MemoryAddrRelation<Event>& relation, Z3& z3) const {
+    z3.solver.add(rfe_encode(relation, z3));
+    z3.solver.add(fr_encode(relation, z3));
+    z3.solver.add(ws_encode(relation, z3));
   }
 };
 
