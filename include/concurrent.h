@@ -43,11 +43,8 @@ inline std::unique_ptr<ReadInstr<typename
   std::enable_if<std::is_arithmetic<T>::value, T>::type>>
   alloc_read_instr(const T& literal) {
 
-  const std::shared_ptr<ReadInstr<bool>> condition_ptr =
-    recorder_ptr()->path_condition().top();
-
-  return std::unique_ptr<ReadInstr<T>>(
-    new LiteralReadInstr<T>(literal, condition_ptr));
+  return std::unique_ptr<ReadInstr<T>>(new LiteralReadInstr<T>(
+    literal, recorder_ptr()->path_condition_ptr()));
 }
 
 template<typename T> struct UnwrapType<LocalVar<T>> { typedef T base; };

@@ -30,11 +30,8 @@ std::unique_ptr<ReadInstr<typename std::enable_if<
 template<typename T>
 std::unique_ptr<ReadEvent<T>> make_read_event(const MemoryAddr& addr) {
   const unsigned thread_id = recorder_ptr()->thread_id();
-  const std::shared_ptr<ReadInstr<bool>> condition_ptr(recorder_ptr()->
-    path_condition().top());
-
   return std::unique_ptr<ReadEvent<T>>(new ReadEvent<T>(thread_id, addr,
-    condition_ptr));
+    recorder_ptr()->path_condition_ptr()));
 }
 
 template<typename T>
@@ -42,11 +39,8 @@ std::unique_ptr<ReadEvent<T>> internal_make_read_event(const MemoryAddr& addr,
   size_t event_id) {
 
   const unsigned thread_id = recorder_ptr()->thread_id();
-  const std::shared_ptr<ReadInstr<bool>> condition_ptr(recorder_ptr()->
-    path_condition().top());
-
   return std::unique_ptr<ReadEvent<T>>(new ReadEvent<T>(event_id, thread_id,
-    addr, condition_ptr));
+    addr, recorder_ptr()->path_condition_ptr()));
 }
 
 /// Common data about a program variable of type `T`
@@ -90,7 +84,7 @@ private:
     const std::shared_ptr<DirectWriteEvent<U>> direct_write_event_ptr(
       new DirectWriteEvent<U>(main_thread_id, addr, std::move(zero_instr_ptr)));
 
-    recorder_ptr()->add_event_ptr(direct_write_event_ptr);
+    recorder_ptr()->insert_event_ptr(direct_write_event_ptr);
     return direct_write_event_ptr;
   }
 

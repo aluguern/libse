@@ -8,8 +8,6 @@
 
 namespace se {
 
-const std::shared_ptr<ReadInstr<bool>> PathCondition::s_true_condition = nullptr;
-
 static std::stack<std::shared_ptr<Recorder>> s_recorder_ptrs;
 
 std::shared_ptr<Recorder> recorder_ptr() { return s_recorder_ptrs.top(); }

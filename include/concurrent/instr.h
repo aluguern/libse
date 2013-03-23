@@ -145,7 +145,11 @@ public:
 template<Operator op, typename U>
 class UnaryReadInstr : public ReadInstr<typename ReturnType<op, U>::result_type> {
 private:
-  const std::unique_ptr<ReadInstr<U>> m_operand_ptr;
+  const std::shared_ptr<ReadInstr<U>> m_operand_ptr;
+
+  friend class Recorder;
+  UnaryReadInstr(std::shared_ptr<ReadInstr<U>> operand_ptr) :
+    m_operand_ptr(operand_ptr) {}
 
 protected:
   std::shared_ptr<ReadInstr<bool>> condition_ptr() const {

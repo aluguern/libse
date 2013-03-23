@@ -37,7 +37,7 @@ TEST(ConcurrencyTest, AllocLiteralReadInstrWithCondition) {
   std::unique_ptr<ReadEvent<char>> event_ptr(new ReadEvent<char>(thread_id, addr));
   std::unique_ptr<ReadInstr<char>> basic_read_instr_ptr(new BasicReadInstr<char>(std::move(event_ptr)));
 
-  recorder_ptr()->path_condition().push(3L < std::move(basic_read_instr_ptr));
+  recorder_ptr()->begin_then_block(3L < std::move(basic_read_instr_ptr));
 
   std::unique_ptr<ReadInstr<long long>> read_instr_ptr(alloc_read_instr(42LL));
 

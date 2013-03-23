@@ -5,8 +5,6 @@
 #ifndef LIBSE_CONCURRENT_RECORDER_H_
 #define LIBSE_CONCURRENT_RECORDER_H_
 
-#include <memory>
-#include <stack>
 #include <forward_list>
 
 #include "concurrent/event.h"
@@ -15,62 +13,124 @@
 
 namespace se {
 
-class PathCondition {
+/// Vertex in a doubly-linked binary tree structure
+class Block {
 private:
-  static const std::shared_ptr<ReadInstr<bool>> s_true_condition;
+  friend class Recorder;
 
-  std::stack<std::shared_ptr<ReadInstr<bool>>> m_conditions;
+  std::shared_ptr<Block> m_prev_block_ptr;
+  const std::shared_ptr<Block> m_next_block_ptr;
 
-public:
-  void push(std::unique_ptr<ReadInstr<bool>> condition) {
-    m_conditions.push(std::move(condition));
-  }
+  const std::shared_ptr<ReadInstr<bool>> m_condition_ptr;
+  std::forward_list<std::shared_ptr<Event>> m_body;
 
-  void pop() { m_conditions.pop(); }
+  std::shared_ptr<Block> m_then_block_ptr;
+  std::shared_ptr<Block> m_else_block_ptr;
 
-  std::shared_ptr<ReadInstr<bool>> top() const {
-    if (m_conditions.empty()) {
-      return s_true_condition;
-    }
+  Block(std::shared_ptr<Block> prev_block_ptr,
+    std::shared_ptr<Block> next_block_ptr,
+    std::shared_ptr<ReadInstr<bool>> condition_ptr) :
+    m_prev_block_ptr(prev_block_ptr), m_next_block_ptr(next_block_ptr),
+    m_condition_ptr(condition_ptr), m_body(),
+    m_then_block_ptr(), m_else_block_ptr() {}
 
-    return m_conditions.top();
-  }
-};
-
-/// Records events and path constraints on a per-thread basis
-class Recorder {
-private:
-  const unsigned m_thread_id;
-
-  PathCondition m_path_condition;
-
-  // List of smart pointers to read and write events
-  std::forward_list<std::shared_ptr<Event>> m_event_ptrs;
-
+  /// Extract and then insert all read events in the given instruction
   template<typename T>
-  void process_read_instr(const ReadInstr<T>& instr) {
+  void bulk_insert(const ReadInstr<T>& instr) {
     // Extract from ReadInstr<T> all pointers to ReadEvent<T> objects
     std::forward_list<std::shared_ptr<Event>> read_event_ptrs;
     instr.filter(read_event_ptrs);
 
-    // Append these pointers to the per-thread event list
-     m_event_ptrs.insert_after(m_event_ptrs.cbefore_begin(),
-       /* range */ read_event_ptrs.cbegin(), read_event_ptrs.cend());
+    // Append these pointers to the block's event pointer list
+    m_body.insert_after(m_body.cbefore_begin(),
+      /* range */ read_event_ptrs.cbegin(), read_event_ptrs.cend());
   }
 
 public:
+  /// Null if and only if block is root in doubly-linked tree
+  std::shared_ptr<Block> prev_block_ptr() const { return m_prev_block_ptr; }
+
+  /// If next_block_ptr() is null, then then_block_ptr() is null
+  std::shared_ptr<Block> next_block_ptr() const { return m_next_block_ptr; }
+
+  /// If prev_block_ptr() is null, then condition_ptr() is null
+  std::shared_ptr<ReadInstr<bool>> condition_ptr() const { return m_condition_ptr; }
+  const std::forward_list<std::shared_ptr<Event>>& body() const { return m_body; }
+
+  /// If then_block_ptr() is null, then else_block_ptr() is null
+
+  /// \see_also next_block_ptr()
+  std::shared_ptr<Block> then_block_ptr() const { return m_then_block_ptr; }
+
+  /// \see_also then_block_ptr()
+  std::shared_ptr<Block> else_block_ptr() const { return m_else_block_ptr; }
+};
+
+/// Records events and path conditions on a per-thread basis
+
+/// The output of a recorder is a series-parallel graph of \ref Block "blocks".
+class Recorder {
+private:
+  const unsigned m_thread_id;
+
+  std::shared_ptr<Block> m_current_block_ptr;
+
+public:
   Recorder(unsigned thread_id) : m_thread_id(thread_id),
-    m_path_condition(), m_event_ptrs() {}
+    m_current_block_ptr(new Block(nullptr, nullptr, nullptr)) {}
 
   unsigned thread_id() const { return m_thread_id; }
-  PathCondition& path_condition() { return m_path_condition; }
 
-  std::forward_list<std::shared_ptr<Event>>& event_ptrs() {
-    return m_event_ptrs;
+  /// Conjunctions of block conditions along path from current block to the root
+  std::shared_ptr<ReadInstr<bool>> path_condition_ptr() const {
+    return m_current_block_ptr->condition_ptr();
   }
 
-  void add_event_ptr(const std::shared_ptr<Event>& event_ptr) {
-    m_event_ptrs.push_front(event_ptr);
+  const Block& current_block_ref() const { return *m_current_block_ptr; }
+  std::shared_ptr<Block> current_block_ptr() const { return m_current_block_ptr; }
+
+  /// \internal
+  std::forward_list<std::shared_ptr<Event>>& current_block_body() const {
+    return m_current_block_ptr->m_body;
+  }
+
+  bool begin_then_block(std::unique_ptr<ReadInstr<bool>> condition_ptr) {
+    // vertex to join "then" (and possibly "else") block
+    std::shared_ptr<Block> next_block_ptr(new Block(nullptr, nullptr,
+      m_current_block_ptr->condition_ptr()));
+
+    m_current_block_ptr->m_then_block_ptr = std::unique_ptr<Block>(new Block(
+      m_current_block_ptr, next_block_ptr, std::move(condition_ptr)));
+
+    m_current_block_ptr = m_current_block_ptr->then_block_ptr();
+    next_block_ptr->m_prev_block_ptr = m_current_block_ptr;
+
+    return true;
+  }
+
+  bool begin_else_block() {
+    std::shared_ptr<ReadInstr<bool>> else_condition_ptr(
+      new UnaryReadInstr<NOT, bool>(m_current_block_ptr->condition_ptr()));
+
+    std::shared_ptr<Block> prev_block_ptr(m_current_block_ptr->prev_block_ptr());
+
+    prev_block_ptr->m_else_block_ptr = std::unique_ptr<Block>(new Block(
+      prev_block_ptr, m_current_block_ptr->next_block_ptr(), else_condition_ptr));
+
+    m_current_block_ptr = prev_block_ptr->else_block_ptr();
+
+    return true;
+  }
+
+  void end_block() {
+    m_current_block_ptr = m_current_block_ptr->next_block_ptr();
+  }
+
+  void end_thread() {}
+
+  /// Insert event into current block
+  void insert_event_ptr(const std::shared_ptr<Event>& event_ptr) {
+    m_current_block_ptr->m_body.push_front(event_ptr);
   }
 
   /// Records a direct memory write event
@@ -78,12 +138,12 @@ public:
   std::shared_ptr<DirectWriteEvent<T>> instr(const MemoryAddr& addr,
     std::unique_ptr<ReadInstr<T>> instr_ptr) {
 
-    process_read_instr(*instr_ptr);
+    m_current_block_ptr->bulk_insert<T>(*instr_ptr);
 
     std::shared_ptr<DirectWriteEvent<T>> write_event_ptr(new DirectWriteEvent<T>(
-        m_thread_id, addr, std::move(instr_ptr), path_condition().top()));
+        m_thread_id, addr, std::move(instr_ptr), path_condition_ptr()));
 
-    m_event_ptrs.push_front(write_event_ptr);
+    insert_event_ptr(write_event_ptr);
     return write_event_ptr;
   }
 
@@ -93,19 +153,19 @@ public:
     std::unique_ptr<DerefReadInstr<T[N], U>> deref_instr_ptr,
     std::unique_ptr<ReadInstr<T>> instr_ptr) {
 
-    process_read_instr(*instr_ptr);
+    m_current_block_ptr->bulk_insert<T>(*instr_ptr);
 
     std::shared_ptr<IndirectWriteEvent<T, U, N>> write_event_ptr(
       new IndirectWriteEvent<T, U, N>(m_thread_id, addr,
         std::move(deref_instr_ptr), std::move(instr_ptr),
-          path_condition().top()));
+          path_condition_ptr()));
 
-    m_event_ptrs.push_front(write_event_ptr);
+    insert_event_ptr(write_event_ptr);
     return write_event_ptr;
   }
 
   void encode(const Z3ValueEncoder& encoder, Z3& z3) const {
-    for (std::shared_ptr<Event> event_ptr : m_event_ptrs) {
+    for (std::shared_ptr<Event> event_ptr : current_block_body()) {
       if (event_ptr->is_write()) {
         z3::expr equality(event_ptr->encode(encoder, z3)); 
         z3.solver.add(equality);
@@ -114,7 +174,7 @@ public:
   }
 
   void relate(MemoryAddrRelation<Event>& relation) const {
-    for (std::shared_ptr<Event> event_ptr : m_event_ptrs) {
+    for (std::shared_ptr<Event> event_ptr : current_block_body()) {
       relation.relate(event_ptr);
     }
   }
