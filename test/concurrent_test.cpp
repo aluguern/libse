@@ -363,7 +363,6 @@ TEST(ConcurrencyTest, OverwriteLocalVarArrayElementWithVar) {
 
 TEST(ConcurrencyTest, LocalRecorder) {
   init_recorder();
-  Event::reset_id();
   const unsigned thread_id = 3;
 
   push_recorder(thread_id);

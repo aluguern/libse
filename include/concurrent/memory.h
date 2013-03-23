@@ -30,6 +30,7 @@ private:
   const std::unordered_set<uintptr_t>& ptrs() const { return m_ptrs; }
 
 public:
+  static void reset(size_t addr = 0) { s_next_addr = addr; }
 
   bool is_shared() const { return m_is_shared; }
 

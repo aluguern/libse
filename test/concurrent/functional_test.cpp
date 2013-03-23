@@ -8,7 +8,6 @@ using namespace se;
 
 TEST(ConcurrentFunctionalTest, LocalArray) {
   // Setup
-  Event::reset_id();
   init_recorder();
 
   Z3 z3;
@@ -32,7 +31,6 @@ TEST(ConcurrentFunctionalTest, LocalArray) {
 
 TEST(ConcurrentFunctionalTest, LocalScalarAndArray) {
   // Setup
-  Event::reset_id();
   init_recorder();
 
   Z3 z3;
@@ -51,7 +49,6 @@ TEST(ConcurrentFunctionalTest, LocalScalarAndArray) {
 
 TEST(ConcurrentFunctionalTest, ThreeThreadsReadWriteScalarSharedVar) {
   // Setup
-  Event::reset_id();
   init_recorder();
 
   Z3 z3;

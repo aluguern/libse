@@ -13,6 +13,9 @@ static std::stack<std::shared_ptr<Recorder>> s_recorder_ptrs;
 std::shared_ptr<Recorder> recorder_ptr() { return s_recorder_ptrs.top(); }
 
 void init_recorder() {
+  Event::reset_id();
+  MemoryAddr::reset();
+
   while (!s_recorder_ptrs.empty()) { 
     s_recorder_ptrs.pop();
   }
