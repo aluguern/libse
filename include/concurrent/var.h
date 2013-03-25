@@ -31,7 +31,7 @@ template<typename T>
 std::unique_ptr<ReadEvent<T>> make_read_event(const MemoryAddr& addr) {
   const unsigned thread_id = recorder_ptr()->thread_id();
   return std::unique_ptr<ReadEvent<T>>(new ReadEvent<T>(thread_id, addr,
-    recorder_ptr()->path_condition_ptr()));
+    recorder_ptr()->block_condition_ptr()));
 }
 
 template<typename T>
@@ -40,7 +40,7 @@ std::unique_ptr<ReadEvent<T>> internal_make_read_event(const MemoryAddr& addr,
 
   const unsigned thread_id = recorder_ptr()->thread_id();
   return std::unique_ptr<ReadEvent<T>>(new ReadEvent<T>(event_id, thread_id,
-    addr, recorder_ptr()->path_condition_ptr()));
+    addr, recorder_ptr()->block_condition_ptr()));
 }
 
 /// Common data about a program variable of type `T`

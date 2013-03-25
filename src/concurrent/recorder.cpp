@@ -10,6 +10,8 @@ namespace se {
 
 static std::stack<std::shared_ptr<Recorder>> s_recorder_ptrs;
 
+const std::shared_ptr<ReadInstr<bool>> Recorder::s_true_condition_ptr = nullptr;
+
 std::shared_ptr<Recorder> recorder_ptr() { return s_recorder_ptrs.top(); }
 
 void init_recorder() {

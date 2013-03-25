@@ -44,7 +44,7 @@ inline std::unique_ptr<ReadInstr<typename
   alloc_read_instr(const T& literal) {
 
   return std::unique_ptr<ReadInstr<T>>(new LiteralReadInstr<T>(
-    literal, recorder_ptr()->path_condition_ptr()));
+    literal, recorder_ptr()->block_condition_ptr()));
 }
 
 template<typename T> struct UnwrapType<LocalVar<T>> { typedef T base; };

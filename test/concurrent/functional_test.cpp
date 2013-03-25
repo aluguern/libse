@@ -29,6 +29,288 @@ TEST(ConcurrentFunctionalTest, LocalArray) {
             "  (not (= (select k!3 #x0000000000000002) #x5a)))", out.str());
 }
 
+class CharBlockPrinter {
+public:
+  std::stringstream out;
+
+private:
+  int indent;
+  void print(std::string str) {
+    assert(indent >= 0);
+    out << std::string(indent, ' ') << str << std::endl;
+  }
+
+  void print(char c) {
+    assert(indent >= 0);
+    out << std::string(indent, ' ') << c << std::endl;
+  }
+
+public:
+  CharBlockPrinter() : out(), indent(0) {}
+
+  void print_block_ptr(std::shared_ptr<Block> block_ptr) {
+    print("{");
+    indent += 2;
+
+    for (std::shared_ptr<Event> event_ptr : block_ptr->body()) {
+      const WriteEvent<char>& write_event =
+        static_cast<const WriteEvent<char>&>(*event_ptr);
+
+      const LiteralReadInstr<char>& literal_read_instr =
+        static_cast<const LiteralReadInstr<char>&>(write_event.instr_ref());
+
+      if (literal_read_instr.literal()) {
+        print(literal_read_instr.literal());
+      }
+    }
+
+    for (std::shared_ptr<Block> inner_block_ptr : block_ptr->inner_block_ptrs()) {
+      print_block_ptr(inner_block_ptr);
+    }
+
+    if (block_ptr->else_block_ptr()) {
+      indent -= 2;
+      print("} else {");
+      indent += 2;
+
+      print_block_ptr(block_ptr->else_block_ptr());
+    }
+
+    indent -= 2;
+    print("}");
+  }
+};
+
+TEST(ConcurrentFunctionalTest, ElseIf) {
+  // Setup
+  init_recorder();
+
+  CharBlockPrinter printer;
+  SharedVar<char> x;
+
+  x = 'A';
+  recorder_ptr()->begin_then(x == '?'); {
+  } recorder_ptr()->begin_else(); {
+      recorder_ptr()->begin_then(x == '?'); {
+        recorder_ptr()->begin_then(x == '?'); {
+          x = 'B';
+        } recorder_ptr()->begin_else(); {
+          x = 'C';
+        } recorder_ptr()->end_branch();
+      } recorder_ptr()->end_branch();
+      x = 'D';
+  } recorder_ptr()->end_branch();
+
+  printer.print_block_ptr(recorder_ptr()->most_outer_block_ptr());
+  EXPECT_EQ("{\n"
+            "  {\n"
+            "    A\n"
+            "  }\n"
+            "  {\n"
+            "  } else {\n"
+            "    {\n"
+            "      {\n"
+            "        {\n"
+            "          B\n"
+            "        } else {\n"
+            "          {\n"
+            "            C\n"
+            "          }\n"
+            "        }\n"
+            "      }\n"
+            "      {\n"
+            "        D\n"
+            "      }\n"
+            "    }\n"
+            "  }\n"
+            "  {\n  }\n"
+            "}\n", printer.out.str());
+}
+
+TEST(ConcurrentFunctionalTest, SeriesParallelGraph) {
+  // Setup
+  init_recorder();
+
+  CharBlockPrinter printer;
+  SharedVar<char> x;
+
+  x = 'A';
+  recorder_ptr()->begin_then(x == '?'); {
+    x = 'B';
+    recorder_ptr()->begin_then(x == '?'); {
+      recorder_ptr()->begin_then(x == '?'); {
+        x = 'C';
+      } recorder_ptr()->end_branch();
+      recorder_ptr()->begin_then(x == '?'); {
+        x = 'D';
+      } recorder_ptr()->end_branch();
+    } recorder_ptr()->end_branch();
+    recorder_ptr()->begin_then(x == '?'); {
+      x = 'E';
+      recorder_ptr()->begin_then(x == '?'); {
+        x = 'F';
+      } recorder_ptr()->end_branch();
+      recorder_ptr()->begin_then(x == '?'); {
+        x = 'G';
+      } recorder_ptr()->end_branch();
+    } recorder_ptr()->end_branch();
+    recorder_ptr()->begin_then(x == '?'); {
+      recorder_ptr()->begin_then(x == '?'); {
+        x = 'H';
+      } recorder_ptr()->end_branch();
+      x = 'I';
+      recorder_ptr()->begin_then(x == '?'); {
+        x = 'J';
+      } recorder_ptr()->end_branch();
+    } recorder_ptr()->end_branch();
+    recorder_ptr()->begin_then(x == '?'); {
+      x = 'K';
+      recorder_ptr()->begin_then(x == '?'); {
+        x = 'L';
+      } recorder_ptr()->end_branch();
+      x = 'M';
+      recorder_ptr()->begin_then(x == '?'); {
+        x = 'N';
+      } recorder_ptr()->end_branch();
+    } recorder_ptr()->end_branch();
+  } recorder_ptr()->begin_else(); {
+    recorder_ptr()->begin_then(x == '?'); {
+      recorder_ptr()->begin_then(x == '?'); {
+        x = 'O';
+      } recorder_ptr()->begin_else(); {
+        x = 'P';
+      } recorder_ptr()->end_branch();
+    } recorder_ptr()->end_branch();
+    x = 'Q';
+    recorder_ptr()->begin_then(x == '?'); {
+      x = 'R';
+      recorder_ptr()->begin_then(x == '?'); {
+        x = 'S';
+      } recorder_ptr()->begin_else(); {
+        x = 'T';
+      } recorder_ptr()->end_branch();
+    } recorder_ptr()->end_branch();
+    recorder_ptr()->begin_then(x == '?'); {
+      recorder_ptr()->begin_then(x == '?'); {
+        x = 'U';
+      } recorder_ptr()->begin_else(); {
+        x = 'W';
+      } recorder_ptr()->end_branch();
+      x = 'V';
+    } recorder_ptr()->end_branch();
+    recorder_ptr()->begin_then(x == '?'); {
+      x = 'X';
+      recorder_ptr()->begin_then(x == '?'); {
+        x = 'Y';
+      } recorder_ptr()->end_branch();
+      recorder_ptr()->begin_then(x == '?'); {
+        x = 'Z';
+      } recorder_ptr()->end_branch();
+      x = '!';
+    } recorder_ptr()->end_branch();
+  } recorder_ptr()->end_branch();
+
+  printer.print_block_ptr(recorder_ptr()->most_outer_block_ptr());
+  EXPECT_EQ("{\n"
+            "  {\n"
+            "    A\n"
+            "  }\n"
+            "  {\n"
+            "    B\n"
+            "    {\n"
+            "      {\n"
+            "        C\n"
+            "      }\n"
+            "      {\n"
+            "        D\n"
+            "      }\n"
+            "    }\n"
+            "    {\n"
+            "      E\n"
+            "      {\n"
+            "        F\n"
+            "      }\n"
+            "      {\n"
+            "        G\n"
+            "      }\n"
+            "    }\n"
+            "    {\n"
+            "      {\n"
+            "        H\n"
+            "      }\n"
+            "      {\n"
+            "        I\n"
+            "      }\n"
+            "      {\n"
+            "        J\n"
+            "      }\n"
+            "    }\n"
+            "    {\n"
+            "      K\n"
+            "      {\n"
+            "        L\n"
+            "      }\n"
+            "      {\n"
+            "        M\n"
+            "      }\n"
+            "      {\n"
+            "        N\n"
+            "      }\n"
+            "    }\n"
+            "  } else {\n"
+            "    {\n"
+            "      {\n"
+            "        {\n"
+            "          O\n"
+            "        } else {\n"
+            "          {\n"
+            "            P\n"
+            "          }\n"
+            "        }\n"
+            "      }\n"
+            "      {\n"
+            "        Q\n"
+            "      }\n"
+            "      {\n"
+            "        R\n"
+            "        {\n"
+            "          S\n"
+            "        } else {\n"
+            "          {\n"
+            "            T\n"
+            "          }\n"
+            "        }\n"
+            "      }\n"
+            "      {\n"
+            "        {\n"
+            "          U\n"
+            "        } else {\n"
+            "          {\n"
+            "            W\n"
+            "          }\n"
+            "        }\n"
+            "        {\n"
+            "          V\n"
+            "        }\n"
+            "      }\n"
+            "      {\n"
+            "        X\n"
+            "        {\n"
+            "          Y\n"
+            "        }\n"
+            "        {\n"
+            "          Z\n"
+            "        }\n"
+            "        {\n"
+            "          !\n"
+            "        }\n"
+            "      }\n"
+            "    }\n"
+            "  }\n"
+            "  {\n  }\n"
+            "}\n", printer.out.str());
+}
+
 TEST(ConcurrentFunctionalTest, LocalScalarAndArray) {
   // Setup
   init_recorder();

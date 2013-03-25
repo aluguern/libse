@@ -13,56 +13,103 @@
 
 namespace se {
 
-/// Vertex in a doubly-linked binary tree structure
+/// Logical control flow unit in structured programs
+
+/// A block is a vertex in a series-parallel graph. A block is defined to have a
+/// list of \ref Event "events", an \ref Block::outer_block_ptr() "outer block",
+/// none or more \ref Block::inner_block_ptrs() "inner blocks", and an optional
+/// \ref Block::else_block_ptr() "else block".
+///
+/// The list of events is called the \ref Block::body() "body" of the block.
+/// A block is said to be "empty" if its body is empty; otherwise, the block is
+/// called "nonempty". The events in the body are interpreted to occur before
+/// those in any inner blocks. Also, if I and I' are inner blocks of block B,
+/// and I is before I' in the list of inner blocks of B, then the events in I
+/// occur before those in I'.
+///
+/// Each block has a necessary \ref Block::condition_ptr() "condition" for the
+/// block to execute. The block is said to be "conditional" if its condition is
+/// not null; otherwise, it is called "unconditional". The inner blocks can be
+/// conditional, unconditional, or any mixture thereof. If B has an else block
+/// C, then C has as condition the negation of B's condition.
 class Block {
 private:
   friend class Recorder;
 
-  std::shared_ptr<Block> m_prev_block_ptr;
-  const std::shared_ptr<Block> m_next_block_ptr;
+  const std::shared_ptr<Block> m_outer_block_ptr;
+  std::shared_ptr<ReadInstr<bool>> m_condition_ptr;
 
-  const std::shared_ptr<ReadInstr<bool>> m_condition_ptr;
   std::forward_list<std::shared_ptr<Event>> m_body;
+  std::forward_list<std::shared_ptr<Block>> m_inner_block_ptrs;
 
-  std::shared_ptr<Block> m_then_block_ptr;
+  // both iterators are strictly internal
+  std::forward_list<std::shared_ptr<Block>>::const_iterator
+    m_inner_block_ptr_cend;
+  std::forward_list<std::shared_ptr<Block>>::const_iterator
+    m_inner_block_ptr_cbefore_end;
+
   std::shared_ptr<Block> m_else_block_ptr;
 
-  Block(std::shared_ptr<Block> prev_block_ptr,
-    std::shared_ptr<Block> next_block_ptr,
-    std::shared_ptr<ReadInstr<bool>> condition_ptr) :
-    m_prev_block_ptr(prev_block_ptr), m_next_block_ptr(next_block_ptr),
-    m_condition_ptr(condition_ptr), m_body(),
-    m_then_block_ptr(), m_else_block_ptr() {}
+  Block(std::shared_ptr<Block> outer_block_ptr,
+    std::unique_ptr<ReadInstr<bool>> condition_ptr = nullptr) :
+    m_outer_block_ptr(outer_block_ptr),
+    m_condition_ptr(std::move(condition_ptr)),
+    m_body(/* empty */), m_inner_block_ptrs(/* empty */),
+    m_inner_block_ptr_cend(m_inner_block_ptrs.cbefore_begin()),
+    m_else_block_ptr(/* none */) {}
 
-  /// Extract and then insert all read events in the given instruction
+  /// Insert in the body all those read events that are in the given instruction
   template<typename T>
   void bulk_insert(const ReadInstr<T>& instr) {
-    // Extract from ReadInstr<T> all pointers to ReadEvent<T> objects
+    // extract from ReadInstr<T> all pointers to ReadEvent<T> objects
     std::forward_list<std::shared_ptr<Event>> read_event_ptrs;
     instr.filter(read_event_ptrs);
 
-    // Append these pointers to the block's event pointer list
+    // append these pointers to the block's event pointer list
     m_body.insert_after(m_body.cbefore_begin(),
       /* range */ read_event_ptrs.cbegin(), read_event_ptrs.cend());
   }
 
+  void push_inner_block_ptr(const std::shared_ptr<Block>& block_ptr) {
+    m_inner_block_ptr_cbefore_end = m_inner_block_ptr_cend;
+    m_inner_block_ptr_cend = m_inner_block_ptrs.insert_after(
+      m_inner_block_ptr_cend, block_ptr);
+  }
+
+  void pop_inner_block_ptr() {
+    assert(!m_inner_block_ptrs.empty());
+    m_inner_block_ptr_cbefore_end = m_inner_block_ptrs.erase_after(
+     m_inner_block_ptr_cbefore_end);
+  }
+
 public:
-  /// Null if and only if block is root in doubly-linked tree
-  std::shared_ptr<Block> prev_block_ptr() const { return m_prev_block_ptr; }
+  /// \internal
+  std::shared_ptr<Block> end_inner_block_ptr() const {
+    return *m_inner_block_ptr_cend;
+  }
 
-  /// If next_block_ptr() is null, then then_block_ptr() is null
-  std::shared_ptr<Block> next_block_ptr() const { return m_next_block_ptr; }
+  /// null if and only if this is the most outer block
 
-  /// If prev_block_ptr() is null, then condition_ptr() is null
-  std::shared_ptr<ReadInstr<bool>> condition_ptr() const { return m_condition_ptr; }
-  const std::forward_list<std::shared_ptr<Event>>& body() const { return m_body; }
+  /// If this is the most outer block, then body() is empty but 
+  /// inner_block_ptrs() has at least one block that can be
+  /// conditional or even unconditional.
+  std::shared_ptr<Block> outer_block_ptr() const {
+    return m_outer_block_ptr;
+  }
 
-  /// If then_block_ptr() is null, then else_block_ptr() is null
+  // If condition_ptr() is null, then inner_block_ptrs() is empty
+  std::shared_ptr<ReadInstr<bool>> condition_ptr() const {
+    return m_condition_ptr;
+  }
 
-  /// \see_also next_block_ptr()
-  std::shared_ptr<Block> then_block_ptr() const { return m_then_block_ptr; }
+  const std::forward_list<std::shared_ptr<Event>>& body() const {
+    return m_body;
+  }
 
-  /// \see_also then_block_ptr()
+  const std::forward_list<std::shared_ptr<Block>>& inner_block_ptrs() const {
+    return m_inner_block_ptrs;
+  }
+
   std::shared_ptr<Block> else_block_ptr() const { return m_else_block_ptr; }
 };
 
@@ -71,18 +118,38 @@ public:
 /// The output of a recorder is a series-parallel graph of \ref Block "blocks".
 class Recorder {
 private:
+  static const std::shared_ptr<ReadInstr<bool>> s_true_condition_ptr;
+
   const unsigned m_thread_id;
+  const std::shared_ptr<Block> m_most_outer_block_ptr;
 
   std::shared_ptr<Block> m_current_block_ptr;
 
+  static std::unique_ptr<ReadInstr<bool>> negate(
+    const std::shared_ptr<ReadInstr<bool>>& condition_ptr) {
+
+    return std::unique_ptr<ReadInstr<bool>>(new UnaryReadInstr<NOT, bool>(
+      condition_ptr));
+  }
+
 public:
   Recorder(unsigned thread_id) : m_thread_id(thread_id),
-    m_current_block_ptr(new Block(nullptr, nullptr, nullptr)) {}
+    m_most_outer_block_ptr(new Block(nullptr, nullptr)),
+    m_current_block_ptr(std::unique_ptr<Block>(new Block(
+      m_most_outer_block_ptr))) {
+
+    m_most_outer_block_ptr->push_inner_block_ptr(m_current_block_ptr);
+  }
 
   unsigned thread_id() const { return m_thread_id; }
 
-  /// Conjunctions of block conditions along path from current block to the root
-  std::shared_ptr<ReadInstr<bool>> path_condition_ptr() const {
+  std::shared_ptr<Block> most_outer_block_ptr() const {
+    return m_most_outer_block_ptr;
+  }
+
+  /// Conjunction of nested block conditions
+  std::shared_ptr<ReadInstr<bool>> block_condition_ptr() const {
+    // TODO: Keep on conjoining these conditions until reaching most outer block
     return m_current_block_ptr->condition_ptr();
   }
 
@@ -94,36 +161,84 @@ public:
     return m_current_block_ptr->m_body;
   }
 
-  bool begin_then_block(std::unique_ptr<ReadInstr<bool>> condition_ptr) {
-    // vertex to join "then" (and possibly "else") block
-    std::shared_ptr<Block> next_block_ptr(new Block(nullptr, nullptr,
-      m_current_block_ptr->condition_ptr()));
+  bool begin_then(std::unique_ptr<ReadInstr<bool>> condition_ptr) {
+    if (m_current_block_ptr->condition_ptr()) {
+      // start nested branch inside current conditional block
+      const std::shared_ptr<Block> then_block_ptr(new Block(
+        m_current_block_ptr, std::move(condition_ptr)));
 
-    m_current_block_ptr->m_then_block_ptr = std::unique_ptr<Block>(new Block(
-      m_current_block_ptr, next_block_ptr, std::move(condition_ptr)));
+      m_current_block_ptr->push_inner_block_ptr(then_block_ptr);
+      m_current_block_ptr = then_block_ptr;
+    } else {
+      // unconditional blocks cannot have inner blocks
+      assert(m_current_block_ptr->inner_block_ptrs().empty());
 
-    m_current_block_ptr = m_current_block_ptr->then_block_ptr();
-    next_block_ptr->m_prev_block_ptr = m_current_block_ptr;
+      if (m_current_block_ptr->body().empty()) {
+        // reuse current unconditional and empty block
+        m_current_block_ptr->m_condition_ptr = std::move(condition_ptr);
+      } else {
+        std::shared_ptr<Block> outer_block_ptr(
+          m_current_block_ptr->outer_block_ptr());
+
+        // next branch after an unconditional block inside outer block
+        std::shared_ptr<Block> then_block_ptr(new Block(outer_block_ptr,
+          std::move(condition_ptr)));
+
+        outer_block_ptr->push_inner_block_ptr(then_block_ptr);
+        m_current_block_ptr = then_block_ptr;       
+      }
+    }
 
     return true;
   }
 
-  bool begin_else_block() {
-    std::shared_ptr<ReadInstr<bool>> else_condition_ptr(
-      new UnaryReadInstr<NOT, bool>(m_current_block_ptr->condition_ptr()));
+  bool begin_else() {
+    if (!m_current_block_ptr->condition_ptr()) {
+      // unconditional blocks cannot have inner blocks
+      assert(m_current_block_ptr->inner_block_ptrs().empty());
 
-    std::shared_ptr<Block> prev_block_ptr(m_current_block_ptr->prev_block_ptr());
+      if (m_current_block_ptr->body().empty()) {
+        m_current_block_ptr = m_current_block_ptr->outer_block_ptr();
 
-    prev_block_ptr->m_else_block_ptr = std::unique_ptr<Block>(new Block(
-      prev_block_ptr, m_current_block_ptr->next_block_ptr(), else_condition_ptr));
+        // delete last empty inner block inside "then" branch
+        m_current_block_ptr->pop_inner_block_ptr();
+      } else {
+        m_current_block_ptr = m_current_block_ptr->outer_block_ptr();
+      }
+    }
 
-    m_current_block_ptr = prev_block_ptr->else_block_ptr();
+    // we're now in the block for the "then" branch
+    assert(nullptr != m_current_block_ptr->outer_block_ptr());
+    std::shared_ptr<Block> else_block_ptr(new Block(
+      m_current_block_ptr->outer_block_ptr(),
+      negate(m_current_block_ptr->condition_ptr())));
+
+    m_current_block_ptr->m_else_block_ptr = else_block_ptr;
+    m_current_block_ptr = else_block_ptr;
 
     return true;
   }
 
-  void end_block() {
-    m_current_block_ptr = m_current_block_ptr->next_block_ptr();
+  // Create next nested, unconditional block inside outer block
+  void end_branch() {
+    std::shared_ptr<Block> outer_block_ptr(
+      m_current_block_ptr->outer_block_ptr());
+
+    if (!m_current_block_ptr->condition_ptr()) {
+      // unconditional blocks cannot have inner blocks
+      assert(m_current_block_ptr->inner_block_ptrs().empty());
+
+      if (m_current_block_ptr->body().empty()) {
+        // delete last empty inner block
+        outer_block_ptr->pop_inner_block_ptr();
+      }
+
+      outer_block_ptr = outer_block_ptr->outer_block_ptr();
+    }
+
+    std::shared_ptr<Block> unconditional_block_ptr(new Block(outer_block_ptr));
+    outer_block_ptr->push_inner_block_ptr(unconditional_block_ptr);
+    m_current_block_ptr = unconditional_block_ptr;
   }
 
   void end_thread() {}
@@ -141,7 +256,7 @@ public:
     m_current_block_ptr->bulk_insert<T>(*instr_ptr);
 
     std::shared_ptr<DirectWriteEvent<T>> write_event_ptr(new DirectWriteEvent<T>(
-        m_thread_id, addr, std::move(instr_ptr), path_condition_ptr()));
+      m_thread_id, addr, std::move(instr_ptr), block_condition_ptr()));
 
     insert_event_ptr(write_event_ptr);
     return write_event_ptr;
@@ -158,7 +273,7 @@ public:
     std::shared_ptr<IndirectWriteEvent<T, U, N>> write_event_ptr(
       new IndirectWriteEvent<T, U, N>(m_thread_id, addr,
         std::move(deref_instr_ptr), std::move(instr_ptr),
-          path_condition_ptr()));
+          block_condition_ptr()));
 
     insert_event_ptr(write_event_ptr);
     return write_event_ptr;
