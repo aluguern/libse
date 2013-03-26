@@ -203,8 +203,8 @@ public:
   const ReadInstr<V>& roperand_ref() const { return *m_roperand_ptr; }
 
   void filter(std::forward_list<std::shared_ptr<Event>>& event_ptrs) const {
-    loperand_ref().filter(event_ptrs);
     roperand_ref().filter(event_ptrs);
+    loperand_ref().filter(event_ptrs);
   }
 
   DECL_READ_ENCODER_FN

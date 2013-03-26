@@ -5,98 +5,50 @@
 #ifndef LIBSE_CONCURRENT_RECORDER_H_
 #define LIBSE_CONCURRENT_RECORDER_H_
 
-#include <forward_list>
-#include <list>
-
-#include "concurrent/event.h"
 #include "concurrent/instr.h"
+#include "concurrent/block.h"
 #include "concurrent/encoder.h"
 
 namespace se {
 
-/// Logical control flow unit in structured programs
+static void internal_relate(const std::shared_ptr<Block>& block_ptr,
+  MemoryAddrRelation<Event>& relation) {
 
-/// A block is a vertex in a series-parallel graph. A block is defined to have a
-/// list of \ref Event "events", an \ref Block::outer_block_ptr() "outer block",
-/// none or more \ref Block::inner_block_ptrs() "inner blocks", and an optional
-/// \ref Block::else_block_ptr() "else block".
-///
-/// The list of events is called the \ref Block::body() "body" of the block.
-/// A block is said to be "empty" if its body is empty; otherwise, the block is
-/// called "nonempty". The events in the body are interpreted to occur before
-/// those in any inner blocks. Also, if I and I' are inner blocks of block B,
-/// and I is before I' in the list of inner blocks of B, then the events in I
-/// occur before those in I'.
-///
-/// Each block has a necessary \ref Block::condition_ptr() "condition" for the
-/// block to execute. The block is said to be "conditional" if its condition is
-/// not null; otherwise, it is called "unconditional". The inner blocks can be
-/// conditional, unconditional, or any mixture thereof. If B has an else block
-/// C, then C has as condition the negation of B's condition.
-class Block {
-private:
-  friend class Recorder;
-
-  const std::shared_ptr<Block> m_outer_block_ptr;
-  std::shared_ptr<ReadInstr<bool>> m_condition_ptr;
-
-  std::forward_list<std::shared_ptr<Event>> m_body;
-  std::list<std::shared_ptr<Block>> m_inner_block_ptrs;
-
-  std::shared_ptr<Block> m_else_block_ptr;
-
-  Block(std::shared_ptr<Block> outer_block_ptr,
-    std::unique_ptr<ReadInstr<bool>> condition_ptr = nullptr) :
-    m_outer_block_ptr(outer_block_ptr),
-    m_condition_ptr(std::move(condition_ptr)),
-    m_body(/* empty */), m_inner_block_ptrs(/* empty */),
-    m_else_block_ptr(/* none */) {}
-
-  /// Insert in the body all those read events that are in the given instruction
-  template<typename T>
-  void bulk_insert(const ReadInstr<T>& instr) {
-    // extract from ReadInstr<T> all pointers to ReadEvent<T> objects
-    std::forward_list<std::shared_ptr<Event>> read_event_ptrs;
-    instr.filter(read_event_ptrs);
-
-    // append these pointers to the block's event pointer list
-    m_body.insert_after(m_body.cbefore_begin(),
-      /* range */ read_event_ptrs.cbegin(), read_event_ptrs.cend());
+  for (const std::shared_ptr<Event>& event_ptr : block_ptr->body()) {
+    relation.relate(event_ptr);
   }
 
-  void push_inner_block_ptr(const std::shared_ptr<Block>& block_ptr) {
-    m_inner_block_ptrs.push_back(block_ptr);
+  for (const std::shared_ptr<Block>& inner_block_ptr :
+    block_ptr->inner_block_ptrs()) {
+
+    internal_relate(inner_block_ptr, relation);
   }
 
-  void pop_inner_block_ptr() {
-    m_inner_block_ptrs.pop_back();
+  if (block_ptr->else_block_ptr()) {
+    internal_relate(block_ptr->else_block_ptr(), relation);
+  }
+}
+
+static void internal_encode(const std::shared_ptr<Block>& block_ptr,
+  const Z3ValueEncoder& encoder, Z3& z3) {
+
+  for (const std::shared_ptr<Event>& event_ptr : block_ptr->body()) {
+    if (event_ptr->is_write()) {
+      z3::expr equality(event_ptr->encode(encoder, z3)); 
+      z3.solver.add(equality);
+    }
   }
 
-public:
-  /// null if and only if this is the most outer block
+  for (const std::shared_ptr<Block>& inner_block_ptr :
+    block_ptr->inner_block_ptrs()) {
 
-  /// If this is the most outer block, then body() is empty but 
-  /// inner_block_ptrs() has at least one block that can be
-  /// conditional or even unconditional.
-  std::shared_ptr<Block> outer_block_ptr() const {
-    return m_outer_block_ptr;
+    internal_encode(inner_block_ptr, encoder, z3);
   }
 
-  // If condition_ptr() is null, then inner_block_ptrs() is empty
-  std::shared_ptr<ReadInstr<bool>> condition_ptr() const {
-    return m_condition_ptr;
+  if (block_ptr->else_block_ptr()) {
+    internal_encode(block_ptr->else_block_ptr(), encoder, z3);
   }
-
-  const std::forward_list<std::shared_ptr<Event>>& body() const {
-    return m_body;
-  }
-
-  const std::list<std::shared_ptr<Block>>& inner_block_ptrs() const {
-    return m_inner_block_ptrs;
-  }
-
-  std::shared_ptr<Block> else_block_ptr() const { return m_else_block_ptr; }
-};
+}
 
 /// Records events and path conditions on a per-thread basis
 
@@ -230,7 +182,7 @@ public:
 
   /// Insert event into current block
   void insert_event_ptr(const std::shared_ptr<Event>& event_ptr) {
-    m_current_block_ptr->m_body.push_front(event_ptr);
+    m_current_block_ptr->insert_event_ptr(event_ptr);
   }
 
   /// Records a direct memory write event
@@ -265,18 +217,11 @@ public:
   }
 
   void encode(const Z3ValueEncoder& encoder, Z3& z3) const {
-    for (std::shared_ptr<Event> event_ptr : current_block_body()) {
-      if (event_ptr->is_write()) {
-        z3::expr equality(event_ptr->encode(encoder, z3)); 
-        z3.solver.add(equality);
-      }
-    }
+    internal_encode(most_outer_block_ptr(), encoder, z3);
   }
 
   void relate(MemoryAddrRelation<Event>& relation) const {
-    for (std::shared_ptr<Event> event_ptr : current_block_body()) {
-      relation.relate(event_ptr);
-    }
+    internal_relate(most_outer_block_ptr(), relation);
   }
 };
 

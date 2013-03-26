@@ -234,13 +234,13 @@ TEST(InstrTest, Filter) {
   std::forward_list<std::shared_ptr<Event>> event_ptrs;
   instr.filter(event_ptrs);
 
-  const ReadEvent<long>& event_b = dynamic_cast<const ReadEvent<long>&>(*event_ptrs.front());
-  EXPECT_EQ(2*8, event_b.event_id());
+  const ReadEvent<int>& event_a = dynamic_cast<const ReadEvent<int>&>(*event_ptrs.front());
+  EXPECT_EQ(2*7, event_a.event_id());
 
   event_ptrs.pop_front();
 
-  const ReadEvent<int>& event_a = dynamic_cast<const ReadEvent<int>&>(*event_ptrs.front());
-  EXPECT_EQ(2*7, event_a.event_id());
+  const ReadEvent<long>& event_b = dynamic_cast<const ReadEvent<long>&>(*event_ptrs.front());
+  EXPECT_EQ(2*8, event_b.event_id());
 
   event_ptrs.pop_front();
   EXPECT_TRUE(event_ptrs.empty());

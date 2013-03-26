@@ -379,10 +379,10 @@ TEST(ConcurrencyTest, LocalRecorder) {
 
   std::stringstream out;
   out << z3.solver;
-  EXPECT_EQ("(solver\n  (= k!7 (store k!5 #x0000000000000004 k!1))\n"
-            "  (= k!5 (store k!3 #x0000000000000002 #xa2))\n"
+  EXPECT_EQ("(solver\n  (= k!1 #x00)\n"
             "  (= k!3 ((as const (Array (_ BitVec 64) (_ BitVec 8))) #x00))\n"
-            "  (= k!1 #x00))", out.str());
+            "  (= k!5 (store k!3 #x0000000000000002 #xa2))\n"
+            "  (= k!7 (store k!5 #x0000000000000004 k!1)))", out.str());
 }
 
 TEST(ConcurrencyTest, AllocSharedVar) {
@@ -559,8 +559,8 @@ TEST(ConcurrencyTest, SharedRecorder) {
 
   std::stringstream out;
   out << z3.solver;
-  EXPECT_EQ("(solver\n  (= k!13 (store k!8 #x0000000000000004 k!10))\n"
-            "  (= k!7 (store k!4 #x0000000000000002 #xa2))\n"
+  EXPECT_EQ("(solver\n  (= k!1 #x00)\n"
             "  (= k!3 ((as const (Array (_ BitVec 64) (_ BitVec 8))) #x00))\n"
-            "  (= k!1 #x00))", out.str());
+            "  (= k!7 (store k!4 #x0000000000000002 #xa2))\n"
+            "  (= k!13 (store k!8 #x0000000000000004 k!10)))", out.str());
 }
