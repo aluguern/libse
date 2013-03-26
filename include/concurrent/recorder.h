@@ -6,6 +6,7 @@
 #define LIBSE_CONCURRENT_RECORDER_H_
 
 #include <forward_list>
+#include <list>
 
 #include "concurrent/event.h"
 #include "concurrent/instr.h"
@@ -40,13 +41,7 @@ private:
   std::shared_ptr<ReadInstr<bool>> m_condition_ptr;
 
   std::forward_list<std::shared_ptr<Event>> m_body;
-  std::forward_list<std::shared_ptr<Block>> m_inner_block_ptrs;
-
-  // both iterators are strictly internal
-  std::forward_list<std::shared_ptr<Block>>::const_iterator
-    m_inner_block_ptr_cend;
-  std::forward_list<std::shared_ptr<Block>>::const_iterator
-    m_inner_block_ptr_cbefore_end;
+  std::list<std::shared_ptr<Block>> m_inner_block_ptrs;
 
   std::shared_ptr<Block> m_else_block_ptr;
 
@@ -55,7 +50,6 @@ private:
     m_outer_block_ptr(outer_block_ptr),
     m_condition_ptr(std::move(condition_ptr)),
     m_body(/* empty */), m_inner_block_ptrs(/* empty */),
-    m_inner_block_ptr_cend(m_inner_block_ptrs.cbefore_begin()),
     m_else_block_ptr(/* none */) {}
 
   /// Insert in the body all those read events that are in the given instruction
@@ -71,23 +65,14 @@ private:
   }
 
   void push_inner_block_ptr(const std::shared_ptr<Block>& block_ptr) {
-    m_inner_block_ptr_cbefore_end = m_inner_block_ptr_cend;
-    m_inner_block_ptr_cend = m_inner_block_ptrs.insert_after(
-      m_inner_block_ptr_cend, block_ptr);
+    m_inner_block_ptrs.push_back(block_ptr);
   }
 
   void pop_inner_block_ptr() {
-    assert(!m_inner_block_ptrs.empty());
-    m_inner_block_ptr_cbefore_end = m_inner_block_ptrs.erase_after(
-     m_inner_block_ptr_cbefore_end);
+    m_inner_block_ptrs.pop_back();
   }
 
 public:
-  /// \internal
-  std::shared_ptr<Block> end_inner_block_ptr() const {
-    return *m_inner_block_ptr_cend;
-  }
-
   /// null if and only if this is the most outer block
 
   /// If this is the most outer block, then body() is empty but 
@@ -106,7 +91,7 @@ public:
     return m_body;
   }
 
-  const std::forward_list<std::shared_ptr<Block>>& inner_block_ptrs() const {
+  const std::list<std::shared_ptr<Block>>& inner_block_ptrs() const {
     return m_inner_block_ptrs;
   }
 

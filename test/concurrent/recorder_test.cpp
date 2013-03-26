@@ -7,12 +7,6 @@
 
 using namespace se;
 
-// Internal helper
-template<typename T>
-static size_t size(const std::forward_list<T>& list) {
-  return std::list<T>(list.cbegin(), list.cend()).size();
-}
-
 TEST(RecorderTest, InitialBlock) {
   const unsigned thread_id = 3;
   Recorder recorder(thread_id);
@@ -28,8 +22,8 @@ TEST(RecorderTest, InitialBlock) {
   EXPECT_EQ(nullptr, most_outer_block_ptr->outer_block_ptr());
   EXPECT_EQ(nullptr, most_outer_block_ptr->condition_ptr());
   EXPECT_TRUE(most_outer_block_ptr->body().empty());
-  EXPECT_EQ(1, size(most_outer_block_ptr->inner_block_ptrs()));
-  EXPECT_EQ(recorder.current_block_ptr(), most_outer_block_ptr->end_inner_block_ptr());
+  EXPECT_EQ(1, most_outer_block_ptr->inner_block_ptrs().size());
+  EXPECT_EQ(recorder.current_block_ptr(), most_outer_block_ptr->inner_block_ptrs().back());
 }
 
 TEST(RecorderTest, ThenBlockWithEmptyBlock) {
@@ -65,8 +59,8 @@ TEST(RecorderTest, ThenBlockWithEmptyBlock) {
   EXPECT_EQ(nullptr, most_outer_block_ptr->outer_block_ptr());
   EXPECT_EQ(nullptr, most_outer_block_ptr->condition_ptr());
   EXPECT_TRUE(most_outer_block_ptr->body().empty());
-  EXPECT_EQ(1, size(most_outer_block_ptr->inner_block_ptrs()));
-  EXPECT_EQ(recorder.current_block_ptr(), most_outer_block_ptr->end_inner_block_ptr());
+  EXPECT_EQ(1, most_outer_block_ptr->inner_block_ptrs().size());
+  EXPECT_EQ(recorder.current_block_ptr(), most_outer_block_ptr->inner_block_ptrs().back());
 
   recorder.end_branch();
 
@@ -78,8 +72,8 @@ TEST(RecorderTest, ThenBlockWithEmptyBlock) {
   EXPECT_TRUE(most_outer_block_ptr->body().empty());
   EXPECT_EQ(nullptr, most_outer_block_ptr->outer_block_ptr());
   EXPECT_EQ(nullptr, most_outer_block_ptr->condition_ptr());
-  EXPECT_EQ(2, size(most_outer_block_ptr->inner_block_ptrs()));
-  EXPECT_EQ(recorder.current_block_ptr(), most_outer_block_ptr->end_inner_block_ptr());
+  EXPECT_EQ(2, most_outer_block_ptr->inner_block_ptrs().size());
+  EXPECT_EQ(recorder.current_block_ptr(), most_outer_block_ptr->inner_block_ptrs().back());
 }
 
 TEST(RecorderTest, ThenBlockWithNonemptyBlock) {
@@ -118,8 +112,8 @@ TEST(RecorderTest, ThenBlockWithNonemptyBlock) {
   EXPECT_EQ(nullptr, most_outer_block_ptr->outer_block_ptr());
   EXPECT_EQ(nullptr, most_outer_block_ptr->condition_ptr());
   EXPECT_TRUE(most_outer_block_ptr->body().empty());
-  EXPECT_EQ(2, size(most_outer_block_ptr->inner_block_ptrs()));
-  EXPECT_EQ(recorder.current_block_ptr(), most_outer_block_ptr->end_inner_block_ptr());
+  EXPECT_EQ(2, most_outer_block_ptr->inner_block_ptrs().size());
+  EXPECT_EQ(recorder.current_block_ptr(), most_outer_block_ptr->inner_block_ptrs().back());
 
   recorder.end_branch();
 
@@ -130,8 +124,8 @@ TEST(RecorderTest, ThenBlockWithNonemptyBlock) {
   EXPECT_EQ(nullptr, most_outer_block_ptr->outer_block_ptr());
   EXPECT_EQ(nullptr, most_outer_block_ptr->condition_ptr());
   EXPECT_TRUE(most_outer_block_ptr->body().empty());
-  EXPECT_EQ(3, size(most_outer_block_ptr->inner_block_ptrs()));
-  EXPECT_EQ(recorder.current_block_ptr(), most_outer_block_ptr->end_inner_block_ptr());
+  EXPECT_EQ(3, most_outer_block_ptr->inner_block_ptrs().size());
+  EXPECT_EQ(recorder.current_block_ptr(), most_outer_block_ptr->inner_block_ptrs().back());
 }
 
 TEST(RecorderTest, NestedThenWithEmptyBlock) {
@@ -165,8 +159,8 @@ TEST(RecorderTest, NestedThenWithEmptyBlock) {
   EXPECT_TRUE(recorder.current_block_ref().body().empty());
   EXPECT_TRUE(recorder.current_block_ref().inner_block_ptrs().empty());
   EXPECT_EQ(outer_then_block_ptr, recorder.current_block_ref().outer_block_ptr());
-  EXPECT_EQ(2, size(outer_then_block_ptr->inner_block_ptrs()));
-  EXPECT_EQ(recorder.current_block_ptr(), outer_then_block_ptr->end_inner_block_ptr());
+  EXPECT_EQ(2, outer_then_block_ptr->inner_block_ptrs().size());
+  EXPECT_EQ(recorder.current_block_ptr(), outer_then_block_ptr->inner_block_ptrs().back());
 
   recorder.end_branch();
 
@@ -175,14 +169,14 @@ TEST(RecorderTest, NestedThenWithEmptyBlock) {
   EXPECT_TRUE(recorder.current_block_ref().inner_block_ptrs().empty());
 
   // delete unused unconditional and empty block
-  EXPECT_EQ(1, size(outer_then_block_ptr->inner_block_ptrs()));
+  EXPECT_EQ(1, outer_then_block_ptr->inner_block_ptrs().size());
 
   EXPECT_EQ(most_outer_block_ptr, recorder.current_block_ref().outer_block_ptr());
   EXPECT_EQ(nullptr, most_outer_block_ptr->outer_block_ptr());
   EXPECT_EQ(nullptr, most_outer_block_ptr->condition_ptr());
   EXPECT_TRUE(most_outer_block_ptr->body().empty());
-  EXPECT_EQ(3, size(most_outer_block_ptr->inner_block_ptrs()));
-  EXPECT_EQ(recorder.current_block_ptr(), most_outer_block_ptr->end_inner_block_ptr());
+  EXPECT_EQ(3, most_outer_block_ptr->inner_block_ptrs().size());
+  EXPECT_EQ(recorder.current_block_ptr(), most_outer_block_ptr->inner_block_ptrs().back());
 }
 
 TEST(RecorderTest, NestedThenWithNonemptyBlock) {
@@ -220,8 +214,8 @@ TEST(RecorderTest, NestedThenWithNonemptyBlock) {
   EXPECT_FALSE(recorder.current_block_ref().body().empty());
   EXPECT_TRUE(recorder.current_block_ref().inner_block_ptrs().empty());
   EXPECT_EQ(outer_then_block_ptr, recorder.current_block_ref().outer_block_ptr());
-  EXPECT_EQ(2, size(outer_then_block_ptr->inner_block_ptrs()));
-  EXPECT_EQ(recorder.current_block_ptr(), outer_then_block_ptr->end_inner_block_ptr());
+  EXPECT_EQ(2, outer_then_block_ptr->inner_block_ptrs().size());
+  EXPECT_EQ(recorder.current_block_ptr(), outer_then_block_ptr->inner_block_ptrs().back());
 
   recorder.end_branch();
 
@@ -230,14 +224,14 @@ TEST(RecorderTest, NestedThenWithNonemptyBlock) {
   EXPECT_TRUE(recorder.current_block_ref().inner_block_ptrs().empty());
 
   // cannot delete unconditional and nonempty block
-  EXPECT_EQ(2, size(outer_then_block_ptr->inner_block_ptrs()));
+  EXPECT_EQ(2, outer_then_block_ptr->inner_block_ptrs().size());
 
   EXPECT_EQ(most_outer_block_ptr, recorder.current_block_ref().outer_block_ptr());
   EXPECT_EQ(nullptr, most_outer_block_ptr->outer_block_ptr());
   EXPECT_EQ(nullptr, most_outer_block_ptr->condition_ptr());
   EXPECT_TRUE(most_outer_block_ptr->body().empty());
-  EXPECT_EQ(3, size(most_outer_block_ptr->inner_block_ptrs()));
-  EXPECT_EQ(recorder.current_block_ptr(), most_outer_block_ptr->end_inner_block_ptr());
+  EXPECT_EQ(3, most_outer_block_ptr->inner_block_ptrs().size());
+  EXPECT_EQ(recorder.current_block_ptr(), most_outer_block_ptr->inner_block_ptrs().back());
 }
 
 TEST(RecorderTest, ElseBlockWithEmptyBlock) {
@@ -279,8 +273,8 @@ TEST(RecorderTest, ElseBlockWithEmptyBlock) {
   EXPECT_EQ(nullptr, most_outer_block_ptr->outer_block_ptr());
   EXPECT_EQ(nullptr, most_outer_block_ptr->condition_ptr());
   EXPECT_TRUE(most_outer_block_ptr->body().empty());
-  EXPECT_EQ(1, size(most_outer_block_ptr->inner_block_ptrs()));
-  EXPECT_EQ(recorder.current_block_ptr(), most_outer_block_ptr->end_inner_block_ptr()->else_block_ptr());
+  EXPECT_EQ(1, most_outer_block_ptr->inner_block_ptrs().size());
+  EXPECT_EQ(recorder.current_block_ptr(), most_outer_block_ptr->inner_block_ptrs().back()->else_block_ptr());
 
   recorder.end_branch();
 
@@ -292,8 +286,8 @@ TEST(RecorderTest, ElseBlockWithEmptyBlock) {
   EXPECT_TRUE(most_outer_block_ptr->body().empty());
   EXPECT_EQ(nullptr, most_outer_block_ptr->outer_block_ptr());
   EXPECT_EQ(nullptr, most_outer_block_ptr->condition_ptr());
-  EXPECT_EQ(2, size(most_outer_block_ptr->inner_block_ptrs()));
-  EXPECT_EQ(recorder.current_block_ptr(), most_outer_block_ptr->end_inner_block_ptr());
+  EXPECT_EQ(2, most_outer_block_ptr->inner_block_ptrs().size());
+  EXPECT_EQ(recorder.current_block_ptr(), most_outer_block_ptr->inner_block_ptrs().back());
 }
 
 TEST(RecorderTest, ElseBlockWithNonemptyBlock) {
@@ -321,7 +315,7 @@ TEST(RecorderTest, ElseBlockWithNonemptyBlock) {
   // See also ThenBlockWithNonemptyBlock
 
   const std::shared_ptr<Block> then_block_ptr(recorder.current_block_ptr());
-  EXPECT_EQ(then_block_ptr, most_outer_block_ptr->end_inner_block_ptr());
+  EXPECT_EQ(then_block_ptr, most_outer_block_ptr->inner_block_ptrs().back());
 
   recorder.begin_else();
 
@@ -340,8 +334,8 @@ TEST(RecorderTest, ElseBlockWithNonemptyBlock) {
   EXPECT_EQ(nullptr, most_outer_block_ptr->outer_block_ptr());
   EXPECT_EQ(nullptr, most_outer_block_ptr->condition_ptr());
   EXPECT_TRUE(most_outer_block_ptr->body().empty());
-  EXPECT_EQ(2, size(most_outer_block_ptr->inner_block_ptrs()));
-  EXPECT_EQ(recorder.current_block_ptr(), most_outer_block_ptr->end_inner_block_ptr()->else_block_ptr());
+  EXPECT_EQ(2, most_outer_block_ptr->inner_block_ptrs().size());
+  EXPECT_EQ(recorder.current_block_ptr(), most_outer_block_ptr->inner_block_ptrs().back()->else_block_ptr());
 
   recorder.end_branch();
 
@@ -352,8 +346,8 @@ TEST(RecorderTest, ElseBlockWithNonemptyBlock) {
   EXPECT_EQ(nullptr, most_outer_block_ptr->outer_block_ptr());
   EXPECT_EQ(nullptr, most_outer_block_ptr->condition_ptr());
   EXPECT_TRUE(most_outer_block_ptr->body().empty());
-  EXPECT_EQ(3, size(most_outer_block_ptr->inner_block_ptrs()));
-  EXPECT_EQ(recorder.current_block_ptr(), most_outer_block_ptr->end_inner_block_ptr());
+  EXPECT_EQ(3, most_outer_block_ptr->inner_block_ptrs().size());
+  EXPECT_EQ(recorder.current_block_ptr(), most_outer_block_ptr->inner_block_ptrs().back());
 }
 
 TEST(RecorderTest, ElseWithNestedEmptyBlock) {
@@ -382,12 +376,12 @@ TEST(RecorderTest, ElseWithNestedEmptyBlock) {
   recorder.end_branch();
 
   // See also NestedThenWithEmptyBlock
-  EXPECT_EQ(2, size(outer_then_block_ptr->inner_block_ptrs()));
+  EXPECT_EQ(2, outer_then_block_ptr->inner_block_ptrs().size());
 
   recorder.begin_else();
 
   // delete unused unconditional and empty block
-  EXPECT_EQ(1, size(outer_then_block_ptr->inner_block_ptrs()));
+  EXPECT_EQ(1, outer_then_block_ptr->inner_block_ptrs().size());
 
   const UnaryReadInstr<NOT, bool>& not_condition = dynamic_cast<const UnaryReadInstr<NOT, bool>&>(*recorder.current_block_ref().condition_ptr());
   const BinaryReadInstr<LSS, long, char>& condition = dynamic_cast<const BinaryReadInstr<LSS, long, char>&>(not_condition.operand_ref());
@@ -401,11 +395,11 @@ TEST(RecorderTest, ElseWithNestedEmptyBlock) {
   EXPECT_EQ(nullptr, most_outer_block_ptr->outer_block_ptr());
   EXPECT_EQ(nullptr, most_outer_block_ptr->condition_ptr());
   EXPECT_TRUE(most_outer_block_ptr->body().empty());
-  EXPECT_EQ(1, size(most_outer_block_ptr->inner_block_ptrs()));
-  EXPECT_EQ(recorder.current_block_ptr(), most_outer_block_ptr->end_inner_block_ptr()->else_block_ptr());
+  EXPECT_EQ(1, most_outer_block_ptr->inner_block_ptrs().size());
+  EXPECT_EQ(recorder.current_block_ptr(), most_outer_block_ptr->inner_block_ptrs().back()->else_block_ptr());
 
   recorder.end_branch();
-  EXPECT_EQ(2, size(most_outer_block_ptr->inner_block_ptrs()));
+  EXPECT_EQ(2, most_outer_block_ptr->inner_block_ptrs().size());
 
   EXPECT_EQ(nullptr, recorder.current_block_ref().condition_ptr());
   EXPECT_TRUE(recorder.current_block_ref().body().empty());
@@ -415,8 +409,8 @@ TEST(RecorderTest, ElseWithNestedEmptyBlock) {
   EXPECT_EQ(nullptr, most_outer_block_ptr->outer_block_ptr());
   EXPECT_EQ(nullptr, most_outer_block_ptr->condition_ptr());
   EXPECT_TRUE(most_outer_block_ptr->body().empty());
-  EXPECT_EQ(2, size(most_outer_block_ptr->inner_block_ptrs()));
-  EXPECT_EQ(recorder.current_block_ptr(), most_outer_block_ptr->end_inner_block_ptr());
+  EXPECT_EQ(2, most_outer_block_ptr->inner_block_ptrs().size());
+  EXPECT_EQ(recorder.current_block_ptr(), most_outer_block_ptr->inner_block_ptrs().back());
 }
 
 TEST(RecorderTest, ElseWithNestedNonemptyBlock) {
@@ -444,13 +438,13 @@ TEST(RecorderTest, ElseWithNestedNonemptyBlock) {
 
   recorder.end_branch();
 
-  EXPECT_EQ(2, size(outer_then_block_ptr->inner_block_ptrs()));
+  EXPECT_EQ(2, outer_then_block_ptr->inner_block_ptrs().size());
   recorder.insert_event_ptr(std::unique_ptr<Event>(new ReadEvent<bool>(thread_id, addr)));
 
   recorder.begin_else();
 
   // cannot delete unconditional but nonempty block
-  EXPECT_EQ(2, size(outer_then_block_ptr->inner_block_ptrs()));
+  EXPECT_EQ(2, outer_then_block_ptr->inner_block_ptrs().size());
 
   const UnaryReadInstr<NOT, bool>& not_condition = dynamic_cast<const UnaryReadInstr<NOT, bool>&>(*recorder.current_block_ref().condition_ptr());
   const BinaryReadInstr<LSS, long, char>& condition = dynamic_cast<const BinaryReadInstr<LSS, long, char>&>(not_condition.operand_ref());
@@ -464,8 +458,8 @@ TEST(RecorderTest, ElseWithNestedNonemptyBlock) {
   EXPECT_EQ(nullptr, most_outer_block_ptr->outer_block_ptr());
   EXPECT_EQ(nullptr, most_outer_block_ptr->condition_ptr());
   EXPECT_TRUE(most_outer_block_ptr->body().empty());
-  EXPECT_EQ(1, size(most_outer_block_ptr->inner_block_ptrs()));
-  EXPECT_EQ(recorder.current_block_ptr(), most_outer_block_ptr->end_inner_block_ptr()->else_block_ptr());
+  EXPECT_EQ(1, most_outer_block_ptr->inner_block_ptrs().size());
+  EXPECT_EQ(recorder.current_block_ptr(), most_outer_block_ptr->inner_block_ptrs().back()->else_block_ptr());
 
   recorder.end_branch();
 
@@ -477,8 +471,8 @@ TEST(RecorderTest, ElseWithNestedNonemptyBlock) {
   EXPECT_EQ(nullptr, most_outer_block_ptr->outer_block_ptr());
   EXPECT_EQ(nullptr, most_outer_block_ptr->condition_ptr());
   EXPECT_TRUE(most_outer_block_ptr->body().empty());
-  EXPECT_EQ(2, size(most_outer_block_ptr->inner_block_ptrs()));
-  EXPECT_EQ(recorder.current_block_ptr(), most_outer_block_ptr->end_inner_block_ptr());
+  EXPECT_EQ(2, most_outer_block_ptr->inner_block_ptrs().size());
+  EXPECT_EQ(recorder.current_block_ptr(), most_outer_block_ptr->inner_block_ptrs().back());
 }
 
 TEST(RecorderTest, NestedElseWithEmptyBlock) {
@@ -515,17 +509,17 @@ TEST(RecorderTest, NestedElseWithEmptyBlock) {
 
   EXPECT_EQ(outer_then_block_ptr, recorder.current_block_ptr()->outer_block_ptr());
   EXPECT_EQ(most_outer_block_ptr, outer_then_block_ptr->outer_block_ptr());
-  EXPECT_EQ(1, size(outer_then_block_ptr->inner_block_ptrs()));
-  EXPECT_EQ(recorder.current_block_ptr(), outer_then_block_ptr->end_inner_block_ptr()->else_block_ptr());
+  EXPECT_EQ(1, outer_then_block_ptr->inner_block_ptrs().size());
+  EXPECT_EQ(recorder.current_block_ptr(), outer_then_block_ptr->inner_block_ptrs().back()->else_block_ptr());
 
   recorder.end_branch();
 
-  EXPECT_EQ(2, size(outer_then_block_ptr->inner_block_ptrs()));
+  EXPECT_EQ(2, outer_then_block_ptr->inner_block_ptrs().size());
 
   recorder.end_branch();
 
   // delete unused unconditional and empty block
-  EXPECT_EQ(1, size(outer_then_block_ptr->inner_block_ptrs()));
+  EXPECT_EQ(1, outer_then_block_ptr->inner_block_ptrs().size());
 
   EXPECT_EQ(nullptr, recorder.current_block_ref().condition_ptr());
   EXPECT_TRUE(recorder.current_block_ref().body().empty());
@@ -535,8 +529,8 @@ TEST(RecorderTest, NestedElseWithEmptyBlock) {
   EXPECT_EQ(nullptr, most_outer_block_ptr->outer_block_ptr());
   EXPECT_EQ(nullptr, most_outer_block_ptr->condition_ptr());
   EXPECT_TRUE(most_outer_block_ptr->body().empty());
-  EXPECT_EQ(2, size(most_outer_block_ptr->inner_block_ptrs()));
-  EXPECT_EQ(recorder.current_block_ptr(), most_outer_block_ptr->end_inner_block_ptr());
+  EXPECT_EQ(2, most_outer_block_ptr->inner_block_ptrs().size());
+  EXPECT_EQ(recorder.current_block_ptr(), most_outer_block_ptr->inner_block_ptrs().back());
 }
 
 TEST(RecorderTest, NestedElseWithNonemptyBlock) {
@@ -573,19 +567,19 @@ TEST(RecorderTest, NestedElseWithNonemptyBlock) {
 
   EXPECT_EQ(outer_then_block_ptr, recorder.current_block_ptr()->outer_block_ptr());
   EXPECT_EQ(most_outer_block_ptr, outer_then_block_ptr->outer_block_ptr());
-  EXPECT_EQ(1, size(outer_then_block_ptr->inner_block_ptrs()));
-  EXPECT_EQ(recorder.current_block_ptr(), outer_then_block_ptr->end_inner_block_ptr()->else_block_ptr());
+  EXPECT_EQ(1, outer_then_block_ptr->inner_block_ptrs().size());
+  EXPECT_EQ(recorder.current_block_ptr(), outer_then_block_ptr->inner_block_ptrs().back()->else_block_ptr());
 
   recorder.end_branch();
 
   recorder.insert_event_ptr(std::unique_ptr<Event>(new ReadEvent<bool>(thread_id, addr)));
 
-  EXPECT_EQ(2, size(outer_then_block_ptr->inner_block_ptrs()));
+  EXPECT_EQ(2, outer_then_block_ptr->inner_block_ptrs().size());
 
   recorder.end_branch();
 
   // cannot delete unconditional but nonempty block
-  EXPECT_EQ(2, size(outer_then_block_ptr->inner_block_ptrs()));
+  EXPECT_EQ(2, outer_then_block_ptr->inner_block_ptrs().size());
 
   EXPECT_EQ(nullptr, recorder.current_block_ref().condition_ptr());
   EXPECT_TRUE(recorder.current_block_ref().body().empty());
@@ -595,8 +589,8 @@ TEST(RecorderTest, NestedElseWithNonemptyBlock) {
   EXPECT_EQ(nullptr, most_outer_block_ptr->outer_block_ptr());
   EXPECT_EQ(nullptr, most_outer_block_ptr->condition_ptr());
   EXPECT_TRUE(most_outer_block_ptr->body().empty());
-  EXPECT_EQ(2, size(most_outer_block_ptr->inner_block_ptrs()));
-  EXPECT_EQ(recorder.current_block_ptr(), most_outer_block_ptr->end_inner_block_ptr());
+  EXPECT_EQ(2, most_outer_block_ptr->inner_block_ptrs().size());
+  EXPECT_EQ(recorder.current_block_ptr(), most_outer_block_ptr->inner_block_ptrs().back());
 }
 
 TEST(RecorderTest, Body) {
