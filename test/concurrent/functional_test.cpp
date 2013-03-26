@@ -24,8 +24,8 @@ TEST(ConcurrentFunctionalTest, LocalArray) {
 
   std::stringstream out;
   out << z3.solver;
-  EXPECT_EQ("(solver\n  (= k!3 (store k!1 #x0000000000000002 #x5a))\n"
-            "  (= k!1 ((as const (Array (_ BitVec 64) (_ BitVec 8))) #x00))\n"
+  EXPECT_EQ("(solver\n  (= k!1 ((as const (Array (_ BitVec 64) (_ BitVec 8))) #x00))\n"
+            "  (= k!3 (store k!1 #x0000000000000002 #x5a))\n"
             "  (not (= (select k!3 #x0000000000000002) #x5a)))", out.str());
 }
 
@@ -81,6 +81,41 @@ public:
   }
 };
 
+TEST(ConcurrentFunctionalTest, Else) {
+  // Setup
+  init_recorder();
+
+  CharBlockPrinter printer;
+  SharedVar<char> x;
+
+  x = 'A';
+  if (recorder_ptr()->begin_then(x == '?')) {
+    x = 'B';
+  }
+  if (recorder_ptr()->begin_else()) {
+    x = 'C';
+  } recorder_ptr()->end_branch();
+  x = 'D';
+
+  printer.print_block_ptr(recorder_ptr()->most_outer_block_ptr());
+  EXPECT_EQ("{\n"
+            "  {\n"
+            "    A\n"
+            "  }\n"
+            "  {\n"
+            "    B\n"
+            "  } else {\n"
+            "    {\n"
+            "      C\n"
+            "    }\n"
+            "  }\n"
+            "  {\n"
+            "    D\n"
+            "  }\n"
+            "}\n", printer.out.str());
+}
+
+
 TEST(ConcurrentFunctionalTest, ElseIf) {
   // Setup
   init_recorder();
@@ -96,9 +131,10 @@ TEST(ConcurrentFunctionalTest, ElseIf) {
           x = 'B';
         } recorder_ptr()->begin_else(); {
           x = 'C';
+          x = 'D';
         } recorder_ptr()->end_branch();
       } recorder_ptr()->end_branch();
-      x = 'D';
+      x = 'E';
   } recorder_ptr()->end_branch();
 
   printer.print_block_ptr(recorder_ptr()->most_outer_block_ptr());
@@ -115,11 +151,12 @@ TEST(ConcurrentFunctionalTest, ElseIf) {
             "        } else {\n"
             "          {\n"
             "            C\n"
+            "            D\n"
             "          }\n"
             "        }\n"
             "      }\n"
             "      {\n"
-            "        D\n"
+            "        E\n"
             "      }\n"
             "    }\n"
             "  }\n"
@@ -367,7 +404,7 @@ TEST(ConcurrentFunctionalTest, ThreeThreadsReadWriteScalarSharedVar) {
   recorder_ptr()->relate(relation);
 
   // Encode partial orders
-  order_encoder.encode(relation, z3);
+  order_encoder.encode(recorder_ptr()->most_outer_block_ptr(), relation, z3);
 
   z3.solver.push();
 
@@ -382,4 +419,121 @@ TEST(ConcurrentFunctionalTest, ThreeThreadsReadWriteScalarSharedVar) {
   EXPECT_EQ(z3::unsat, z3.solver.check());
 
   z3.solver.pop();
+}
+
+TEST(ConcurrentFunctionalTest, SatJoinPathsInSingleThreadWithSharedVar) {
+  init_recorder();
+
+  Z3 z3;
+  MemoryAddrRelation<Event> relation;
+  const Z3ValueEncoder value_encoder;
+  const Z3OrderEncoder order_encoder;
+
+  SharedVar<char> x;
+  LocalVar<char> a;
+
+  x = 'A';
+  if (recorder_ptr()->begin_then(x == '?')) {
+    x = 'B';
+  }
+  if (recorder_ptr()->begin_else()) {
+    x = 'C';
+  }
+  recorder_ptr()->end_branch();
+  a = x;
+
+  recorder_ptr()->encode(value_encoder, z3);
+  recorder_ptr()->relate(relation);
+  order_encoder.encode(recorder_ptr()->most_outer_block_ptr(), relation, z3);
+
+  EXPECT_EQ(z3::sat, z3.solver.check());
+
+  z3.solver.push();
+
+  z3.solver.add(value_encoder.encode(!(a == 'C'), z3));
+  EXPECT_EQ(z3::sat, z3.solver.check());
+
+  z3.solver.pop();
+
+  z3.solver.push();
+
+  z3.solver.add(value_encoder.encode(a == 'B', z3));
+  EXPECT_EQ(z3::sat, z3.solver.check());
+
+  z3.solver.pop();
+
+  z3.solver.push();
+
+  z3.solver.add(value_encoder.encode(a == 'B' && !(a == 'C'), z3));
+  EXPECT_EQ(z3::sat, z3.solver.check());
+
+  z3.solver.pop();
+
+  z3.solver.push();
+
+  z3.solver.add(value_encoder.encode(!(a == 'B') && a == 'C', z3));
+  EXPECT_EQ(z3::sat, z3.solver.check());
+
+  z3.solver.pop();
+}
+
+TEST(ConcurrentFunctionalTest, UnsatJoinPathsInSingleThreadWithSharedVar) {
+  init_recorder();
+
+  Z3 z3;
+  MemoryAddrRelation<Event> relation;
+  const Z3ValueEncoder value_encoder;
+  const Z3OrderEncoder order_encoder;
+
+  SharedVar<char> x;
+  LocalVar<char> a;
+
+  x = 'A';
+  if (recorder_ptr()->begin_then(x == '?')) {
+    x = 'B';
+  }
+  if (recorder_ptr()->begin_else()) {
+    x = 'C';
+  }
+  recorder_ptr()->end_branch();
+  a = x;
+
+  recorder_ptr()->encode(value_encoder, z3);
+  recorder_ptr()->relate(relation);
+  order_encoder.encode(recorder_ptr()->most_outer_block_ptr(), relation, z3);
+
+  z3.solver.push();
+
+  z3.solver.add(value_encoder.encode(!(a == 'B' || a == 'C'), z3));
+  EXPECT_EQ(z3::unsat, z3.solver.check());
+
+  z3.solver.pop();
+
+  z3.solver.push();
+
+  z3.solver.add(value_encoder.encode(a == 'A', z3));
+  EXPECT_EQ(z3::unsat, z3.solver.check());
+
+  z3.solver.pop();
+}
+
+TEST(ConcurrentFunctionalTest, SatSingleThreadWithSharedVar) {
+  init_recorder();
+
+  Z3 z3;
+  MemoryAddrRelation<Event> relation;
+  const Z3ValueEncoder value_encoder;
+  const Z3OrderEncoder order_encoder;
+
+  SharedVar<char> x;
+  LocalVar<char> a;
+
+  x = 'A';
+  a = x;
+
+  recorder_ptr()->encode(value_encoder, z3);
+  recorder_ptr()->relate(relation);
+  order_encoder.encode(recorder_ptr()->most_outer_block_ptr(), relation, z3);
+
+  EXPECT_EQ(z3::sat, z3.solver.check());
 }

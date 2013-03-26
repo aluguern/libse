@@ -80,7 +80,15 @@ public:
 
   unsigned thread_id() const { return m_thread_id; }
 
+  /// Root of the series-parallel graph
+  
+  /// The most outer block has an empty body but at least one inner block.
+  /// But the most outer block has never an else block.
   std::shared_ptr<Block> most_outer_block_ptr() const {
+    assert(m_most_outer_block_ptr->body().empty());
+    assert(!m_most_outer_block_ptr->inner_block_ptrs().empty());
+    assert(nullptr == m_most_outer_block_ptr->else_block_ptr());
+
     return m_most_outer_block_ptr;
   }
 

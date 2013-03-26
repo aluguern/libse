@@ -10,6 +10,7 @@
 #include <z3++.h>
 
 #include "concurrent/instr.h"
+#include "concurrent/block.h"
 #include "concurrent/relation.h"
 
 namespace se {
@@ -20,6 +21,8 @@ public:
   z3::solver solver;
 
 private:
+  unsigned join_id;
+
   z3::symbol create_symbol(const Event& event) {
     return context.int_symbol(event.event_id());
   }
@@ -34,7 +37,7 @@ private:
   }
 
 public:
-  Z3() : context(), solver(context) {}
+  Z3() : context(), solver(context), join_id(0) {}
 
   template<typename T, class = typename std::enable_if<
     std::is_arithmetic<T>::value>::type>
@@ -95,6 +98,18 @@ public:
     z3::expr clock(context.constant(create_symbol(event), sort));
     solver.add(clock > 0);
     return clock;
+  }
+
+  z3::expr join_clocks(const z3::expr& clock_x, const z3::expr& clock_y) {
+    assert(clock_x.is_int() && clock_y.is_int());
+
+    const std::string join_name = std::to_string(join_id++) + "_Join";
+    z3::sort clock_sort(context.int_sort());
+    z3::symbol join_clock_symbol(context.str_symbol(join_name.c_str()));
+    z3::expr join_clock(context.constant(join_clock_symbol, clock_sort));
+    solver.add(join_clock > 0);
+    solver.add(clock_x < join_clock && clock_y < join_clock);
+    return join_clock;
   }
 };
 
@@ -244,13 +259,14 @@ public:
 
   z3::expr rfe_encode(const MemoryAddrRelation<Event>& relation, Z3& z3) const {
     const MemoryAddrSet& addrs = relation.addrs();
+
+    z3::expr rfe_expr(z3.context.bool_val(true));
     for (const MemoryAddr& addr : addrs) {
       const std::pair<EventPtrSet, EventPtrSet> result =
         relation.partition(addr);
       const EventPtrSet& read_event_ptrs = result.first;
       const EventPtrSet& write_event_ptrs = result.second;
 
-      z3::expr rfe_expr(z3.context.bool_val(true));
       for (const EventPtr& read_event_ptr : read_event_ptrs) {
         const Event& read_event = *read_event_ptr;
         const z3::expr read_event_condition(event_condition(read_event, z3));
@@ -258,10 +274,6 @@ public:
         z3::expr wr_schedules(z3.context.bool_val(false));
         for (const EventPtr& write_event_ptr : write_event_ptrs) {
           const Event& write_event = *write_event_ptr;
-
-          if (write_event.thread_id() == read_event.thread_id()) {
-            continue;
-          }
 
           const z3::expr wr_order(z3.clock(write_event) < z3.clock(read_event));
           const z3::expr wr_schedule(z3.constant(write_event, read_event));
@@ -276,8 +288,8 @@ public:
 
         rfe_expr = rfe_expr and implies(read_event_condition, wr_schedules);
       }
-      return rfe_expr;
     }
+    return rfe_expr;
   }
 
   z3::expr ws_encode(const MemoryAddrRelation<Event>& relation, Z3& z3) const {
@@ -292,9 +304,7 @@ public:
           const Event& x = *write_event_ptr_x;
           const Event& y = *write_event_ptr_y;
 
-          if (x.thread_id() == y.thread_id()) {
-            continue;
-          }
+          if (x == y) { continue; }
 
           const z3::expr xy_order(z3.clock(x) < z3.clock(y));
           const z3::expr yx_order(z3.clock(y) < z3.clock(x));
@@ -325,22 +335,18 @@ public:
           const Event& write_event_x = *write_event_ptr_x;
           const Event& write_event_y = *write_event_ptr_y;
 
-          if (write_event_x == write_event_y) {
-            continue;
-          }
+          if (write_event_x == write_event_y) { continue; }
 
           for (const EventPtr& read_event_ptr : read_event_ptrs) {
             const Event& read_event = *read_event_ptr;
 
-            if (write_event_y.thread_id() == read_event.thread_id()) {
-              continue;
-            }
-
             const z3::expr xr_schedule(z3.constant(write_event_x, read_event));
+            const z3::expr xy_order(z3.clock(write_event_x) < z3.clock(write_event_y));
             const z3::expr ry_order(z3.clock(read_event) < z3.clock(write_event_y));
             const z3::expr y_condition(event_condition(write_event_y, z3));
 
-            fr_expr = fr_expr and implies(xr_schedule and y_condition, ry_order);
+            fr_expr = fr_expr and
+              implies(xr_schedule and xy_order and y_condition, ry_order);
           }
         }
       }
@@ -349,10 +355,63 @@ public:
     return fr_expr;
   }
 
-  void encode(const MemoryAddrRelation<Event>& relation, Z3& z3) const {
+  z3::expr internal_encode_spo(const std::shared_ptr<Block>& block_ptr,
+    const z3::expr& earlier_clock, Z3& z3) const {
+
+    z3::expr inner_clock(earlier_clock);
+    if (!block_ptr->body().empty()) {
+      const std::forward_list<std::shared_ptr<Event>>& body = block_ptr->body();
+      std::forward_list<std::shared_ptr<Event>>::const_iterator iter(body.cbegin());
+
+      const Event& body_event = **iter;
+      z3::expr body_clock(z3.clock(body_event));
+      z3.solver.add(inner_clock < body_clock);
+
+      for (iter++; iter != body.cend(); iter++) {
+        const Event& body_event = **iter;
+        z3::expr next_body_clock(z3.clock(body_event));
+        z3.solver.add(body_clock < next_body_clock);
+        body_clock = next_body_clock;
+      }
+
+      inner_clock = body_clock;
+    }
+
+    for (const std::shared_ptr<Block>& inner_block_ptr :
+      block_ptr->inner_block_ptrs()) {
+
+      z3::expr then_clock(internal_encode_spo(inner_block_ptr, inner_clock, z3));
+      const std::shared_ptr<Block>& inner_else_block_ptr(
+        inner_block_ptr->else_block_ptr());
+      if (inner_else_block_ptr) {
+        z3::expr else_clock(internal_encode_spo(inner_else_block_ptr,
+          inner_clock, z3));
+        inner_clock = z3.join_clocks(then_clock, else_clock);
+      } else {
+        inner_clock = then_clock;
+      }
+    }
+
+    return inner_clock;
+  }
+
+  void encode_spo(const std::shared_ptr<Block>& most_outer_block_ptr,
+    Z3& z3) const {
+
+    z3::expr epoch_clock(z3.context.constant(z3.context.str_symbol("epoch_clock"),
+      z3.context.int_sort()));
+
+    internal_encode_spo(most_outer_block_ptr, epoch_clock, z3);
+  }
+
+  void encode(const std::shared_ptr<Block>& most_outer_block_ptr,
+    const MemoryAddrRelation<Event>& relation, Z3& z3) const {
+
     z3.solver.add(rfe_encode(relation, z3));
     z3.solver.add(fr_encode(relation, z3));
     z3.solver.add(ws_encode(relation, z3));
+
+    encode_spo(most_outer_block_ptr, z3);
   }
 };
 

@@ -78,6 +78,7 @@ pkginclude_HEADERS = \
   include/concurrent/memory.h \
   include/concurrent/event.h \
   include/concurrent/instr.h \
+  include/concurrent/block.h \
   include/concurrent/encoder.h \
   include/concurrent/recorder.h \
   include/concurrent/var.h \
