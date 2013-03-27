@@ -1,9 +1,9 @@
 # Provide various options to initialize the Autoconf and configure processes.
 AC_PREREQ([2.59])
 
-AC_INIT([libse], [0.3], [alex.horn@cs.ox.ac.uk])
+AC_INIT([libse], [1.0], [alex.horn@cs.ox.ac.uk])
 
-AC_CONFIG_SRCDIR([src/expr.cpp])
+AC_CONFIG_SRCDIR([src/concurrent/event.cpp])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_HEADERS([build-aux/config.h])
 AC_CONFIG_MACRO_DIR([m4])
@@ -11,7 +11,7 @@ AC_CONFIG_FILES([Makefile])
 AC_CONFIG_SUBDIRS([gtest])
 
 # Search for SMT and SAT solver libraries
-CXXFLAGS="$CXXFLAGS -Isolvers/z3/src/api -Isolvers/z3/src/api/c++" 
+CXXFLAGS="$CXXFLAGS -Isolvers/z3/src/api -Isolvers/z3/src/api/c++"
 LDFLAGS="$LDFLAGS -Lsolvers/z3/build"
 
 AC_SEARCH_LIBS([Z3_mk_config], [z3], , AC_MSG_ERROR([Unable to find Z3 theorem prover]))

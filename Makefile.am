@@ -33,9 +33,7 @@ check-local:
 test: check-local check
 
 bench: all
-	git rev-parse HEAD >> bench/LOG
-	time -p -o bench/LOG -a bench/for_loop
-	time -p -o bench/LOG -a bench/while_loop
+	time -p bench/if
 
 .PHONY: bench doc
 
@@ -62,14 +60,7 @@ lib_libse_la_SOURCES = \
   src/concurrent/memory.cpp \
   src/concurrent/event.cpp \
   src/concurrent/recorder.cpp \
-  src/concurrent/relation.cpp \
-  src/expr.cpp \
-  src/value.cpp \
-  src/var.cpp \
-  src/if.cpp \
-  src/loop.cpp \
-  src/tester.cpp \
-  src/tracer.cpp
+  src/concurrent/relation.cpp
 
 pkginclude_HEADERS = \
   include/core/op.h \
@@ -83,19 +74,7 @@ pkginclude_HEADERS = \
   include/concurrent/recorder.h \
   include/concurrent/var.h \
   include/concurrent/relation.h \
-  include/concurrent.h \
-  include/value.h \
-  include/expr.h \
-  include/instr.h \
-  include/visitor.h \
-  include/interpreter.h \
-  include/var.h \
-  include/memory.h \
-  include/if.h \
-  include/loop.h \
-  include/sequential-se.h \
-  include/tester.h \
-  include/tracer.h
+  include/concurrent.h
 
 # Build rules for functional and unit tests.
 # Recall the Automake naming conventions:
@@ -132,34 +111,14 @@ test_se_SOURCES = \
   test/concurrent/var_test.cpp \
   test/concurrent/relation_test.cpp \
   test/concurrent/functional_test.cpp \
-  test/concurrent_test.cpp \
-  test/value_test.cpp \
-  test/any_test.cpp \
-  test/expr_test.cpp \
-  test/instr_test.cpp \
-  test/visitor_test.cpp \
-  test/interpreter_test.cpp \
-  test/var_test.cpp \
-  test/memory_test.cpp \
-  test/if_test.cpp \
-  test/loop_test.cpp \
-  test/version_test.cpp \
-  test/tracer_test.cpp \
-  test/simplify_test.cpp \
-  test/tester_functional_test.cpp \
-  test/single_path_functional_test.cpp \
-  test/multi_path_functional_test.cpp
+  test/concurrent_test.cpp
 
 test_se_CPPFLAGS = -std=c++0x -I$(srcdir)/include -I$(top_srcdir)/gtest/include
 test_se_LDADD = $(top_builddir)/gtest/lib/libgtest_main.la lib/libse.la
 
 # Benchmarks
 
-bin_PROGRAMS = bench/for_loop bench/while_loop
-bench_for_loop_SOURCES = bench/for_loop_bench.cpp
-bench_for_loop_CPPFLAGS = -std=c++0x -I$(srcdir)/include
-bench_for_loop_LDADD = lib/libse.la
-
-bench_while_loop_SOURCES = bench/while_loop_bench.cpp
-bench_while_loop_CPPFLAGS = -std=c++0x -I$(srcdir)/include
-bench_while_loop_LDADD = lib/libse.la
+bin_PROGRAMS = bench/if
+bench_if_SOURCES = bench/if_bench.cpp
+bench_if_CPPFLAGS = -std=c++0x -I$(srcdir)/include
+bench_if_LDADD = lib/libse.la
