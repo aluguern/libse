@@ -368,8 +368,7 @@ public:
       z3.solver.add(inner_clock < body_clock);
 
       for (iter++; iter != body.cend(); iter++) {
-        const Event& body_event = **iter;
-        z3::expr next_body_clock(z3.clock(body_event));
+        z3::expr next_body_clock(z3.clock(**iter));
         z3.solver.add(body_clock < next_body_clock);
         body_clock = next_body_clock;
       }
