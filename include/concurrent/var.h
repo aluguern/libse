@@ -43,6 +43,9 @@ std::unique_ptr<ReadEvent<T>> internal_make_read_event(const MemoryAddr& addr,
     addr, recorder_ptr()->block_condition_ptr()));
 }
 
+/// Identifier of the main thread from which others can be spawn
+static constexpr unsigned MAIN_THREAD_ID = 0;
+
 /// Common data about a program variable of type `T`
 
 /// Every object has a \ref BaseDeclVar::addr() "memory address" that identifies
@@ -64,17 +67,10 @@ std::unique_ptr<ReadEvent<T>> internal_make_read_event(const MemoryAddr& addr,
 template<typename T>
 class BaseDeclVar {
 private:
-  // Identifies memory affected by directly writing the variable. The semantics
-  // of this depend on T. For example, a direct write to a fixed-size array
-  // variable is postulated to initialize each array element. In contrast, a
-  // direct write to a pointer variable only affects the memory at which the
-  // pointer variable resides, not the memory to which it points.
   const MemoryAddr m_addr;
 
   // Never null
   std::shared_ptr<DirectWriteEvent<T>> m_direct_write_event_ptr;
-
-  static constexpr unsigned main_thread_id = 0;
 
   template<typename U>
   static std::shared_ptr<DirectWriteEvent<U>> make_direct_write_event(
@@ -82,9 +78,8 @@ private:
 
     std::unique_ptr<ReadInstr<U>> zero_instr_ptr(new LiteralReadInstr<U>());
     const std::shared_ptr<DirectWriteEvent<U>> direct_write_event_ptr(
-      new DirectWriteEvent<U>(main_thread_id, addr, std::move(zero_instr_ptr)));
+      new DirectWriteEvent<U>(MAIN_THREAD_ID, addr, std::move(zero_instr_ptr)));
 
-    recorder_ptr()->insert_event_ptr(direct_write_event_ptr);
     return direct_write_event_ptr;
   }
 
@@ -94,21 +89,40 @@ protected:
   /// \param is_shared - can other threads modify the variable?
   ///
   /// Once declared, the memory address of the variable never changes.
-  /// Each variable is initialized to zero. This is accomplished through
-  /// a direct write event from within the main thread.
+  /// The newly declared variable is initialized to zero. This is accomplished
+  /// through a direct write event from within the main thread.
+  ///
+  /// It is the responsibility of the subclass to record the write event.
+  ///
+  /// \see_also BaseDeclVar<T>::direct_write_event()
+  /// \see_also Recorder::insert_event_ptr(const std::shared_ptr<Event>&)
   BaseDeclVar(bool is_shared) : m_addr(MemoryAddr::alloc<T>(is_shared)),
     m_direct_write_event_ptr(make_direct_write_event<T>(m_addr)) {}
 
   ~BaseDeclVar() {}
 
+  /// Most recent direct write event, never null
+  std::shared_ptr<DirectWriteEvent<T>> direct_write_event_ptr() const {
+    return m_direct_write_event_ptr;
+  }
+
 public:
+  /// Memory affected by directly writing the variable
+
+  /// This is the memory affected by directly writing the variable. The effects
+  /// depend on T. For example, a direct write to a fixed-size array variable
+  /// is postulated to initialize each array element. In contrast, a direct
+  /// write to a pointer variable only affects the memory at which the pointer
+  /// variable resides, not the memory to which it points.
   const MemoryAddr& addr() const { return m_addr; }
 
   const DirectWriteEvent<T>& direct_write_event_ref() const {
     return *m_direct_write_event_ptr;
   }
 
+  /// \pre argument must not be null
   void set_direct_write_event_ptr(const std::shared_ptr<DirectWriteEvent<T>>& event_ptr) {
+    assert(nullptr != event_ptr);
     m_direct_write_event_ptr = event_ptr;
   }
 };
@@ -116,11 +130,37 @@ public:
 /// Variable declaration allowing only direct memory writes
 template<typename T>
 class DeclVar : public BaseDeclVar<T> {
+private:
+  template<typename U>
+  static std::shared_ptr<DirectWriteEvent<U>> make_direct_write_event(
+    const MemoryAddr& addr, const T v) {
+
+    std::unique_ptr<ReadInstr<U>> instr_ptr(new LiteralReadInstr<U>(v));
+    const std::shared_ptr<DirectWriteEvent<U>> direct_write_event_ptr(
+      new DirectWriteEvent<U>(MAIN_THREAD_ID, addr, std::move(instr_ptr)));
+
+    return direct_write_event_ptr;
+  }
+
 public:
+  using BaseDeclVar<T>::addr;
+  using BaseDeclVar<T>::direct_write_event_ptr;
+
   /// Declare a variable that only allows direct memory writes
 
   /// \param is_shared - can other threads modify the variable?
-  DeclVar(bool is_shared) : BaseDeclVar<T>(is_shared) {}
+  DeclVar(bool is_shared) : BaseDeclVar<T>(is_shared) {
+    recorder_ptr()->insert_event_ptr(direct_write_event_ptr());
+  }
+
+  /// Declare a variable that only allows direct memory writes
+
+  /// \param is_shared - can other threads modify the variable?
+  /// \param v - initialization value
+  DeclVar(bool is_shared, const T v) : BaseDeclVar<T>(is_shared) {
+    set_direct_write_event_ptr(make_direct_write_event<T>(addr(), v));
+    recorder_ptr()->insert_event_ptr(direct_write_event_ptr());
+  }
 
   ~DeclVar() {}
 };
@@ -133,13 +173,18 @@ private:
   std::shared_ptr<IndirectWriteEvent<T, size_t, N>> m_indirect_write_event_ptr;
 
 public:
+  using BaseDeclVar<T[N]>::direct_write_event_ptr;
+
   /// Declare a fixed-sized array
 
   /// \param is_array_shared - can other threads modify any array elements?
   DeclVar(bool is_array_shared) :
     BaseDeclVar<T[N]>(/* base pointer cannot be modified */ false),
     m_array_addr(MemoryAddr::alloc<T>(is_array_shared, N)),
-    m_indirect_write_event_ptr() {}
+    m_indirect_write_event_ptr() {
+
+    recorder_ptr()->insert_event_ptr(direct_write_event_ptr());
+  }
 
   ~DeclVar() {}
 
@@ -264,6 +309,10 @@ public:
   LocalVar() : m_var(false), m_local_read(internal_make_read_event<T>(
     m_var.addr(), m_var.direct_write_event_ref().event_id())) {}
 
+  LocalVar(const T v) : m_var(false, v),
+    m_local_read(internal_make_read_event<T>(m_var.addr(),
+      m_var.direct_write_event_ref().event_id())) {}
+
   const MemoryAddr& addr() const { return m_var.addr(); }
 
   std::shared_ptr<ReadEvent<T>> read_event_ptr() const {
@@ -362,6 +411,7 @@ private:
 
 public:
   SharedVar() : m_var(true) {}
+  SharedVar(const T v) : m_var(true, v) {}
 
   const MemoryAddr& addr() const { return m_var.addr(); }
 
