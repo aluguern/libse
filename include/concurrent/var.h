@@ -145,6 +145,7 @@ private:
 public:
   using BaseDeclVar<T>::addr;
   using BaseDeclVar<T>::direct_write_event_ptr;
+  using BaseDeclVar<T>::set_direct_write_event_ptr;
 
   /// Declare a variable that only allows direct memory writes
 
