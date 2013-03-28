@@ -53,23 +53,6 @@ private:
     m_body(/* empty */), m_body_cend(m_body.cbefore_begin()),
     m_inner_block_ptrs(/* empty */), m_else_block_ptr(/* none */) {}
 
-  /// Insert in the body all those read events that are in the given instruction
-  template<typename T>
-  void bulk_insert(const ReadInstr<T>& instr) {
-    // extract from ReadInstr<T> all pointers to ReadEvent<T> objects
-    std::forward_list<std::shared_ptr<Event>> read_event_ptrs;
-    instr.filter(read_event_ptrs);
-
-    // append these pointers to the block's event pointer list
-    m_body_cend = m_body.insert_after(m_body_cend,
-      /* range */ read_event_ptrs.cbegin(), read_event_ptrs.cend());
-  }
-
-  /// Insert event into at the end of the list
-  void insert_event_ptr(const std::shared_ptr<Event>& event_ptr) {
-    m_body_cend = m_body.insert_after(m_body_cend, event_ptr);
-  }
-
   void push_inner_block_ptr(const std::shared_ptr<Block>& block_ptr) {
     m_inner_block_ptrs.push_back(block_ptr);
   }
@@ -79,6 +62,22 @@ private:
   }
 
 public:
+  /// Root of a new series-parallel graph
+  static std::unique_ptr<Block> make_root() {
+    return std::unique_ptr<Block>(new Block(nullptr, nullptr));
+  }
+
+  /// Append all the given event pointers to the body
+  void insert_all(const std::forward_list<std::shared_ptr<Event>>& event_ptrs) {
+    m_body_cend = m_body.insert_after(m_body_cend,
+      /* range */ event_ptrs.cbegin(), event_ptrs.cend());
+  }
+
+  /// Insert event into at the end of the list
+  void insert_event_ptr(const std::shared_ptr<Event>& event_ptr) {
+    m_body_cend = m_body.insert_after(m_body_cend, event_ptr);
+  }
+
   /// null if and only if this is the most outer block
 
   /// If this is the most outer block, then body() is empty but 

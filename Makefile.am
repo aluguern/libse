@@ -106,6 +106,7 @@ test_se_SOURCES = \
   test/concurrent/memory_test.cpp \
   test/concurrent/event_test.cpp \
   test/concurrent/instr_test.cpp \
+  test/concurrent/block_test.cpp \
   test/concurrent/encoder_test.cpp \
   test/concurrent/recorder_test.cpp \
   test/concurrent/var_test.cpp \

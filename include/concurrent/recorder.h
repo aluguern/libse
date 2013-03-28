@@ -132,9 +132,18 @@ private:
       condition_ptr));
   }
 
+  /// Insert in the body all those read events that are in the given instruction
+  template<typename T>
+  void insert_all(const ReadInstr<T>& instr) {
+    std::forward_list<std::shared_ptr<Event>> read_event_ptrs;
+    instr.filter(read_event_ptrs);
+
+    m_current_block_ptr->insert_all(read_event_ptrs);
+  }
+
 public:
   Recorder(unsigned thread_id) : m_thread_id(thread_id),
-    m_most_outer_block_ptr(new Block(nullptr, nullptr)),
+    m_most_outer_block_ptr(Block::make_root()),
     m_current_block_ptr(std::unique_ptr<Block>(new Block(
       m_most_outer_block_ptr))), m_loop_stack(/* empty */) {
 
@@ -296,7 +305,7 @@ public:
   std::shared_ptr<DirectWriteEvent<T>> instr(const MemoryAddr& addr,
     std::unique_ptr<ReadInstr<T>> instr_ptr) {
 
-    m_current_block_ptr->bulk_insert<T>(*instr_ptr);
+    insert_all<T>(*instr_ptr);
 
     std::shared_ptr<DirectWriteEvent<T>> write_event_ptr(new DirectWriteEvent<T>(
       m_thread_id, addr, std::move(instr_ptr), block_condition_ptr()));
@@ -311,7 +320,7 @@ public:
     std::unique_ptr<DerefReadInstr<T[N], U>> deref_instr_ptr,
     std::unique_ptr<ReadInstr<T>> instr_ptr) {
 
-    m_current_block_ptr->bulk_insert<T>(*instr_ptr);
+    insert_all<T>(*instr_ptr);
 
     std::shared_ptr<IndirectWriteEvent<T, U, N>> write_event_ptr(
       new IndirectWriteEvent<T, U, N>(m_thread_id, addr,
