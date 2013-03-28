@@ -53,7 +53,8 @@ public:
   constexpr Loop(const LoopPolicy& policy) :
     m_policy(policy), m_unwinding_counter(policy.unwinding_bound()) {}
 
-//  Loop(const Loop&) = delete;
+  constexpr Loop(Loop&& other) :
+    m_policy(other.m_policy), m_unwinding_counter(other.m_unwinding_counter) {}
 
   constexpr unsigned policy_id() const { return m_policy.id(); }
   constexpr unsigned unwinding_bound() const { return m_policy.unwinding_bound(); }

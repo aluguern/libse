@@ -30,6 +30,15 @@ TEST(RecorderTest, ConstLoop) {
   EXPECT_EQ(1, const_loop.unwinding_counter());
 }
 
+TEST(RecorderTest, MoveLoop) {
+  constexpr LoopPolicy p(make_loop_policy<7, 1>());
+  constexpr Loop const_loop = Loop(p);
+
+  static_assert(7 == const_loop.policy_id(), "Wrong loop ID");
+  static_assert(1 == const_loop.unwinding_bound(), "Wrong loop unwinding bound");
+  EXPECT_EQ(1, const_loop.unwinding_counter());
+}
+
 TEST(RecorderTest, DecrementLoopUnwindingCounter) {
   ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
