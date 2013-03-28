@@ -6,6 +6,11 @@
 
 using namespace se;
 
+TEST(ConcurrentFunctionalTest, Counter) {
+  constexpr unsigned counter = __COUNTER__;
+  EXPECT_EQ(counter + 1, __COUNTER__);
+}
+
 TEST(ConcurrentFunctionalTest, LocalArray) {
   // Setup
   init_recorder();
