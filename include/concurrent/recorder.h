@@ -112,6 +112,30 @@ static void internal_encode(const std::shared_ptr<Block>& block_ptr,
 /// Records events and path conditions on a per-thread basis
 
 /// The output of a recorder is a series-parallel graph of \ref Block "blocks".
+/// To automate the construction of these blocks, the source code of a program
+/// would typically have to be transformed such that the appropriate Recorder
+/// member functions are called at each control flow point in the program.
+//
+/// Example:
+///
+///      if (c == '?') {
+///        c = 'A';
+///      } else {
+///        c = 'B';
+///      }
+/// turns into
+///      if (recorder.begin_then(c == '?')) {
+///        c = 'A';
+///      }
+///      if (recorder.begin_else()) {
+///        c = 'B';
+///      }
+///      recorder.end_branch();
+///
+/// Note that this source-to-source transformation requires the immediate
+/// post-dominator of every control point in the program's control-flow graph
+/// to be always computable. In particular, this is not the case in unstructured
+/// programs where goto statements can jump to an arbitrary program location.
 class Recorder {
 private:
   static const std::shared_ptr<ReadInstr<bool>> s_true_condition_ptr;
@@ -178,6 +202,12 @@ public:
     return m_current_block_ptr->m_body;
   }
 
+  /// Unwind the loop once more if the loop unwinding policy permits it
+
+  /// If the return value is false, the effect of a subsequent call to
+  /// the function is undefined.
+  ///
+  /// \return continue loop unwinding?
   bool unwind_loop(std::unique_ptr<ReadInstr<bool>> condition_ptr,
     const LoopPolicy& policy) {
 
@@ -209,6 +239,13 @@ public:
     return continue_unwinding;
   }
 
+  /// Annotation for a conditional jump instruction
+  ///
+  /// The inner block is executed if and only if the return value is true.
+  /// This member function must be called exactly once prior to calling
+  /// begin_else() or end_branch().
+  ///
+  /// \return execute "then" block?
   bool begin_then(std::unique_ptr<ReadInstr<bool>> condition_ptr) {
     assert(nullptr != condition_ptr);
 
@@ -242,6 +279,15 @@ public:
     return true;
   }
 
+  /// Optional control flow
+
+  /// A call of this function demarcates the end of the "then" block and the
+  /// beginning of the "else" block. Therefore, begin_else() must never be
+  /// called prior to calling begin_then(std::unique_ptr<ReadInstr<bool>>). In
+  /// addition, this member function must be called at most once. The "else"
+  /// block is executed if and only if the return value is true.
+  ///
+  /// \return execute "else" block?
   bool begin_else() {
     if (!m_current_block_ptr->condition_ptr()) {
       // unconditional blocks cannot have inner blocks
@@ -269,7 +315,10 @@ public:
     return true;
   }
 
-  // Create next nested, unconditional block inside outer block
+  /// Create next nested, unconditional block inside outer block
+
+  /// end_branch() must always be called exactly once such that its call site is
+  /// the immediate post-dominator of the if-then-else statement it annotates.
   void end_branch() {
     std::shared_ptr<Block> outer_block_ptr(
       m_current_block_ptr->outer_block_ptr());
