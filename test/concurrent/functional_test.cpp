@@ -426,7 +426,7 @@ TEST(ConcurrentFunctionalTest, ThreeThreadsReadWriteScalarSharedVar) {
   // Record second child thread
   push_recorder(2);
 
-  x = '\0';
+  x = 'Q';
 
   recorder_ptr()->encode(value_encoder, z3);
   recorder_ptr()->relate(relation);
@@ -444,6 +444,13 @@ TEST(ConcurrentFunctionalTest, ThreeThreadsReadWriteScalarSharedVar) {
 
   z3.solver.push();
 
+  z3.solver.add(value_encoder.encode(!(a == '\0'), z3));
+  EXPECT_EQ(z3::sat, z3.solver.check());
+
+  z3.solver.pop();
+
+  z3.solver.push();
+
   z3.solver.add(value_encoder.encode(!(a == 'P'), z3));
   EXPECT_EQ(z3::sat, z3.solver.check());
 
@@ -451,7 +458,35 @@ TEST(ConcurrentFunctionalTest, ThreeThreadsReadWriteScalarSharedVar) {
 
   z3.solver.push();
 
-  z3.solver.add(value_encoder.encode(!(a == 'P' || a == '\0'), z3));
+  z3.solver.add(value_encoder.encode(!(a == 'Q'), z3));
+  EXPECT_EQ(z3::sat, z3.solver.check());
+
+  z3.solver.pop();
+
+  z3.solver.push();
+
+  z3.solver.add(value_encoder.encode(!(a == 'P' || a == 'Q'), z3));
+  EXPECT_EQ(z3::sat, z3.solver.check());
+
+  z3.solver.pop();
+
+  z3.solver.push();
+
+  z3.solver.add(value_encoder.encode(!(a == '\0' || a == 'P'), z3));
+  EXPECT_EQ(z3::sat, z3.solver.check());
+
+  z3.solver.pop();
+
+  z3.solver.push();
+
+  z3.solver.add(value_encoder.encode(!(a == '\0' || a == 'Q'), z3));
+  EXPECT_EQ(z3::sat, z3.solver.check());
+
+  z3.solver.pop();
+
+  z3.solver.push();
+
+  z3.solver.add(value_encoder.encode(!(a == '\0' || a == 'P' || a == 'Q'), z3));
   EXPECT_EQ(z3::unsat, z3.solver.check());
 
   z3.solver.pop();
