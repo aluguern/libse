@@ -5,11 +5,67 @@
 #ifndef LIBSE_CONCURRENT_RECORDER_H_
 #define LIBSE_CONCURRENT_RECORDER_H_
 
+#include <stack>
+
 #include "concurrent/instr.h"
 #include "concurrent/block.h"
 #include "concurrent/encoder.h"
 
 namespace se {
+
+/// Bounded loop unwinding policy
+
+/// Two loop policies with the same \ref LoopPolicy::id() "identifier" must
+/// have identical \ref LoopPolicy::unwinding_bound() "loop unwinding bounds".
+class LoopPolicy {
+private:
+  const unsigned m_id;
+  const unsigned m_unwinding_bound;
+
+  template<unsigned id, unsigned unwinding_bound>
+  friend constexpr LoopPolicy make_loop_policy();
+
+  /// \pre 0 < bound
+  constexpr LoopPolicy(const unsigned id, const unsigned bound) :
+    m_id(id), m_unwinding_bound(bound) {}
+
+public:
+  constexpr LoopPolicy(const LoopPolicy& other) :
+    m_id(other.m_id), m_unwinding_bound(other.m_unwinding_bound) {}
+
+  constexpr unsigned id() const { return m_id; }
+  constexpr unsigned unwinding_bound() const { return m_unwinding_bound; }
+};
+
+/// \pre if id == id', then unwinding_bound == unwinding_bound'
+template<unsigned id, unsigned unwinding_bound>
+constexpr LoopPolicy make_loop_policy() {
+  static_assert(0 < unwinding_bound, "Loop unwinding bound must be positive");
+  return LoopPolicy(id, unwinding_bound);
+}
+
+class Loop {
+private:
+  const LoopPolicy m_policy;
+  unsigned m_unwinding_counter;
+
+public:
+  constexpr Loop(const LoopPolicy& policy) :
+    m_policy(policy), m_unwinding_counter(policy.unwinding_bound()) {}
+
+//  Loop(const Loop&) = delete;
+
+  constexpr unsigned policy_id() const { return m_policy.id(); }
+  constexpr unsigned unwinding_bound() const { return m_policy.unwinding_bound(); }
+
+  unsigned unwinding_counter() const { return m_unwinding_counter; }
+
+  /// \pre 0 < unwinding_counter()
+  void decrement_unwinding_counter() {
+    assert(0 < m_unwinding_counter);
+    m_unwinding_counter--;
+  }
+};
 
 static void internal_relate(const std::shared_ptr<Block>& block_ptr,
   MemoryAddrRelation<Event>& relation) {
@@ -62,6 +118,10 @@ private:
 
   std::shared_ptr<Block> m_current_block_ptr;
 
+  // Each structurally nested loop in program is pushed onto this stack. This
+  // requires an inner loop to be fully unwound before a loop containing it.
+  std::stack<Loop> m_loop_stack;
+
   static std::unique_ptr<ReadInstr<bool>> negate(
     const std::shared_ptr<ReadInstr<bool>>& condition_ptr) {
 
@@ -73,7 +133,7 @@ public:
   Recorder(unsigned thread_id) : m_thread_id(thread_id),
     m_most_outer_block_ptr(new Block(nullptr, nullptr)),
     m_current_block_ptr(std::unique_ptr<Block>(new Block(
-      m_most_outer_block_ptr))) {
+      m_most_outer_block_ptr))), m_loop_stack(/* empty */) {
 
     m_most_outer_block_ptr->push_inner_block_ptr(m_current_block_ptr);
   }
@@ -106,7 +166,40 @@ public:
     return m_current_block_ptr->m_body;
   }
 
+  bool unwind_loop(std::unique_ptr<ReadInstr<bool>> condition_ptr,
+    const LoopPolicy& policy) {
+
+    assert(nullptr != condition_ptr);
+
+    if (m_loop_stack.empty() || m_loop_stack.top().policy_id() != policy.id()) {
+      m_loop_stack.push(Loop(policy));
+    }
+
+    assert(!m_loop_stack.empty());
+    assert(m_loop_stack.top().policy_id() == policy.id());
+    assert(m_loop_stack.top().unwinding_bound() == policy.unwinding_bound());
+
+    Loop& current_loop = m_loop_stack.top();
+    bool continue_unwinding = true;
+    if (0 < current_loop.unwinding_counter()) {
+      current_loop.decrement_unwinding_counter();
+      continue_unwinding = begin_then(std::move(condition_ptr));
+    } else {
+      // close all unwound branches of the current loop
+      for (unsigned k = 0; k < current_loop.unwinding_bound(); k++) {
+        end_branch();
+      }
+
+      m_loop_stack.pop();
+      continue_unwinding = false;
+    }
+
+    return continue_unwinding;
+  }
+
   bool begin_then(std::unique_ptr<ReadInstr<bool>> condition_ptr) {
+    assert(nullptr != condition_ptr);
+
     if (m_current_block_ptr->condition_ptr()) {
       // start nested branch inside current conditional block
       const std::shared_ptr<Block> then_block_ptr(new Block(
@@ -122,7 +215,7 @@ public:
         // reuse current unconditional and empty block
         m_current_block_ptr->m_condition_ptr = std::move(condition_ptr);
       } else {
-        std::shared_ptr<Block> outer_block_ptr(
+        const std::shared_ptr<Block> outer_block_ptr(
           m_current_block_ptr->outer_block_ptr());
 
         // next branch after an unconditional block inside outer block
@@ -130,7 +223,7 @@ public:
           std::move(condition_ptr)));
 
         outer_block_ptr->push_inner_block_ptr(then_block_ptr);
-        m_current_block_ptr = then_block_ptr;       
+        m_current_block_ptr = then_block_ptr;
       }
     }
 
@@ -179,11 +272,13 @@ public:
       }
 
       outer_block_ptr = outer_block_ptr->outer_block_ptr();
+      assert(nullptr != outer_block_ptr);
     }
 
-    std::shared_ptr<Block> unconditional_block_ptr(new Block(outer_block_ptr));
-    outer_block_ptr->push_inner_block_ptr(unconditional_block_ptr);
-    m_current_block_ptr = unconditional_block_ptr;
+    // next block is initially unconditional and empty
+    std::shared_ptr<Block> next_block_ptr(new Block(outer_block_ptr));
+    outer_block_ptr->push_inner_block_ptr(next_block_ptr);
+    m_current_block_ptr = next_block_ptr;
   }
 
   void end_thread() {}

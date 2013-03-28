@@ -7,6 +7,45 @@
 
 using namespace se;
 
+TEST(RecorderTest, LoopPolicy) {
+  constexpr LoopPolicy p(make_loop_policy<7, 2>());
+  static_assert(7 == p.id(), "Wrong loop ID");
+  static_assert(2 == p.unwinding_bound(), "Wrong loop unwinding bound");
+}
+
+TEST(RecorderTest, CopyLoopPolicy) {
+  constexpr LoopPolicy p(make_loop_policy<7, 2>());
+  constexpr LoopPolicy q(p);
+
+  static_assert(7 == q.id(), "Wrong loop ID");
+  static_assert(2 == q.unwinding_bound(), "Wrong loop unwinding bound");
+}
+
+TEST(RecorderTest, ConstLoop) {
+  constexpr LoopPolicy p(make_loop_policy<7, 1>());
+  constexpr Loop const_loop(p);
+
+  static_assert(7 == const_loop.policy_id(), "Wrong loop ID");
+  static_assert(1 == const_loop.unwinding_bound(), "Wrong loop unwinding bound");
+  EXPECT_EQ(1, const_loop.unwinding_counter());
+}
+
+TEST(RecorderTest, DecrementLoopUnwindingCounter) {
+  ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+  constexpr LoopPolicy p(make_loop_policy<7, 1>());
+  Loop loop(p);
+
+  EXPECT_EQ(7, loop.policy_id());
+  EXPECT_EQ(1, loop.unwinding_bound());
+  EXPECT_EQ(1, loop.unwinding_counter());
+
+  loop.decrement_unwinding_counter();
+  EXPECT_EQ(0, loop.unwinding_counter());
+
+  EXPECT_EXIT(loop.decrement_unwinding_counter(), ::testing::KilledBySignal(SIGABRT), "Assertion");
+}
+
 TEST(RecorderTest, InitialBlock) {
   const unsigned thread_id = 3;
   Recorder recorder(thread_id);
@@ -591,6 +630,172 @@ TEST(RecorderTest, NestedElseWithNonemptyBlock) {
   EXPECT_TRUE(most_outer_block_ptr->body().empty());
   EXPECT_EQ(2, most_outer_block_ptr->inner_block_ptrs().size());
   EXPECT_EQ(recorder.current_block_ptr(), most_outer_block_ptr->inner_block_ptrs().back());
+}
+
+TEST(RecorderTest, SimpleLoopWithReuse) {
+  const unsigned thread_id = 3;
+  Recorder recorder(thread_id);
+
+  constexpr LoopPolicy policy(make_loop_policy<7, 2>());
+  bool continue_unwinding = true;
+
+  const std::shared_ptr<Block> most_outer_block_ptr(recorder.current_block_ptr()->outer_block_ptr());
+  EXPECT_EQ(most_outer_block_ptr, recorder.most_outer_block_ptr());
+
+  const std::shared_ptr<Block> initial_block_ptr(recorder.current_block_ptr());
+  EXPECT_TRUE(initial_block_ptr->body().empty());
+  EXPECT_TRUE(initial_block_ptr->inner_block_ptrs().empty());
+  EXPECT_EQ(nullptr, initial_block_ptr->condition_ptr());
+
+  // k = 1
+  continue_unwinding = recorder.unwind_loop(std::unique_ptr<ReadInstr<bool>>(new LiteralReadInstr<bool>(true)), policy);
+  EXPECT_TRUE(continue_unwinding);
+
+  // reuse empty and conditional initial block
+  EXPECT_EQ(initial_block_ptr, recorder.current_block_ptr());
+  EXPECT_TRUE(initial_block_ptr->body().empty());
+  EXPECT_TRUE(initial_block_ptr->inner_block_ptrs().empty());
+  EXPECT_NE(nullptr, initial_block_ptr->condition_ptr());
+
+  // k = 2
+  continue_unwinding = recorder.unwind_loop(std::unique_ptr<ReadInstr<bool>>(new LiteralReadInstr<bool>(true)), policy);
+  EXPECT_TRUE(continue_unwinding);
+
+  const std::shared_ptr<Block> second_unwound_loop_block_ptr(recorder.current_block_ptr());
+  EXPECT_NE(initial_block_ptr, second_unwound_loop_block_ptr);
+  EXPECT_EQ(initial_block_ptr, second_unwound_loop_block_ptr->outer_block_ptr());
+  EXPECT_TRUE(second_unwound_loop_block_ptr->body().empty());
+  EXPECT_TRUE(second_unwound_loop_block_ptr->inner_block_ptrs().empty());
+  EXPECT_NE(nullptr, second_unwound_loop_block_ptr->condition_ptr());
+
+  // k = 3, stop unrolling!
+  continue_unwinding = recorder.unwind_loop(std::unique_ptr<ReadInstr<bool>>(new LiteralReadInstr<bool>(true)), policy);
+  EXPECT_FALSE(continue_unwinding);
+
+  EXPECT_NE(second_unwound_loop_block_ptr, recorder.current_block_ptr());
+  EXPECT_NE(initial_block_ptr, recorder.current_block_ptr());
+  EXPECT_EQ(most_outer_block_ptr, recorder.current_block_ptr()->outer_block_ptr());
+  EXPECT_EQ(2, most_outer_block_ptr->inner_block_ptrs().size());
+}
+
+TEST(RecorderTest, SimpleLoopWithoutReuse) {
+  const unsigned thread_id = 3;
+  Recorder recorder(thread_id);
+
+  constexpr LoopPolicy policy(make_loop_policy<7, 2>());
+  bool continue_unwinding = true;
+
+  const std::shared_ptr<Block> most_outer_block_ptr(recorder.current_block_ptr()->outer_block_ptr());
+  EXPECT_EQ(1, most_outer_block_ptr->inner_block_ptrs().size());
+  EXPECT_EQ(most_outer_block_ptr, recorder.most_outer_block_ptr());
+
+  recorder.insert_event_ptr(std::unique_ptr<Event>(new ReadEvent<char>(thread_id,  MemoryAddr::alloc<char>())));
+
+  const std::shared_ptr<Block> initial_block_ptr(recorder.current_block_ptr());
+  EXPECT_FALSE(initial_block_ptr->body().empty());
+  EXPECT_TRUE(initial_block_ptr->inner_block_ptrs().empty());
+  EXPECT_EQ(nullptr, initial_block_ptr->condition_ptr());
+
+  // k = 1
+  continue_unwinding = recorder.unwind_loop(std::unique_ptr<ReadInstr<bool>>(new LiteralReadInstr<bool>(true)), policy);
+  EXPECT_TRUE(continue_unwinding);
+
+  // cannot reuse nonempty initial block
+  const std::shared_ptr<Block> first_unwound_loop_block_ptr(recorder.current_block_ptr());
+  EXPECT_NE(initial_block_ptr, first_unwound_loop_block_ptr);
+  EXPECT_TRUE(first_unwound_loop_block_ptr->body().empty());
+  EXPECT_TRUE(first_unwound_loop_block_ptr->inner_block_ptrs().empty());
+  EXPECT_NE(nullptr, first_unwound_loop_block_ptr->condition_ptr());
+  EXPECT_TRUE(initial_block_ptr->inner_block_ptrs().empty());
+  EXPECT_FALSE(initial_block_ptr->body().empty());
+  EXPECT_EQ(nullptr, initial_block_ptr->condition_ptr());
+
+  // k = 2
+  continue_unwinding = recorder.unwind_loop(std::unique_ptr<ReadInstr<bool>>(new LiteralReadInstr<bool>(true)), policy);
+  EXPECT_TRUE(continue_unwinding);
+
+  const std::shared_ptr<Block> second_unwound_loop_block_ptr(recorder.current_block_ptr());
+  EXPECT_NE(initial_block_ptr, second_unwound_loop_block_ptr);
+  EXPECT_EQ(first_unwound_loop_block_ptr, second_unwound_loop_block_ptr->outer_block_ptr());
+  EXPECT_TRUE(second_unwound_loop_block_ptr->body().empty());
+  EXPECT_TRUE(second_unwound_loop_block_ptr->inner_block_ptrs().empty());
+  EXPECT_NE(nullptr, second_unwound_loop_block_ptr->condition_ptr());
+
+  // k = 3, stop unrolling!
+  continue_unwinding = recorder.unwind_loop(std::unique_ptr<ReadInstr<bool>>(new LiteralReadInstr<bool>(true)), policy);
+  EXPECT_FALSE(continue_unwinding);
+
+  EXPECT_NE(second_unwound_loop_block_ptr, recorder.current_block_ptr());
+  EXPECT_NE(first_unwound_loop_block_ptr, recorder.current_block_ptr());
+  EXPECT_NE(initial_block_ptr, recorder.current_block_ptr());
+  EXPECT_EQ(most_outer_block_ptr, recorder.current_block_ptr()->outer_block_ptr());
+  EXPECT_EQ(3, most_outer_block_ptr->inner_block_ptrs().size());
+}
+
+TEST(RecorderTest, NestedLoop) {
+  const unsigned thread_id = 3;
+  Recorder recorder(thread_id);
+
+  constexpr LoopPolicy outer_policy(make_loop_policy<7, 1>());
+  constexpr LoopPolicy inner_policy(make_loop_policy<8, 1>());
+  bool continue_unwinding = true;
+
+  recorder.insert_event_ptr(std::unique_ptr<Event>(new ReadEvent<char>(thread_id,  MemoryAddr::alloc<char>())));
+
+  const std::shared_ptr<Block> most_outer_block_ptr(recorder.current_block_ptr()->outer_block_ptr());
+  EXPECT_EQ(1, most_outer_block_ptr->inner_block_ptrs().size());
+  EXPECT_EQ(most_outer_block_ptr, recorder.most_outer_block_ptr());
+
+  const std::shared_ptr<Block> initial_block_ptr(recorder.current_block_ptr());
+  EXPECT_FALSE(initial_block_ptr->body().empty());
+  EXPECT_TRUE(initial_block_ptr->inner_block_ptrs().empty());
+  EXPECT_EQ(nullptr, initial_block_ptr->condition_ptr());
+
+  // k = 1
+  continue_unwinding = recorder.unwind_loop(std::unique_ptr<ReadInstr<bool>>(new LiteralReadInstr<bool>(true)), outer_policy);
+  EXPECT_TRUE(continue_unwinding);
+
+  // cannot reuse nonempty initial block
+  const std::shared_ptr<Block> first_unwound_loop_block_ptr(recorder.current_block_ptr());
+  EXPECT_NE(initial_block_ptr, first_unwound_loop_block_ptr);
+  EXPECT_TRUE(first_unwound_loop_block_ptr->body().empty());
+  EXPECT_TRUE(first_unwound_loop_block_ptr->inner_block_ptrs().empty());
+  EXPECT_NE(nullptr, first_unwound_loop_block_ptr->condition_ptr());
+  EXPECT_TRUE(initial_block_ptr->inner_block_ptrs().empty());
+  EXPECT_FALSE(initial_block_ptr->body().empty());
+  EXPECT_EQ(nullptr, initial_block_ptr->condition_ptr());
+
+  // j = 1
+  continue_unwinding = recorder.unwind_loop(std::unique_ptr<ReadInstr<bool>>(new LiteralReadInstr<bool>(true)), inner_policy);
+  EXPECT_TRUE(continue_unwinding);
+
+  const std::shared_ptr<Block> second_unwound_loop_block_ptr(recorder.current_block_ptr());
+  EXPECT_NE(initial_block_ptr, second_unwound_loop_block_ptr);
+  EXPECT_EQ(first_unwound_loop_block_ptr, second_unwound_loop_block_ptr->outer_block_ptr());
+  EXPECT_TRUE(second_unwound_loop_block_ptr->body().empty());
+  EXPECT_TRUE(second_unwound_loop_block_ptr->inner_block_ptrs().empty());
+  EXPECT_NE(nullptr, second_unwound_loop_block_ptr->condition_ptr());
+
+  // j = 2, stop inner loop unrolling!
+  continue_unwinding = recorder.unwind_loop(std::unique_ptr<ReadInstr<bool>>(new LiteralReadInstr<bool>(true)), inner_policy);
+  EXPECT_FALSE(continue_unwinding);
+
+  EXPECT_NE(second_unwound_loop_block_ptr, recorder.current_block_ptr());
+  EXPECT_NE(first_unwound_loop_block_ptr, recorder.current_block_ptr());
+  EXPECT_NE(initial_block_ptr, recorder.current_block_ptr());
+  EXPECT_EQ(first_unwound_loop_block_ptr, recorder.current_block_ptr()->outer_block_ptr());
+
+  EXPECT_EQ(2, first_unwound_loop_block_ptr->inner_block_ptrs().size());
+
+  // k = 2, stop outer loop unrolling!
+  continue_unwinding = recorder.unwind_loop(std::unique_ptr<ReadInstr<bool>>(new LiteralReadInstr<bool>(true)), outer_policy);
+  EXPECT_FALSE(continue_unwinding);
+
+  EXPECT_NE(second_unwound_loop_block_ptr, recorder.current_block_ptr());
+  EXPECT_NE(first_unwound_loop_block_ptr, recorder.current_block_ptr());
+  EXPECT_NE(initial_block_ptr, recorder.current_block_ptr());
+  EXPECT_EQ(most_outer_block_ptr, recorder.current_block_ptr()->outer_block_ptr());
+  EXPECT_EQ(3, most_outer_block_ptr->inner_block_ptrs().size());
 }
 
 TEST(RecorderTest, Body) {
