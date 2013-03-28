@@ -353,6 +353,37 @@ TEST(ConcurrentFunctionalTest, SeriesParallelGraph) {
             "}\n", printer.out.str());
 }
 
+TEST(ConcurrentFunctionalTest, Loop) {
+  // Setup
+  init_recorder();
+
+  CharBlockPrinter printer;
+  SharedVar<char> x;
+
+  x = 'A';
+  char k = 1;
+  while (recorder_ptr()->unwind_loop(x < '?', make_loop_policy<__COUNTER__, 3>())) {
+    x = k++;
+  }
+
+  printer.print_block_ptr(recorder_ptr()->most_outer_block_ptr());
+  EXPECT_EQ("{\n"
+            "  {\n"
+            "    A\n"
+            "  }\n"
+            "  {\n"
+            "    \x1\n"
+            "    {\n"
+            "      \x2\n"
+            "      {\n"
+            "        \x3\n"
+            "      }\n"
+            "    }\n"
+            "  }\n"
+            "  {\n  }\n"
+            "}\n", printer.out.str());
+}
+
 TEST(ConcurrentFunctionalTest, LocalScalarAndArray) {
   // Setup
   init_recorder();
