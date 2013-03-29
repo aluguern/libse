@@ -12,26 +12,27 @@ TEST(ConcurrentFunctionalTest, Counter) {
 }
 
 TEST(ConcurrentFunctionalTest, LocalArray) {
-  // Setup
-  init_recorder();
-
   Z3 z3;
-  MemoryAddrRelation<Event> relation;
-  const Z3ValueEncoder value_encoder;
-  const Z3OrderEncoder order_encoder;
+
+  Threads::reset();
+  Threads::begin_main_thread();
 
   LocalVar<char[5]> a;
   a[2] = 'Z';
 
-  recorder_ptr()->encode(value_encoder, z3);
-  z3.solver.add(value_encoder.encode(!(a[2] == 'Z'), z3));
+  Threads::expect(a[2] == 'Z', z3);
+
+  // Do not encode global memory accesses for this test
+  Threads::end_thread(z3);
+
   EXPECT_EQ(z3::unsat, z3.solver.check());
 
   std::stringstream out;
   out << z3.solver;
-  EXPECT_EQ("(solver\n  (= k!1 ((as const (Array (_ BitVec 64) (_ BitVec 8))) #x00))\n"
+  EXPECT_EQ("(solver\n  (not (= (select k!3 #x0000000000000002) #x5a))\n"
+            "  (= k!1 ((as const (Array (_ BitVec 64) (_ BitVec 8))) #x00))\n"
             "  (= k!3 (store k!1 #x0000000000000002 #x5a))\n"
-            "  (not (= (select k!3 #x0000000000000002) #x5a)))", out.str());
+            "  (> k!1 0)\n  (< epoch_clock k!1)\n  (> k!3 0)\n  (< k!1 k!3))", out.str());
 }
 
 class CharBlockPrinter {
@@ -87,22 +88,23 @@ public:
 };
 
 TEST(ConcurrentFunctionalTest, Else) {
-  // Setup
-  init_recorder();
-
   CharBlockPrinter printer;
+
+  Threads::reset();
+  Threads::begin_main_thread();
+
   SharedVar<char> x;
 
   x = 'A';
-  if (recorder_ptr()->begin_then(x == '?')) {
+  if (ThisThread::recorder().begin_then(x == '?')) {
     x = 'B';
   }
-  if (recorder_ptr()->begin_else()) {
+  if (ThisThread::recorder().begin_else()) {
     x = 'C';
-  } recorder_ptr()->end_branch();
+  } ThisThread::recorder().end_branch();
   x = 'D';
 
-  printer.print_block_ptr(recorder_ptr()->most_outer_block_ptr());
+  printer.print_block_ptr(ThisThread::recorder().most_outer_block_ptr());
   EXPECT_EQ("{\n"
             "  {\n"
             "    A\n"
@@ -122,27 +124,28 @@ TEST(ConcurrentFunctionalTest, Else) {
 
 
 TEST(ConcurrentFunctionalTest, ElseIf) {
-  // Setup
-  init_recorder();
-
   CharBlockPrinter printer;
+
+  Threads::reset();
+  Threads::begin_main_thread();
+
   SharedVar<char> x;
 
   x = 'A';
-  recorder_ptr()->begin_then(x == '?'); {
-  } recorder_ptr()->begin_else(); {
-      recorder_ptr()->begin_then(x == '?'); {
-        recorder_ptr()->begin_then(x == '?'); {
+  ThisThread::recorder().begin_then(x == '?'); {
+  } ThisThread::recorder().begin_else(); {
+      ThisThread::recorder().begin_then(x == '?'); {
+        ThisThread::recorder().begin_then(x == '?'); {
           x = 'B';
-        } recorder_ptr()->begin_else(); {
+        } ThisThread::recorder().begin_else(); {
           x = 'C';
           x = 'D';
-        } recorder_ptr()->end_branch();
-      } recorder_ptr()->end_branch();
+        } ThisThread::recorder().end_branch();
+      } ThisThread::recorder().end_branch();
       x = 'E';
-  } recorder_ptr()->end_branch();
+  } ThisThread::recorder().end_branch();
 
-  printer.print_block_ptr(recorder_ptr()->most_outer_block_ptr());
+  printer.print_block_ptr(ThisThread::recorder().most_outer_block_ptr());
   EXPECT_EQ("{\n"
             "  {\n"
             "    A\n"
@@ -170,89 +173,90 @@ TEST(ConcurrentFunctionalTest, ElseIf) {
 }
 
 TEST(ConcurrentFunctionalTest, SeriesParallelGraph) {
-  // Setup
-  init_recorder();
-
   CharBlockPrinter printer;
+
+  Threads::reset();
+  Threads::begin_main_thread();
+
   SharedVar<char> x;
 
   x = 'A';
-  recorder_ptr()->begin_then(x == '?'); {
+  ThisThread::recorder().begin_then(x == '?'); {
     x = 'B';
-    recorder_ptr()->begin_then(x == '?'); {
-      recorder_ptr()->begin_then(x == '?'); {
+    ThisThread::recorder().begin_then(x == '?'); {
+      ThisThread::recorder().begin_then(x == '?'); {
         x = 'C';
-      } recorder_ptr()->end_branch();
-      recorder_ptr()->begin_then(x == '?'); {
+      } ThisThread::recorder().end_branch();
+      ThisThread::recorder().begin_then(x == '?'); {
         x = 'D';
-      } recorder_ptr()->end_branch();
-    } recorder_ptr()->end_branch();
-    recorder_ptr()->begin_then(x == '?'); {
+      } ThisThread::recorder().end_branch();
+    } ThisThread::recorder().end_branch();
+    ThisThread::recorder().begin_then(x == '?'); {
       x = 'E';
-      recorder_ptr()->begin_then(x == '?'); {
+      ThisThread::recorder().begin_then(x == '?'); {
         x = 'F';
-      } recorder_ptr()->end_branch();
-      recorder_ptr()->begin_then(x == '?'); {
+      } ThisThread::recorder().end_branch();
+      ThisThread::recorder().begin_then(x == '?'); {
         x = 'G';
-      } recorder_ptr()->end_branch();
-    } recorder_ptr()->end_branch();
-    recorder_ptr()->begin_then(x == '?'); {
-      recorder_ptr()->begin_then(x == '?'); {
+      } ThisThread::recorder().end_branch();
+    } ThisThread::recorder().end_branch();
+    ThisThread::recorder().begin_then(x == '?'); {
+      ThisThread::recorder().begin_then(x == '?'); {
         x = 'H';
-      } recorder_ptr()->end_branch();
+      } ThisThread::recorder().end_branch();
       x = 'I';
-      recorder_ptr()->begin_then(x == '?'); {
+      ThisThread::recorder().begin_then(x == '?'); {
         x = 'J';
-      } recorder_ptr()->end_branch();
-    } recorder_ptr()->end_branch();
-    recorder_ptr()->begin_then(x == '?'); {
+      } ThisThread::recorder().end_branch();
+    } ThisThread::recorder().end_branch();
+    ThisThread::recorder().begin_then(x == '?'); {
       x = 'K';
-      recorder_ptr()->begin_then(x == '?'); {
+      ThisThread::recorder().begin_then(x == '?'); {
         x = 'L';
-      } recorder_ptr()->end_branch();
+      } ThisThread::recorder().end_branch();
       x = 'M';
-      recorder_ptr()->begin_then(x == '?'); {
+      ThisThread::recorder().begin_then(x == '?'); {
         x = 'N';
-      } recorder_ptr()->end_branch();
-    } recorder_ptr()->end_branch();
-  } recorder_ptr()->begin_else(); {
-    recorder_ptr()->begin_then(x == '?'); {
-      recorder_ptr()->begin_then(x == '?'); {
+      } ThisThread::recorder().end_branch();
+    } ThisThread::recorder().end_branch();
+  } ThisThread::recorder().begin_else(); {
+    ThisThread::recorder().begin_then(x == '?'); {
+      ThisThread::recorder().begin_then(x == '?'); {
         x = 'O';
-      } recorder_ptr()->begin_else(); {
+      } ThisThread::recorder().begin_else(); {
         x = 'P';
-      } recorder_ptr()->end_branch();
-    } recorder_ptr()->end_branch();
+      } ThisThread::recorder().end_branch();
+    } ThisThread::recorder().end_branch();
     x = 'Q';
-    recorder_ptr()->begin_then(x == '?'); {
+    ThisThread::recorder().begin_then(x == '?'); {
       x = 'R';
-      recorder_ptr()->begin_then(x == '?'); {
+      ThisThread::recorder().begin_then(x == '?'); {
         x = 'S';
-      } recorder_ptr()->begin_else(); {
+      } ThisThread::recorder().begin_else(); {
         x = 'T';
-      } recorder_ptr()->end_branch();
-    } recorder_ptr()->end_branch();
-    recorder_ptr()->begin_then(x == '?'); {
-      recorder_ptr()->begin_then(x == '?'); {
+      } ThisThread::recorder().end_branch();
+    } ThisThread::recorder().end_branch();
+    ThisThread::recorder().begin_then(x == '?'); {
+      ThisThread::recorder().begin_then(x == '?'); {
         x = 'U';
-      } recorder_ptr()->begin_else(); {
+      } ThisThread::recorder().begin_else(); {
         x = 'W';
-      } recorder_ptr()->end_branch();
+      } ThisThread::recorder().end_branch();
       x = 'V';
-    } recorder_ptr()->end_branch();
-    recorder_ptr()->begin_then(x == '?'); {
+    } ThisThread::recorder().end_branch();
+    ThisThread::recorder().begin_then(x == '?'); {
       x = 'X';
-      recorder_ptr()->begin_then(x == '?'); {
+      ThisThread::recorder().begin_then(x == '?'); {
         x = 'Y';
-      } recorder_ptr()->end_branch();
-      recorder_ptr()->begin_then(x == '?'); {
+      } ThisThread::recorder().end_branch();
+      ThisThread::recorder().begin_then(x == '?'); {
         x = 'Z';
-      } recorder_ptr()->end_branch();
+      } ThisThread::recorder().end_branch();
       x = '!';
-    } recorder_ptr()->end_branch();
-  } recorder_ptr()->end_branch();
+    } ThisThread::recorder().end_branch();
+  } ThisThread::recorder().end_branch();
 
-  printer.print_block_ptr(recorder_ptr()->most_outer_block_ptr());
+  printer.print_block_ptr(ThisThread::recorder().most_outer_block_ptr());
   EXPECT_EQ("{\n"
             "  {\n"
             "    A\n"
@@ -354,19 +358,20 @@ TEST(ConcurrentFunctionalTest, SeriesParallelGraph) {
 }
 
 TEST(ConcurrentFunctionalTest, Loop) {
-  // Setup
-  init_recorder();
-
   CharBlockPrinter printer;
+
+  Threads::reset();
+  Threads::begin_main_thread();
+
   SharedVar<char> x;
 
   x = 'A';
   char k = 1;
-  while (recorder_ptr()->unwind_loop(x < '?', make_loop_policy<__COUNTER__, 3>())) {
+  while (ThisThread::recorder().unwind_loop(x < '?', make_loop_policy<__COUNTER__, 3>())) {
     x = k++;
   }
 
-  printer.print_block_ptr(recorder_ptr()->most_outer_block_ptr());
+  printer.print_block_ptr(ThisThread::recorder().most_outer_block_ptr());
   EXPECT_EQ("{\n"
             "  {\n"
             "    A\n"
@@ -385,216 +390,117 @@ TEST(ConcurrentFunctionalTest, Loop) {
 }
 
 TEST(ConcurrentFunctionalTest, LocalScalarAndArray) {
-  // Setup
-  init_recorder();
-
   Z3 z3;
-  MemoryAddrRelation<Event> relation;
-  const Z3ValueEncoder value_encoder;
+
+  Threads::reset();
+  Threads::begin_main_thread();
 
   LocalVar<char[5]> a;
   LocalVar<char> b;
   a[2] = 'Z';
   b = a[2];
 
-  recorder_ptr()->encode(value_encoder, z3);
-  z3.solver.add(value_encoder.encode(!(b == 'Z'), z3));
+  Threads::expect(b == 'Z', z3);
+
+  // Do not encode global memory accesses for this test
+  Threads::end_thread(z3);
+
   EXPECT_EQ(z3::unsat, z3.solver.check());
 }
 
 TEST(ConcurrentFunctionalTest, ThreeThreadsReadWriteScalarSharedVar) {
-  // Setup
-  init_recorder();
-
   Z3 z3;
-  MemoryAddrRelation<Event> relation;
-  const Z3ValueEncoder value_encoder;
-  const Z3OrderEncoder order_encoder;
+
+  Threads::reset();
+  Threads::begin_main_thread();
 
   // Declare shared variable initialized by main thread
   SharedVar<char> x;
 
   // Record first child thread
-  push_recorder(1);
+  Threads::begin_thread();
 
   x = 'P';
 
-  recorder_ptr()->encode(value_encoder, z3);
-  recorder_ptr()->relate(relation);
-  pop_recorder();
+  Threads::end_thread(z3);
 
   // Record second child thread
-  push_recorder(2);
+  Threads::begin_thread();
 
   x = 'Q';
 
-  recorder_ptr()->encode(value_encoder, z3);
-  recorder_ptr()->relate(relation);
-  pop_recorder();
+  Threads::end_thread(z3);
 
   // Prepare property encoding
   LocalVar<char> a;
   a = x;
 
-  recorder_ptr()->encode(value_encoder, z3);
-  recorder_ptr()->relate(relation);
+  // Create properties within main thread context
+  std::unique_ptr<ReadInstr<bool>> c0(a == '\0');
+  std::unique_ptr<ReadInstr<bool>> c1(a == 'P');
+  std::unique_ptr<ReadInstr<bool>> c2(a == 'Q');
+  std::unique_ptr<ReadInstr<bool>> c3(a == 'P' || a == 'Q');
+  std::unique_ptr<ReadInstr<bool>> c4(a == '\0' || a == 'P');
+  std::unique_ptr<ReadInstr<bool>> c5(a == '\0' || a == 'Q');
+  std::unique_ptr<ReadInstr<bool>> c6(a == '\0' || a == 'P' || a == 'Q');
 
-  // Encode partial orders
-  order_encoder.encode(recorder_ptr()->most_outer_block_ptr(), relation, z3);
+  Threads::end_main_thread(z3);
 
   z3.solver.push();
 
-  z3.solver.add(value_encoder.encode(!(a == '\0'), z3));
+  Threads::expect(std::move(c0), z3);
   EXPECT_EQ(z3::sat, z3.solver.check());
 
   z3.solver.pop();
 
   z3.solver.push();
 
-  z3.solver.add(value_encoder.encode(!(a == 'P'), z3));
+  Threads::expect(std::move(c1), z3);
   EXPECT_EQ(z3::sat, z3.solver.check());
 
   z3.solver.pop();
 
   z3.solver.push();
 
-  z3.solver.add(value_encoder.encode(!(a == 'Q'), z3));
+  Threads::expect(std::move(c2), z3);
   EXPECT_EQ(z3::sat, z3.solver.check());
 
   z3.solver.pop();
 
   z3.solver.push();
 
-  z3.solver.add(value_encoder.encode(!(a == 'P' || a == 'Q'), z3));
+  Threads::expect(std::move(c3), z3);
   EXPECT_EQ(z3::sat, z3.solver.check());
 
   z3.solver.pop();
 
   z3.solver.push();
 
-  z3.solver.add(value_encoder.encode(!(a == '\0' || a == 'P'), z3));
+  Threads::expect(std::move(c4), z3);
   EXPECT_EQ(z3::sat, z3.solver.check());
 
   z3.solver.pop();
 
   z3.solver.push();
 
-  z3.solver.add(value_encoder.encode(!(a == '\0' || a == 'Q'), z3));
+  Threads::expect(std::move(c5), z3);
   EXPECT_EQ(z3::sat, z3.solver.check());
 
   z3.solver.pop();
 
   z3.solver.push();
 
-  z3.solver.add(value_encoder.encode(!(a == '\0' || a == 'P' || a == 'Q'), z3));
-  EXPECT_EQ(z3::unsat, z3.solver.check());
-
-  z3.solver.pop();
-}
-
-TEST(ConcurrentFunctionalTest, SatJoinPathsInSingleThreadWithSharedVar) {
-  init_recorder();
-
-  Z3 z3;
-  MemoryAddrRelation<Event> relation;
-  const Z3ValueEncoder value_encoder;
-  const Z3OrderEncoder order_encoder;
-
-  SharedVar<char> x;
-  LocalVar<char> a;
-
-  x = 'A';
-  if (recorder_ptr()->begin_then(x == '?')) {
-    x = 'B';
-  }
-  if (recorder_ptr()->begin_else()) {
-    x = 'C';
-  }
-  recorder_ptr()->end_branch();
-  a = x;
-
-  recorder_ptr()->encode(value_encoder, z3);
-  recorder_ptr()->relate(relation);
-  order_encoder.encode(recorder_ptr()->most_outer_block_ptr(), relation, z3);
-
-  EXPECT_EQ(z3::sat, z3.solver.check());
-
-  z3.solver.push();
-
-  z3.solver.add(value_encoder.encode(!(a == 'C'), z3));
-  EXPECT_EQ(z3::sat, z3.solver.check());
-
-  z3.solver.pop();
-
-  z3.solver.push();
-
-  z3.solver.add(value_encoder.encode(a == 'B', z3));
-  EXPECT_EQ(z3::sat, z3.solver.check());
-
-  z3.solver.pop();
-
-  z3.solver.push();
-
-  z3.solver.add(value_encoder.encode(a == 'B' && !(a == 'C'), z3));
-  EXPECT_EQ(z3::sat, z3.solver.check());
-
-  z3.solver.pop();
-
-  z3.solver.push();
-
-  z3.solver.add(value_encoder.encode(!(a == 'B') && a == 'C', z3));
-  EXPECT_EQ(z3::sat, z3.solver.check());
-
-  z3.solver.pop();
-}
-
-TEST(ConcurrentFunctionalTest, UnsatJoinPathsInSingleThreadWithSharedVar) {
-  init_recorder();
-
-  Z3 z3;
-  MemoryAddrRelation<Event> relation;
-  const Z3ValueEncoder value_encoder;
-  const Z3OrderEncoder order_encoder;
-
-  SharedVar<char> x;
-  LocalVar<char> a;
-
-  x = 'A';
-  if (recorder_ptr()->begin_then(x == '?')) {
-    x = 'B';
-  }
-  if (recorder_ptr()->begin_else()) {
-    x = 'C';
-  }
-  recorder_ptr()->end_branch();
-  a = x;
-
-  recorder_ptr()->encode(value_encoder, z3);
-  recorder_ptr()->relate(relation);
-  order_encoder.encode(recorder_ptr()->most_outer_block_ptr(), relation, z3);
-
-  z3.solver.push();
-
-  z3.solver.add(value_encoder.encode(!(a == 'B' || a == 'C'), z3));
-  EXPECT_EQ(z3::unsat, z3.solver.check());
-
-  z3.solver.pop();
-
-  z3.solver.push();
-
-  z3.solver.add(value_encoder.encode(a == 'A', z3));
+  Threads::expect(std::move(c6), z3);
   EXPECT_EQ(z3::unsat, z3.solver.check());
 
   z3.solver.pop();
 }
 
 TEST(ConcurrentFunctionalTest, SatSingleThreadWithSharedVar) {
-  init_recorder();
-
   Z3 z3;
-  MemoryAddrRelation<Event> relation;
-  const Z3ValueEncoder value_encoder;
-  const Z3OrderEncoder order_encoder;
+
+  Threads::reset();
+  Threads::begin_main_thread();
 
   SharedVar<char> x;
   LocalVar<char> a;
@@ -602,9 +508,105 @@ TEST(ConcurrentFunctionalTest, SatSingleThreadWithSharedVar) {
   x = 'A';
   a = x;
 
-  recorder_ptr()->encode(value_encoder, z3);
-  recorder_ptr()->relate(relation);
-  order_encoder.encode(recorder_ptr()->most_outer_block_ptr(), relation, z3);
+  Threads::end_main_thread(z3);
 
   EXPECT_EQ(z3::sat, z3.solver.check());
+}
+
+TEST(ConcurrentFunctionalTest, SatJoinPathsInSingleThreadWithSharedVar) {
+  Z3 z3;
+
+  Threads::reset();
+  Threads::begin_main_thread();
+
+  SharedVar<char> x;
+  LocalVar<char> a;
+
+  x = 'A';
+  if (ThisThread::recorder().begin_then(x == '?')) {
+    x = 'B';
+  }
+  if (ThisThread::recorder().begin_else()) {
+    x = 'C';
+  }
+  ThisThread::recorder().end_branch();
+  a = x;
+
+  // Create properties within main thread context
+  std::unique_ptr<ReadInstr<bool>> c0(!(a == 'B'));
+  std::unique_ptr<ReadInstr<bool>> c1(a == 'C');
+  std::unique_ptr<ReadInstr<bool>> c2(!(a == 'B') || a == 'C');
+  std::unique_ptr<ReadInstr<bool>> c3((a == 'B') || !(a == 'C'));
+
+  Threads::end_main_thread(z3);
+
+  EXPECT_EQ(z3::sat, z3.solver.check());
+
+  z3.solver.push();
+
+  Threads::expect(std::move(c0), z3);
+  EXPECT_EQ(z3::sat, z3.solver.check());
+
+  z3.solver.pop();
+
+  z3.solver.push();
+
+  Threads::expect(std::move(c1), z3);
+  EXPECT_EQ(z3::sat, z3.solver.check());
+
+  z3.solver.pop();
+
+  z3.solver.push();
+
+  Threads::expect(std::move(c2), z3);
+  EXPECT_EQ(z3::sat, z3.solver.check());
+
+  z3.solver.pop();
+
+  z3.solver.push();
+
+  Threads::expect(std::move(c3), z3);
+  EXPECT_EQ(z3::sat, z3.solver.check());
+
+  z3.solver.pop();
+}
+
+TEST(ConcurrentFunctionalTest, UnsatJoinPathsInSingleThreadWithSharedVar) {
+  Z3 z3;
+
+  Threads::reset();
+  Threads::begin_main_thread();
+
+  SharedVar<char> x;
+  LocalVar<char> a;
+
+  x = 'A';
+  if (ThisThread::recorder().begin_then(x == '?')) {
+    x = 'B';
+  }
+  if (ThisThread::recorder().begin_else()) {
+    x = 'C';
+  }
+  ThisThread::recorder().end_branch();
+  a = x;
+
+  // Create properties within main thread context
+  std::unique_ptr<ReadInstr<bool>> c0(a == 'B' || a == 'C');
+  std::unique_ptr<ReadInstr<bool>> c1(!(a == 'A'));
+
+  Threads::end_main_thread(z3);
+
+  z3.solver.push();
+
+  Threads::expect(std::move(c0), z3);
+  EXPECT_EQ(z3::unsat, z3.solver.check());
+
+  z3.solver.pop();
+
+  z3.solver.push();
+
+  Threads::expect(std::move(c1), z3);
+  EXPECT_EQ(z3::unsat, z3.solver.check());
+
+  z3.solver.pop();
 }

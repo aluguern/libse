@@ -10,26 +10,6 @@ namespace se {
 
 static std::stack<std::shared_ptr<Recorder>> s_recorder_ptrs;
 
-const std::shared_ptr<ReadInstr<bool>> Recorder::s_true_condition_ptr = nullptr;
-
-std::shared_ptr<Recorder> recorder_ptr() { return s_recorder_ptrs.top(); }
-
-void init_recorder() {
-  Event::reset_id();
-  MemoryAddr::reset();
-
-  while (!s_recorder_ptrs.empty()) { 
-    s_recorder_ptrs.pop();
-  }
-  push_recorder(0);
-}
-
-void push_recorder(unsigned thread_id) {
-  s_recorder_ptrs.push(std::shared_ptr<Recorder>(new Recorder(thread_id)));
-}
-
-void pop_recorder() {
-  s_recorder_ptrs.pop();
-}
+//std::shared_ptr<Recorder> recorder_ptr() { return s_recorder_ptrs.top(); }
 
 }

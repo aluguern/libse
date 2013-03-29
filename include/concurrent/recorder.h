@@ -13,6 +13,12 @@
 
 namespace se {
 
+class Recorder;
+namespace ThisThread {
+  Recorder& recorder();
+  unsigned thread_id();
+}
+
 /// Bounded loop unwinding policy
 
 /// Two loop policies with the same \ref LoopPolicy::id() "identifier" must
@@ -69,45 +75,6 @@ public:
     m_unwinding_counter--;
   }
 };
-
-static void internal_relate(const std::shared_ptr<Block>& block_ptr,
-  MemoryAddrRelation<Event>& relation) {
-
-  for (const std::shared_ptr<Event>& event_ptr : block_ptr->body()) {
-    relation.relate(event_ptr);
-  }
-
-  for (const std::shared_ptr<Block>& inner_block_ptr :
-    block_ptr->inner_block_ptrs()) {
-
-    internal_relate(inner_block_ptr, relation);
-  }
-
-  if (block_ptr->else_block_ptr()) {
-    internal_relate(block_ptr->else_block_ptr(), relation);
-  }
-}
-
-static void internal_encode(const std::shared_ptr<Block>& block_ptr,
-  const Z3ValueEncoder& encoder, Z3& z3) {
-
-  for (const std::shared_ptr<Event>& event_ptr : block_ptr->body()) {
-    if (event_ptr->is_write()) {
-      z3::expr equality(event_ptr->encode(encoder, z3)); 
-      z3.solver.add(equality);
-    }
-  }
-
-  for (const std::shared_ptr<Block>& inner_block_ptr :
-    block_ptr->inner_block_ptrs()) {
-
-    internal_encode(inner_block_ptr, encoder, z3);
-  }
-
-  if (block_ptr->else_block_ptr()) {
-    internal_encode(block_ptr->else_block_ptr(), encoder, z3);
-  }
-}
 
 /// Records events and path conditions on a per-thread basis
 
@@ -173,6 +140,13 @@ public:
 
     m_most_outer_block_ptr->push_inner_block_ptr(m_current_block_ptr);
   }
+
+  Recorder(const Recorder&) = delete;
+
+  Recorder(Recorder&& other) : m_thread_id(other.m_thread_id),
+    m_most_outer_block_ptr(std::move(other.m_most_outer_block_ptr)),
+    m_current_block_ptr(std::move(other.m_current_block_ptr)),
+    m_loop_stack(std::move(other.m_loop_stack)) {}
 
   unsigned thread_id() const { return m_thread_id; }
 
@@ -379,21 +353,7 @@ public:
     insert_event_ptr(write_event_ptr);
     return write_event_ptr;
   }
-
-  void encode(const Z3ValueEncoder& encoder, Z3& z3) const {
-    internal_encode(most_outer_block_ptr(), encoder, z3);
-  }
-
-  void relate(MemoryAddrRelation<Event>& relation) const {
-    internal_relate(most_outer_block_ptr(), relation);
-  }
 };
-
-/// Static object which can record events and path conditions
-extern void init_recorder();
-extern std::shared_ptr<Recorder> recorder_ptr();
-extern void push_recorder(unsigned thread_id);
-extern void pop_recorder();
 
 }
 

@@ -60,7 +60,8 @@ lib_libse_la_SOURCES = \
   src/concurrent/memory.cpp \
   src/concurrent/event.cpp \
   src/concurrent/recorder.cpp \
-  src/concurrent/relation.cpp
+  src/concurrent/relation.cpp \
+  src/concurrent/thread.cpp
 
 pkginclude_HEADERS = \
   include/core/op.h \
@@ -74,6 +75,7 @@ pkginclude_HEADERS = \
   include/concurrent/recorder.h \
   include/concurrent/var.h \
   include/concurrent/relation.h \
+  include/concurrent/thread.h \
   include/concurrent.h
 
 # Build rules for functional and unit tests.
@@ -111,8 +113,9 @@ test_se_SOURCES = \
   test/concurrent/recorder_test.cpp \
   test/concurrent/var_test.cpp \
   test/concurrent/relation_test.cpp \
-  test/concurrent/functional_test.cpp \
-  test/concurrent_test.cpp
+  test/concurrent/thread_test.cpp \
+  test/concurrent_test.cpp \
+  test/concurrent/functional_test.cpp
 
 test_se_CPPFLAGS = -std=c++0x -I$(srcdir)/include -I$(top_srcdir)/gtest/include
 test_se_LDADD = $(top_builddir)/gtest/lib/libgtest_main.la lib/libse.la

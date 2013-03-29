@@ -1,13 +1,13 @@
 #include "gtest/gtest.h"
 
 #include "concurrent/var.h"
-#include "concurrent/recorder.h"
+#include "concurrent/thread.h"
 
 using namespace se;
 
 TEST(VarTest, SharedDeclVarInitScalar) {
-  init_recorder();
-  Event::reset_id(7);
+  Threads::reset(7);
+  Threads::begin_main_thread();
 
   DeclVar<char> var(true);
 
@@ -18,8 +18,8 @@ TEST(VarTest, SharedDeclVarInitScalar) {
 }
 
 TEST(VarTest, LocalDeclVarInitScalar) {
-  init_recorder();
-  Event::reset_id(7);
+  Threads::reset(7);
+  Threads::begin_main_thread();
 
   DeclVar<char> var(false);
 
@@ -30,7 +30,8 @@ TEST(VarTest, LocalDeclVarInitScalar) {
 }
 
 TEST(VarTest, LocalVarInitScalar) {
-  init_recorder();
+  Threads::reset();
+  Threads::begin_main_thread();
 
   LocalVar<char> var('Z');
 
@@ -40,7 +41,8 @@ TEST(VarTest, LocalVarInitScalar) {
 }
 
 TEST(VarTest, SharedVarInitScalar) {
-  init_recorder();
+  Threads::reset();
+  Threads::begin_main_thread();
 
   SharedVar<char> var('Z');
 

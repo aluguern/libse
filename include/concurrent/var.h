@@ -29,18 +29,17 @@ std::unique_ptr<ReadInstr<typename std::enable_if<
 
 template<typename T>
 std::unique_ptr<ReadEvent<T>> make_read_event(const MemoryAddr& addr) {
-  const unsigned thread_id = recorder_ptr()->thread_id();
-  return std::unique_ptr<ReadEvent<T>>(new ReadEvent<T>(thread_id, addr,
-    recorder_ptr()->block_condition_ptr()));
+  return std::unique_ptr<ReadEvent<T>>(new ReadEvent<T>(ThisThread::thread_id(),
+    addr, ThisThread::recorder().block_condition_ptr()));
 }
 
 template<typename T>
 std::unique_ptr<ReadEvent<T>> internal_make_read_event(const MemoryAddr& addr,
   size_t event_id) {
 
-  const unsigned thread_id = recorder_ptr()->thread_id();
+  const unsigned thread_id = ThisThread::thread_id();
   return std::unique_ptr<ReadEvent<T>>(new ReadEvent<T>(event_id, thread_id,
-    addr, recorder_ptr()->block_condition_ptr()));
+    addr, ThisThread::recorder().block_condition_ptr()));
 }
 
 /// Identifier of the main thread from which others can be spawn
@@ -151,7 +150,7 @@ public:
 
   /// \param is_shared - can other threads modify the variable?
   DeclVar(bool is_shared) : BaseDeclVar<T>(is_shared) {
-    recorder_ptr()->insert_event_ptr(direct_write_event_ptr());
+    ThisThread::recorder().insert_event_ptr(direct_write_event_ptr());
   }
 
   /// Declare a variable that only allows direct memory writes
@@ -160,7 +159,7 @@ public:
   /// \param v - initialization value
   DeclVar(bool is_shared, const T v) : BaseDeclVar<T>(is_shared) {
     set_direct_write_event_ptr(make_direct_write_event<T>(addr(), v));
-    recorder_ptr()->insert_event_ptr(direct_write_event_ptr());
+    ThisThread::recorder().insert_event_ptr(direct_write_event_ptr());
   }
 
   ~DeclVar() {}
@@ -184,7 +183,7 @@ public:
     m_array_addr(MemoryAddr::alloc<T>(is_array_shared, N)),
     m_indirect_write_event_ptr() {
 
-    recorder_ptr()->insert_event_ptr(direct_write_event_ptr());
+    ThisThread::recorder().insert_event_ptr(direct_write_event_ptr());
   }
 
   ~DeclVar() {}
@@ -237,7 +236,7 @@ private:
     assert(nullptr != instr_ptr);
 
     const std::shared_ptr<IndirectWriteEvent<Range, Domain, N>> write_event_ptr(
-      recorder_ptr()->instr(m_element_addr, std::move(m_deref_instr_ptr),
+      ThisThread::recorder().instr(m_element_addr, std::move(m_deref_instr_ptr),
         std::move(instr_ptr)));
     m_var_ptr->set_indirect_write_event_ptr(write_event_ptr);
   }
@@ -343,7 +342,7 @@ public:
 
   LocalVar<T>& operator=(std::unique_ptr<ReadInstr<T>> instr_ptr) {
     const std::shared_ptr<DirectWriteEvent<T>> write_event_ptr(
-      recorder_ptr()->instr(addr(), std::move(instr_ptr)));
+      ThisThread::recorder().instr(addr(), std::move(instr_ptr)));
 
     m_var.set_direct_write_event_ptr(write_event_ptr);
     m_local_read.m_read_event_ptr = internal_make_read_event<T>(addr(),
@@ -434,7 +433,7 @@ public:
 
   SharedVar<T>& operator=(std::unique_ptr<ReadInstr<T>> instr_ptr) {
     const std::shared_ptr<DirectWriteEvent<T>> write_event_ptr(
-      recorder_ptr()->instr(addr(), std::move(instr_ptr)));
+      ThisThread::recorder().instr(addr(), std::move(instr_ptr)));
 
     m_var.set_direct_write_event_ptr(write_event_ptr);
 
