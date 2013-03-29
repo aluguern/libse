@@ -59,6 +59,9 @@ private:
   __Relation m_relation;
 
 public:
+  /// Clears contents
+  void clear() { m_relation.clear(); }
+
   void add(const T& a, const U& b) {
     m_relation.insert(typename __Relation::value_type(a, b));
   }
@@ -129,6 +132,12 @@ private:
 
 public:
   MemoryAddrRelation() : m_relation(), m_addrs() {}
+
+  /// Clears contents
+  void clear() {
+    m_addrs.clear();
+    m_relation.clear();
+  }
 
   /// Set of related but opaque memory addresses
   const MemoryAddrSet addrs() const { return m_addrs; }

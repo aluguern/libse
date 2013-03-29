@@ -60,6 +60,9 @@ TEST(RelationTest, DefaultMemoryAddrRelation) {
 
   EXPECT_EQ(1, relation.find(addr, ReadEventPredicate::predicate()).size());
   EXPECT_EQ(0, relation.find(other_addr, ReadEventPredicate::predicate()).size());
+
+  relation.clear();
+  EXPECT_TRUE(relation.find(addr, ReadEventPredicate::predicate()).empty());
 }
 
 TEST(RelationTest, MemoryAddrRelationAsFunction) {
@@ -74,6 +77,9 @@ TEST(RelationTest, MemoryAddrRelationAsFunction) {
 
   EXPECT_EQ(1, relation.find(addr, ReadEventPredicate::predicate()).size());
   EXPECT_EQ(0, relation.find(other_addr, ReadEventPredicate::predicate()).size());
+
+  relation.clear();
+  EXPECT_TRUE(relation.find(addr, ReadEventPredicate::predicate()).empty());
 }
 
 TEST(RelationTest, MemoryAddrRelation) {
@@ -92,6 +98,10 @@ TEST(RelationTest, MemoryAddrRelation) {
   EXPECT_EQ(1, relation.find(addr_b, ReadEventPredicate::predicate()).size());
   EXPECT_EQ(relation.find(addr_a, ReadEventPredicate::predicate()), relation.find(addr_b, ReadEventPredicate::predicate()));
   EXPECT_EQ(0, relation.find(addr_c, ReadEventPredicate::predicate()).size());
+
+  relation.clear();
+  EXPECT_TRUE(relation.find(addr_a, ReadEventPredicate::predicate()).empty());
+  EXPECT_TRUE(relation.find(addr_b, ReadEventPredicate::predicate()).empty());
 }
 
 TEST(RelationTest, FilterMemoryAddrRelation) {
@@ -114,4 +124,8 @@ TEST(RelationTest, FilterMemoryAddrRelation) {
   EXPECT_EQ(1, relation.find(addr, WriteEventPredicate::predicate()).size());
   EXPECT_TRUE(relation.find(other_addr, ReadEventPredicate::predicate()).empty());
   EXPECT_TRUE(relation.find(other_addr, WriteEventPredicate::predicate()).empty());
+
+  relation.clear();
+  EXPECT_TRUE(relation.find(addr, ReadEventPredicate::predicate()).empty());
+  EXPECT_TRUE(relation.find(addr, WriteEventPredicate::predicate()).empty());
 }
