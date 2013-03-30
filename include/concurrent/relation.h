@@ -110,15 +110,23 @@ public:
   }
 };
 
-/// \internal
+/// \internal SingletonMemoryAddr::ptrs().size() is always exactly one
+class SingletonMemoryAddr : public MemoryAddr {
+  friend class SingletonMemoryAddrHash;
+  template<typename T> friend class MemoryAddrRelation;
+
+  SingletonMemoryAddr(uintptr_t ptr, bool is_shared) :
+    MemoryAddr({ ptr }, is_shared) {}
+};
+
+/// \internal Hash a SingletonMemoryAddr
 struct SingletonMemoryAddrHash {
-  size_t operator()(const se::MemoryAddr& addr) const  {
-    assert(1 == addr.ptrs().size());
+  size_t operator()(const se::SingletonMemoryAddr& addr) const  {
     return *(addr.ptrs().cbegin());
   }
 };
 
-typedef std::unordered_set<MemoryAddr, SingletonMemoryAddrHash> MemoryAddrSet;
+typedef std::unordered_set<SingletonMemoryAddr, SingletonMemoryAddrHash> MemoryAddrSet;
 
 template<typename T = Event>
 class MemoryAddrRelation {
@@ -145,7 +153,7 @@ public:
   void relate(const std::shared_ptr<T>& event_ptr) {
     const bool is_shared = event_ptr->addr().is_shared();
     for (uintptr_t ptr : event_ptr->addr().ptrs()) {
-      m_addrs.insert(MemoryAddr(ptr, is_shared));
+      m_addrs.insert(SingletonMemoryAddr(ptr, is_shared));
       m_relation.add(ptr, event_ptr);
     }
   }

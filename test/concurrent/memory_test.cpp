@@ -20,14 +20,37 @@ TEST(MemoryAddrTest, Offset) {
   EXPECT_EQ(other_addr, offset_addr);
 }
 
-TEST(MemoryAddrTest, ArrayOffset) {
-  static_assert(1 == sizeof(bool), "ArrayOffset test assumption fails");
+TEST(MemoryAddrTest, OffsetOnRegion) {
+  static_assert(1 == sizeof(bool), "Test assumption fails");
 
   constexpr size_t MEM_BEGIN = 2;
   constexpr size_t N = 5;
 
   MemoryAddr::reset(MEM_BEGIN);
   const MemoryAddr addr = MemoryAddr::alloc<int>(true, N);
+
+  MemoryAddr::reset(MEM_BEGIN);
+  const MemoryAddr addr_a = MemoryAddr::alloc<bool>();
+  const MemoryAddr addr_b = MemoryAddr::alloc<bool>();
+  const MemoryAddr addr_c = MemoryAddr::alloc<bool>();
+  const MemoryAddr addr_d = MemoryAddr::alloc<bool>();
+  const MemoryAddr addr_e = MemoryAddr::alloc<bool>();
+
+  EXPECT_NE(addr_a, addr);
+  EXPECT_NE(addr_b, addr + 1);
+  EXPECT_NE(addr_c, addr + 2);
+  EXPECT_NE(addr_d, addr + 3);
+  EXPECT_NE(addr_e, addr + 4);
+}
+
+TEST(MemoryAddrTest, OffsetOnBase) {
+  static_assert(1 == sizeof(bool), "Test assumption fails");
+
+  constexpr size_t MEM_BEGIN = 2;
+  constexpr size_t N = 5;
+
+  MemoryAddr::reset(MEM_BEGIN);
+  const MemoryAddr addr = MemoryAddr::alloc<int[N]>(true, 1);
 
   MemoryAddr::reset(MEM_BEGIN);
   const MemoryAddr addr_a = MemoryAddr::alloc<bool>();
@@ -55,7 +78,7 @@ TEST(MemoryAddrTest, ArrayAddr) {
   const MemoryAddr addr_x = MemoryAddr::alloc<int[N]>(true);
   const MemoryAddr addr_y = MemoryAddr::alloc<bool>(true);
 
-  EXPECT_EQ(addr_a, addr_x);
+  EXPECT_NE(addr_a, addr_x);
   EXPECT_EQ(addr_b, addr_y);
 }
 
