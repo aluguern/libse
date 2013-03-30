@@ -43,6 +43,22 @@ TEST(MemoryAddrTest, ArrayOffset) {
   EXPECT_EQ(addr_e, addr + 4);
 }
 
+TEST(MemoryAddrTest, ArrayAddr) {
+  constexpr size_t MEM_BEGIN = 2;
+  constexpr size_t N = 5;
+
+  MemoryAddr::reset(MEM_BEGIN);
+  const MemoryAddr addr_a = MemoryAddr::alloc<int>(true, N);
+  const MemoryAddr addr_b = MemoryAddr::alloc<bool>(true);
+
+  MemoryAddr::reset(MEM_BEGIN);
+  const MemoryAddr addr_x = MemoryAddr::alloc<int[N]>(true);
+  const MemoryAddr addr_y = MemoryAddr::alloc<bool>(true);
+
+  EXPECT_EQ(addr_a, addr_x);
+  EXPECT_EQ(addr_b, addr_y);
+}
+
 TEST(MemoryAddrTest, DefaultIsShared) {
   const MemoryAddr addr = MemoryAddr::alloc<int>();
   EXPECT_TRUE(addr.is_shared());

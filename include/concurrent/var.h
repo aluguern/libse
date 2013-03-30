@@ -169,7 +169,6 @@ public:
 template<typename T, size_t N>
 class DeclVar<T[N]> : public BaseDeclVar<T[N]> {
 private:
-  const MemoryAddr m_array_addr;
   std::shared_ptr<IndirectWriteEvent<T, size_t, N>> m_indirect_write_event_ptr;
 
 public:
@@ -177,18 +176,13 @@ public:
 
   /// Declare a fixed-sized array
 
-  /// \param is_array_shared - can other threads modify any array elements?
-  DeclVar(bool is_array_shared) :
-    BaseDeclVar<T[N]>(/* base pointer cannot be modified */ false),
-    m_array_addr(MemoryAddr::alloc<T>(is_array_shared, N)),
-    m_indirect_write_event_ptr() {
-
+  /// \param is_shared - can other threads modify any array elements?
+  DeclVar(bool is_shared) :
+    BaseDeclVar<T[N]>(is_shared), m_indirect_write_event_ptr() {
     ThisThread::recorder().insert_event_ptr(direct_write_event_ptr());
   }
 
   ~DeclVar() {}
-
-  const MemoryAddr& array_addr() { return m_array_addr; }
 
   const IndirectWriteEvent<T, size_t, N>& indirect_write_event_ref() const {
     return *m_indirect_write_event_ptr;
@@ -366,7 +360,7 @@ public:
       new DerefReadInstr<Range[N], Domain>(alloc_read_instr(*this),
         std::move(offset_ptr)));
 
-    const MemoryAddr offset_addr = m_var.array_addr() + offset;
+    const MemoryAddr offset_addr = m_var.addr() + offset;
     return LocalMemory<Range, Domain, N>(&m_var, offset_addr,
       std::move(deref_instr_ptr), &m_local_read);
   }
@@ -455,7 +449,7 @@ public:
       new DerefReadInstr<Range[N], Domain>(alloc_read_instr(*this),
         std::move(offset_ptr)));
 
-    const MemoryAddr offset_addr = m_var.array_addr() + offset;
+    const MemoryAddr offset_addr = m_var.addr() + offset;
     return SharedMemory<Range, Domain, N>(&m_var, offset_addr,
       std::move(deref_instr_ptr));
   }

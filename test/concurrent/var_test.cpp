@@ -40,6 +40,15 @@ TEST(VarTest, LocalVarInitScalar) {
   EXPECT_FALSE(var.addr().is_shared());
 }
 
+TEST(VarTest, LocalVarInitArray) {
+  Threads::reset();
+  Threads::begin_main_thread();
+
+  LocalVar<char[5]> var;
+
+  EXPECT_FALSE(var.addr().is_shared());
+}
+
 TEST(VarTest, SharedVarInitScalar) {
   Threads::reset();
   Threads::begin_main_thread();
@@ -48,5 +57,14 @@ TEST(VarTest, SharedVarInitScalar) {
 
   const LiteralReadInstr<char>& instr = dynamic_cast<const LiteralReadInstr<char>&>(var.direct_write_event_ref().instr_ref());
   EXPECT_EQ('Z', instr.literal());
+  EXPECT_TRUE(var.addr().is_shared());
+}
+
+TEST(VarTest, SharedVarInitArray) {
+  Threads::reset();
+  Threads::begin_main_thread();
+
+  SharedVar<char[5]> var;
+
   EXPECT_TRUE(var.addr().is_shared());
 }
