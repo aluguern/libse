@@ -324,6 +324,8 @@ public:
   }
 
   /// Records a direct memory write event
+
+  /// Inserts direct write event and the read events that determine its value.
   template<typename T>
   std::shared_ptr<DirectWriteEvent<T>> instr(const MemoryAddr& addr,
     std::unique_ptr<ReadInstr<T>> instr_ptr) {
@@ -338,6 +340,8 @@ public:
   }
 
   /// Records an indirect memory write event
+
+  /// Inserts indirect write event and the read events that determine its value.
   template<typename T, typename U, size_t N>
   std::shared_ptr<IndirectWriteEvent<T, U, N>> instr(const MemoryAddr& addr,
     std::unique_ptr<DerefReadInstr<T[N], U>> deref_instr_ptr,
