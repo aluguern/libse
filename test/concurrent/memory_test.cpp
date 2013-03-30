@@ -13,11 +13,34 @@ TEST(MemoryAddrTest, UniqueAddr) {
 }
 
 TEST(MemoryAddrTest, Offset) {
-  const MemoryAddr addr = MemoryAddr::alloc<bool>();
+  const MemoryAddr addr = MemoryAddr::alloc<long long>();
   const MemoryAddr offset_addr = addr + sizeof(long long);
-  const MemoryAddr other_addr = MemoryAddr::alloc<long long>();
+  const MemoryAddr other_addr = MemoryAddr::alloc<bool>();
 
   EXPECT_EQ(other_addr, offset_addr);
+}
+
+TEST(MemoryAddrTest, ArrayOffset) {
+  static_assert(1 == sizeof(bool), "ArrayOffset test assumption fails");
+
+  constexpr size_t MEM_BEGIN = 2;
+  constexpr size_t N = 5;
+
+  MemoryAddr::reset(MEM_BEGIN);
+  const MemoryAddr addr = MemoryAddr::alloc<int>(true, N);
+
+  MemoryAddr::reset(MEM_BEGIN);
+  const MemoryAddr addr_a = MemoryAddr::alloc<bool>();
+  const MemoryAddr addr_b = MemoryAddr::alloc<bool>();
+  const MemoryAddr addr_c = MemoryAddr::alloc<bool>();
+  const MemoryAddr addr_d = MemoryAddr::alloc<bool>();
+  const MemoryAddr addr_e = MemoryAddr::alloc<bool>();
+
+  EXPECT_EQ(addr_a, addr);
+  EXPECT_EQ(addr_b, addr + 1);
+  EXPECT_EQ(addr_c, addr + 2);
+  EXPECT_EQ(addr_d, addr + 3);
+  EXPECT_EQ(addr_e, addr + 4);
 }
 
 TEST(MemoryAddrTest, DefaultIsShared) {

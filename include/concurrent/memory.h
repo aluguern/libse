@@ -52,7 +52,9 @@ public:
 
   template<typename T>
   static MemoryAddr alloc(bool is_shared = true, size_t size = 1) {
-    return MemoryAddr(s_next_addr += sizeof(T) * size, is_shared);
+    MemoryAddr addr(s_next_addr, is_shared);
+    s_next_addr += sizeof(T) * size;
+    return std::move(addr);
   }
 };
 
