@@ -515,3 +515,24 @@ TEST(ConcurrencyTest, OverwriteSharedVarArrayElementWithVar) {
   const BasicReadInstr<char>& read_instr = dynamic_cast<const BasicReadInstr<char>&>(array_var.indirect_write_event_ref().instr_ref());
   EXPECT_EQ(2*15, read_instr.event_ptr()->event_id());
 }
+
+
+TEST(ConcurrencyTest, LocalArrayMemoryAddr) {
+  Threads::reset();
+  Threads::begin_main_thread();
+
+  LocalVar<long long[3]> a;
+  EXPECT_EQ(a[0].addr(), a.base_addr());
+  EXPECT_EQ(a[1].addr(), a.base_addr() + 1 * sizeof(long long));
+  EXPECT_EQ(a[2].addr(), a.base_addr() + 2 * sizeof(long long));
+}
+
+TEST(ConcurrencyTest, SharedArrayMemoryAddr) {
+  Threads::reset();
+  Threads::begin_main_thread();
+
+  SharedVar<long[3]> a;
+  EXPECT_EQ(a[0].addr(), a.base_addr());
+  EXPECT_EQ(a[1].addr(), a.base_addr() + 1 * sizeof(long));
+  EXPECT_EQ(a[2].addr(), a.base_addr() + 2 * sizeof(long));
+}

@@ -46,7 +46,11 @@ TEST(VarTest, LocalVarInitArray) {
 
   LocalVar<char[5]> var;
 
-  EXPECT_FALSE(var.addr().is_shared());
+  EXPECT_FALSE(var[0].addr().is_shared());
+  EXPECT_FALSE(var[1].addr().is_shared());
+  EXPECT_FALSE(var[2].addr().is_shared());
+  EXPECT_FALSE(var[3].addr().is_shared());
+  EXPECT_FALSE(var[4].addr().is_shared());
 }
 
 TEST(VarTest, SharedVarInitScalar) {
@@ -66,5 +70,9 @@ TEST(VarTest, SharedVarInitArray) {
 
   SharedVar<char[5]> var;
 
-  EXPECT_TRUE(var.addr().is_shared());
+  EXPECT_TRUE(var[0].addr().is_shared());
+  EXPECT_TRUE(var[1].addr().is_shared());
+  EXPECT_TRUE(var[2].addr().is_shared());
+  EXPECT_TRUE(var[3].addr().is_shared());
+  EXPECT_TRUE(var[4].addr().is_shared());
 }
