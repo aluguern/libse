@@ -402,16 +402,6 @@ public:
 
     internal_encode_spo(most_outer_block_ptr, epoch_clock, z3);
   }
-
-  void encode(const std::shared_ptr<Block>& most_outer_block_ptr,
-    const MemoryAddrRelation<Event>& relation, Z3& z3) const {
-
-    z3.solver.add(rfe_encode(relation, z3));
-    z3.solver.add(fr_encode(relation, z3));
-    z3.solver.add(ws_encode(relation, z3));
-
-    encode_spo(most_outer_block_ptr, z3);
-  }
 };
 
 }
