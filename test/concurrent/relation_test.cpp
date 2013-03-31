@@ -17,6 +17,8 @@ public:
   z3::expr encode_eq(const Z3ValueEncoder& encoder, Z3& helper) const {
     return helper.constant(*this);
   }
+
+  z3::expr constant(Z3& helper) const { return helper.constant(*this); }
 };
 
 

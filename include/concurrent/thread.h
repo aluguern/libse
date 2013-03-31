@@ -58,7 +58,7 @@ private:
   void internal_encode_events(const std::shared_ptr<Block>& block_ptr, Z3& z3) {
     for (const std::shared_ptr<Event>& event_ptr : block_ptr->body()) {
       if (event_ptr->is_write()) {
-        const z3::expr equality_expr(event_ptr->encode(m_value_encoder, z3));
+        const z3::expr equality_expr(event_ptr->encode_eq(m_value_encoder, z3));
         z3.solver.add(equality_expr);
       }
     }
@@ -151,7 +151,7 @@ public:
     std::unique_ptr<ReadInstr<bool>> negation_ptr(new UnaryReadInstr<NOT, bool>(
       std::move(condition_ptr)));
 
-    const z3::expr boolean_expr(s_singleton.m_value_encoder.encode(
+    const z3::expr boolean_expr(s_singleton.m_value_encoder.encode_eq(
       std::move(negation_ptr), z3));
 
     z3.solver.add(boolean_expr);

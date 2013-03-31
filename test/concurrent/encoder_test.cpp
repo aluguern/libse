@@ -452,7 +452,7 @@ TEST(EncoderTest, Z3ValueEncoderDirectWriteEvent) {
   const MemoryAddr write_addr = MemoryAddr::alloc<long>();
   const DirectWriteEvent<long> write_event(thread_id, write_addr, std::move(read_instr_ptr));
 
-  z3::expr equality(encoder.encode(write_event, z3));
+  z3::expr equality(encoder.encode_eq(write_event, z3));
   z3.solver.add(equality);
 
   EXPECT_EQ(z3::sat, z3.solver.check());
@@ -474,7 +474,7 @@ TEST(EncoderTest, Z3ValueEncoderDirectWriteEventThroughDispatch) {
   const DirectWriteEvent<long> write_event(thread_id, write_addr, std::move(read_instr_ptr));
   const Event& event = write_event;
 
-  z3::expr equality(event.encode(encoder, z3));
+  z3::expr equality(event.encode_eq(encoder, z3));
   z3.solver.add(equality);
 
   EXPECT_EQ(z3::sat, z3.solver.check());
@@ -507,7 +507,7 @@ TEST(EncoderTest, Z3ValueEncoderIndirectWriteEvent) {
   const IndirectWriteEvent<char, size_t, array_size> write_event(thread_id, write_addr,
     std::move(deref_read_instr_ptr), std::move(read_instr_ptr));
 
-  z3.solver.add(encoder.encode(write_event, z3));
+  z3.solver.add(encoder.encode_eq(write_event, z3));
   z3::expr new_array(z3.constant(write_event));
 
   z3.solver.push();
@@ -550,7 +550,7 @@ TEST(EncoderTest, Z3ValueEncoderIndirectWriteEventThroughDispatch) {
 
   const Event& event = write_event;
 
-  z3.solver.add(event.encode(encoder, z3));
+  z3.solver.add(event.encode_eq(encoder, z3));
   z3::expr new_array(z3.constant(write_event));
 
   z3.solver.push();
@@ -577,7 +577,7 @@ TEST(EncoderTest, Z3ValueEncoderReadEvent) {
   const MemoryAddr addr = MemoryAddr::alloc<int>();
   const ReadEvent<int> read_event(thread_id, addr);
 
-  z3.solver.add(encoder.encode(read_event, z3));
+  z3.solver.add(encoder.encode_eq(read_event, z3));
 
   // Proves that read events are encoded as false
   EXPECT_EQ(z3::unsat, z3.solver.check());
@@ -593,7 +593,7 @@ TEST(EncoderTest, Z3ValueEncoderReadEventThroughDispatch) {
   const ReadEvent<int> read_event(thread_id, addr);
   const Event& event = read_event;
 
-  z3.solver.add(event.encode(encoder, z3));
+  z3.solver.add(event.encode_eq(encoder, z3));
 
   // Proves that read events are encoded as a false
   EXPECT_EQ(z3::unsat, z3.solver.check());
@@ -682,8 +682,8 @@ TEST(EncoderTest, Z3OrderEncoderForFrWithoutCondition) {
   relation.relate(minor_write_event_ptr);
   relation.relate(read_event_ptr);
 
-  z3.solver.add(major_write_event_ptr->encode(value_encoder, z3));
-  z3.solver.add(minor_write_event_ptr->encode(value_encoder, z3));
+  z3.solver.add(major_write_event_ptr->encode_eq(value_encoder, z3));
+  z3.solver.add(minor_write_event_ptr->encode_eq(value_encoder, z3));
   z3.solver.add(order_encoder.rfe_encode(relation, z3));
   z3.solver.add(order_encoder.fr_encode(relation, z3));
   EXPECT_EQ(z3::sat, z3.solver.check());

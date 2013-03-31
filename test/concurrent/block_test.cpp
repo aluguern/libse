@@ -10,9 +10,11 @@ public:
   TestEvent(size_t event_id) :
     Event(event_id, 0, MemoryAddr::alloc<int>(), true, &TypeInfo<int>::s_type) {}
 
-  z3::expr encode(const Z3ValueEncoder& encoder, Z3& helper) const {
+  z3::expr encode_eq(const Z3ValueEncoder& encoder, Z3& helper) const {
     return helper.constant(*this);
   }
+
+  z3::expr constant(Z3& helper) const { return helper.constant(*this); }
 };
 
 TEST(BlockTest, InsertEvents) {

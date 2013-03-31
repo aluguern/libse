@@ -124,11 +124,15 @@ public:
     return m_event_id == other.m_event_id;
   }
 
-  virtual z3::expr encode(const Z3ValueEncoder& encoder, Z3& helper) const = 0;
+  virtual z3::expr encode_eq(const Z3ValueEncoder& encoder, Z3& helper) const = 0;
+  virtual z3::expr constant(Z3& helper) const = 0;
 };
 
 #define DECL_VALUE_ENCODER_FN \
-  z3::expr encode(const Z3ValueEncoder& encoder, Z3& helper) const;
+  z3::expr encode_eq(const Z3ValueEncoder& encoder, Z3& helper) const;
+
+#define DECL_CONSTANT_ENCODER_FN \
+  z3::expr constant(Z3& helper) const;
 
 /// Event that writes `sizeof(T)` bytes to memory
 template<typename T>
@@ -168,6 +172,7 @@ public:
   ~DirectWriteEvent() {}
 
   DECL_VALUE_ENCODER_FN
+  DECL_CONSTANT_ENCODER_FN
 };
 
 template<typename T, typename U> class DerefReadInstr;
@@ -197,6 +202,7 @@ public:
   }
 
   DECL_VALUE_ENCODER_FN
+  DECL_CONSTANT_ENCODER_FN
 };
 
 /// Event that reads `sizeof(T)` bytes from memory
@@ -219,6 +225,7 @@ public:
   ~ReadEvent() {}
 
   DECL_VALUE_ENCODER_FN
+  DECL_CONSTANT_ENCODER_FN
 };
 
 }
