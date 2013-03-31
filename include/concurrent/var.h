@@ -158,7 +158,7 @@ public:
   /// \param is_shared - can other threads modify any array elements?
   DeclVar(bool is_shared) :
     m_base_addr(MemoryAddr::alloc<T>(is_shared)),
-    m_addr(MemoryAddr::join(m_base_addr, MemoryAddr::alloc<T>(is_shared,
+    m_addr(m_base_addr.join(MemoryAddr::alloc<T>(is_shared,
       /* zero allowed */ N - 1))), m_direct_write_event_ptr(
       make_direct_write_event<T[N]>(m_addr)), m_indirect_write_event_ptr() {
 

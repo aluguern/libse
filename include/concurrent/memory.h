@@ -64,11 +64,6 @@ public:
     return MemoryAddr(std::move(ptrs), m_is_shared);
   }
 
-  /// \deprecated Use MemoryAddr::join(const MemoryAddr&) instead
-  static MemoryAddr join(const MemoryAddr& a, const MemoryAddr& b) {
-    return a.join(b);
-  }
-
   /// Element in a lattice for a single or multiple memory cells
 
   /// \param is_shared - can other threads modify the memory?

@@ -92,7 +92,7 @@ TEST(RelationTest, MemoryAddrRelation) {
   const MemoryAddr addr_a = MemoryAddr::alloc<int>();
   const MemoryAddr addr_b = MemoryAddr::alloc<int>();
   const MemoryAddr addr_c = MemoryAddr::alloc<int>();
-  const MemoryAddr addr = MemoryAddr::join(addr_a, addr_b);
+  const MemoryAddr addr = addr_a.join(addr_b);
 
   const std::shared_ptr<Event> event_ptr(new TestEvent(addr));
 
