@@ -14,7 +14,7 @@ public:
     const std::shared_ptr<ReadInstr<bool>>& condition_ptr = nullptr) :
     Event(0, addr, true, &TypeInfo<int>::s_type, condition_ptr) {}
 
-  z3::expr encode(const Z3ValueEncoder& encoder, Z3& helper) const {
+  z3::expr encode_eq(const Z3ValueEncoder& encoder, Z3& helper) const {
     return helper.constant(*this);
   }
 };
@@ -58,11 +58,13 @@ TEST(RelationTest, DefaultMemoryAddrRelation) {
 
   relation.relate(event_ptr);
 
+  EXPECT_EQ(1, relation.event_ptrs().size());
   EXPECT_EQ(1, relation.find(addr, ReadEventPredicate::predicate()).size());
   EXPECT_EQ(0, relation.find(other_addr, ReadEventPredicate::predicate()).size());
 
   relation.clear();
   EXPECT_TRUE(relation.find(addr, ReadEventPredicate::predicate()).empty());
+  EXPECT_TRUE(relation.event_ptrs().empty());
 }
 
 TEST(RelationTest, MemoryAddrRelationAsFunction) {
@@ -75,11 +77,13 @@ TEST(RelationTest, MemoryAddrRelationAsFunction) {
 
   relation.relate(event_ptr);
 
+  EXPECT_EQ(1, relation.event_ptrs().size());
   EXPECT_EQ(1, relation.find(addr, ReadEventPredicate::predicate()).size());
   EXPECT_EQ(0, relation.find(other_addr, ReadEventPredicate::predicate()).size());
 
   relation.clear();
   EXPECT_TRUE(relation.find(addr, ReadEventPredicate::predicate()).empty());
+  EXPECT_TRUE(relation.event_ptrs().empty());
 }
 
 TEST(RelationTest, MemoryAddrRelation) {
@@ -94,6 +98,7 @@ TEST(RelationTest, MemoryAddrRelation) {
 
   relation.relate(event_ptr);
 
+  EXPECT_EQ(1, relation.event_ptrs().size());
   EXPECT_EQ(1, relation.find(addr_a, ReadEventPredicate::predicate()).size());
   EXPECT_EQ(1, relation.find(addr_b, ReadEventPredicate::predicate()).size());
   EXPECT_EQ(relation.find(addr_a, ReadEventPredicate::predicate()), relation.find(addr_b, ReadEventPredicate::predicate()));
@@ -102,6 +107,7 @@ TEST(RelationTest, MemoryAddrRelation) {
   relation.clear();
   EXPECT_TRUE(relation.find(addr_a, ReadEventPredicate::predicate()).empty());
   EXPECT_TRUE(relation.find(addr_b, ReadEventPredicate::predicate()).empty());
+  EXPECT_TRUE(relation.event_ptrs().empty());
 }
 
 TEST(RelationTest, FilterMemoryAddrRelation) {
@@ -120,6 +126,7 @@ TEST(RelationTest, FilterMemoryAddrRelation) {
   relation.relate(read_event_ptr_i);
   relation.relate(read_event_ptr_ii);
 
+  EXPECT_EQ(3, relation.event_ptrs().size());
   EXPECT_EQ(2, relation.find(addr, ReadEventPredicate::predicate()).size());
   EXPECT_EQ(1, relation.find(addr, WriteEventPredicate::predicate()).size());
   EXPECT_TRUE(relation.find(other_addr, ReadEventPredicate::predicate()).empty());
@@ -128,4 +135,5 @@ TEST(RelationTest, FilterMemoryAddrRelation) {
   relation.clear();
   EXPECT_TRUE(relation.find(addr, ReadEventPredicate::predicate()).empty());
   EXPECT_TRUE(relation.find(addr, WriteEventPredicate::predicate()).empty());
+  EXPECT_TRUE(relation.event_ptrs().empty());
 }

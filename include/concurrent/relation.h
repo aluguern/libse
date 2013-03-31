@@ -5,6 +5,7 @@
 #ifndef LIBSE_CONCURRENT_RELATION_H_
 #define LIBSE_CONCURRENT_RELATION_H_
 
+#include <unordered_set>
 #include <unordered_map>
 #include <type_traits>
 #include <functional>
@@ -133,24 +134,33 @@ class MemoryAddrRelation {
 static_assert(std::is_base_of<Event, T>::value, "T must be a subclass of Event");
 
 private:
+  std::unordered_set<std::shared_ptr<T>> m_event_ptrs;
   Relation<uintptr_t, std::shared_ptr<T>> m_relation;
 
   // Each memory address is guaranteed to have only one pointer
   MemoryAddrSet m_addrs;
 
 public:
-  MemoryAddrRelation() : m_relation(), m_addrs() {}
+  MemoryAddrRelation() : m_event_ptrs(), m_relation(), m_addrs() {}
 
   /// Clears contents
   void clear() {
+    m_event_ptrs.clear();
     m_addrs.clear();
     m_relation.clear();
+  }
+
+  /// All those events which were passed to relate()
+  const std::unordered_set<std::shared_ptr<T>>& event_ptrs() const {
+    return m_event_ptrs;
   }
 
   /// Set of related but opaque memory addresses
   const MemoryAddrSet addrs() const { return m_addrs; }
 
   void relate(const std::shared_ptr<T>& event_ptr) {
+    m_event_ptrs.insert(event_ptr);
+
     const bool is_shared = event_ptr->addr().is_shared();
     for (uintptr_t ptr : event_ptr->addr().ptrs()) {
       m_addrs.insert(SingletonMemoryAddr(ptr, is_shared));
