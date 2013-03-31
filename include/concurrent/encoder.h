@@ -319,7 +319,7 @@ public:
           const Event& x = *write_event_ptr_x;
           const Event& y = *write_event_ptr_y;
 
-          if (x == y) { continue; }
+          if (x == y || x.event_id() > y.event_id()) { continue; }
 
           const z3::expr xy_order(z3.clock(x) < z3.clock(y));
           const z3::expr yx_order(z3.clock(y) < z3.clock(x));
