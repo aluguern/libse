@@ -182,6 +182,7 @@ public:
 /// Encoder for the values of direct and indirect write events
 
 /// Every `encode_eq(...)` member function returns a Z3 expression whose sort
+/// is Boolean.
 class Z3ValueEncoder {
 private:
   const Z3WriteEncoder m_write_encoder;
@@ -270,36 +271,34 @@ public:
   Z3OrderEncoder() : m_read_encoder() {}
 
   z3::expr rfe_encode(const MemoryAddrRelation<Event>& relation, Z3& z3) const {
-    const MemoryAddrSet& addrs = relation.addrs();
-
     z3::expr rfe_expr(z3.context.bool_val(true));
-    for (const MemoryAddr& addr : addrs) {
-      const std::pair<EventPtrSet, EventPtrSet> result =
-        relation.partition(addr);
-      const EventPtrSet& read_event_ptrs = result.first;
-      const EventPtrSet& write_event_ptrs = result.second;
+    for (const EventPtr& x_ptr : /* read events */ relation.event_ptrs()) {
+      if (x_ptr->is_write() || !x_ptr->addr().is_shared()) { continue; }
 
-      for (const EventPtr& read_event_ptr : read_event_ptrs) {
-        const Event& read_event = *read_event_ptr;
-        const z3::expr read_event_condition(event_condition(read_event, z3));
+      const Event& read_event = *x_ptr;
+      const z3::expr read_event_condition(event_condition(read_event, z3));
 
-        z3::expr wr_schedules(z3.context.bool_val(false));
-        for (const EventPtr& write_event_ptr : write_event_ptrs) {
-          const Event& write_event = *write_event_ptr;
+      z3::expr wr_schedules(z3.context.bool_val(false));
+      for (const EventPtr& y_ptr : /* write events */ relation.event_ptrs()) {
+        if (y_ptr->is_read()) { continue; }
 
-          const z3::expr wr_order(z3.clock(write_event) < z3.clock(read_event));
-          const z3::expr wr_schedule(z3.constant(write_event, read_event));
-          const z3::expr wr_equality(z3.constant(write_event) ==
-            z3.constant(read_event));
-          const z3::expr write_event_condition(event_condition(write_event, z3));
+        const Event& write_event = *y_ptr;
 
-          wr_schedules = wr_schedules or wr_schedule;
-          rfe_expr = rfe_expr and implies(wr_schedule, wr_order and
-            write_event_condition and read_event_condition and wr_equality);
-        }
+        if (read_event.addr().meet(write_event.addr()).is_bottom()) { continue; }
+        assert(write_event.addr().is_shared());
 
-        rfe_expr = rfe_expr and implies(read_event_condition, wr_schedules);
+        const z3::expr wr_order(z3.clock(write_event) < z3.clock(read_event));
+        const z3::expr wr_schedule(z3.constant(write_event, read_event));
+        const z3::expr wr_equality(write_event.constant(z3) ==
+          read_event.constant(z3));
+        const z3::expr write_event_condition(event_condition(write_event, z3));
+
+        wr_schedules = wr_schedules or wr_schedule;
+        rfe_expr = rfe_expr and implies(wr_schedule, wr_order and
+          write_event_condition and read_event_condition and wr_equality);
       }
+
+      rfe_expr = rfe_expr and implies(read_event_condition, wr_schedules);
     }
     return rfe_expr;
   }
@@ -312,7 +311,11 @@ public:
       const EventPtrSet write_event_ptrs = relation.find(addr,
         WriteEventPredicate::predicate());
       for (const EventPtr& write_event_ptr_x : write_event_ptrs) {
+        if (!write_event_ptr_x->addr().is_shared()) { continue; }
+
         for (const EventPtr& write_event_ptr_y : write_event_ptrs) {
+          if (!write_event_ptr_y->addr().is_shared()) { continue; }
+
           const Event& x = *write_event_ptr_x;
           const Event& y = *write_event_ptr_y;
 
@@ -343,7 +346,11 @@ public:
       const EventPtrSet& write_event_ptrs = result.second;
 
       for (const EventPtr& write_event_ptr_x : write_event_ptrs) {
+        if (!write_event_ptr_x->addr().is_shared()) { continue; }
+
         for (const EventPtr& write_event_ptr_y : write_event_ptrs) {
+          if (!write_event_ptr_y->addr().is_shared()) { continue; }
+
           const Event& write_event_x = *write_event_ptr_x;
           const Event& write_event_y = *write_event_ptr_y;
 
@@ -372,15 +379,18 @@ public:
 
     z3::expr inner_clock(earlier_clock);
     if (!block_ptr->body().empty()) {
+      // Consider changing Block::body() to return an ordered set if it would
+      // simplify the treatment of local events (below, currently excluded).
       const std::forward_list<std::shared_ptr<Event>>& body = block_ptr->body();
-      std::forward_list<std::shared_ptr<Event>>::const_iterator iter(body.cbegin());
 
-      const Event& body_event = **iter;
-      z3::expr body_clock(z3.clock(body_event));
-      z3.solver.add(inner_clock < body_clock);
+      z3::expr body_clock(inner_clock);
+      for (std::forward_list<std::shared_ptr<Event>>::const_iterator iter(
+             body.cbegin()); iter != body.cend(); iter++) {
 
-      for (iter++; iter != body.cend(); iter++) {
-        z3::expr next_body_clock(z3.clock(**iter));
+        const Event& body_event = **iter;
+        if (!body_event.addr().is_shared()) { continue; }
+
+        z3::expr next_body_clock(z3.clock(body_event));
         z3.solver.add(body_clock < next_body_clock);
         body_clock = next_body_clock;
       }

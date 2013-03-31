@@ -34,6 +34,13 @@ inline std::unique_ptr<ReadInstr<T>> alloc_read_instr(const SharedVar<T>& shared
 
 template<typename Range, typename Domain, size_t N>
 inline std::unique_ptr<ReadInstr<Range>> alloc_read_instr(
+  SharedMemory<Range, Domain, N>&& shared_memory) {
+
+  return std::move(shared_memory.deref_instr_ptr());
+}
+
+template<typename Range, typename Domain, size_t N>
+inline std::unique_ptr<ReadInstr<Range>> alloc_read_instr(
   LocalMemory<Range, Domain, N>&& local_memory) {
 
   return std::move(local_memory.deref_instr_ptr());

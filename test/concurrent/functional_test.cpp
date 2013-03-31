@@ -31,8 +31,7 @@ TEST(ConcurrentFunctionalTest, LocalArray) {
   out << z3.solver;
   EXPECT_EQ("(solver\n  (not (= (select k!3 #x0000000000000002) #x5a))\n"
             "  (= k!1 ((as const (Array (_ BitVec 64) (_ BitVec 8))) #x00))\n"
-            "  (= k!3 (store k!1 #x0000000000000002 #x5a))\n"
-            "  (> k!1 0)\n  (< epoch_clock k!1)\n  (> k!3 0)\n  (< k!1 k!3))", out.str());
+            "  (= k!3 (store k!1 #x0000000000000002 #x5a)))", out.str());
 }
 
 class CharBlockPrinter {
@@ -389,25 +388,6 @@ TEST(ConcurrentFunctionalTest, Loop) {
             "}\n", printer.out.str());
 }
 
-TEST(ConcurrentFunctionalTest, LocalScalarAndArray) {
-  Z3 z3;
-
-  Threads::reset();
-  Threads::begin_main_thread();
-
-  LocalVar<char[5]> a;
-  LocalVar<char> b;
-  a[2] = 'Z';
-  b = a[2];
-
-  Threads::expect(b == 'Z', z3);
-
-  // Do not encode global memory accesses for this test
-  Threads::end_thread(z3);
-
-  EXPECT_EQ(z3::unsat, z3.solver.check());
-}
-
 TEST(ConcurrentFunctionalTest, ThreeThreadsReadWriteScalarSharedVar) {
   Z3 z3;
 
@@ -589,6 +569,207 @@ TEST(ConcurrentFunctionalTest, UnsatJoinPathsInSingleThreadWithSharedVar) {
   }
   ThisThread::recorder().end_branch();
   a = x;
+
+  // Create properties within main thread context
+  std::unique_ptr<ReadInstr<bool>> c0(a == 'B' || a == 'C');
+  std::unique_ptr<ReadInstr<bool>> c1(!(a == 'A'));
+
+  Threads::end_main_thread(z3);
+
+  z3.solver.push();
+
+  Threads::expect(std::move(c0), z3);
+  EXPECT_EQ(z3::unsat, z3.solver.check());
+
+  z3.solver.pop();
+
+  z3.solver.push();
+
+  Threads::expect(std::move(c1), z3);
+  EXPECT_EQ(z3::unsat, z3.solver.check());
+
+  z3.solver.pop();
+}
+
+TEST(ConcurrentFunctionalTest, LocalScalarAndLocalArray) {
+  Z3 z3;
+
+  Threads::reset();
+  Threads::begin_main_thread();
+
+  LocalVar<char[5]> a;
+  LocalVar<char> b;
+  a[2] = 'Z';
+  b = a[2];
+
+  std::unique_ptr<ReadInstr<bool>> c0(b == 'Z');
+
+  // Do not encode global memory accesses for this test
+  Threads::end_main_thread(z3);
+
+  EXPECT_EQ(z3::sat, z3.solver.check());
+
+  z3.solver.push();
+
+  Threads::expect(std::move(c0), z3);
+  EXPECT_EQ(z3::unsat, z3.solver.check());
+}
+
+TEST(ConcurrentFunctionalTest, LocalScalarAndSharedArray) {
+  Z3 z3;
+
+  Threads::reset();
+  Threads::begin_main_thread();
+
+  SharedVar<char[5]> a;
+  LocalVar<char> b;
+  a[2] = 'Z';
+  b = a[2];
+
+  std::unique_ptr<ReadInstr<bool>> c0(b == 'Z');
+
+  Threads::end_main_thread(z3);
+
+  EXPECT_EQ(z3::sat, z3.solver.check());
+
+  z3.solver.push();
+
+  Threads::expect(std::move(c0), z3);
+  EXPECT_EQ(z3::unsat, z3.solver.check());
+
+  z3.solver.pop();
+}
+
+TEST(ConcurrentFunctionalTest, SatJoinPathsInSingleThreadWithNondetermisticConditionAndArraySharedVar) {
+  Z3 z3;
+
+  Threads::reset();
+  Threads::begin_main_thread();
+
+  SharedVar<char[3]> x;
+  SharedVar<char> y;
+  LocalVar<char> a;
+
+  x[2] = 'A';
+  if (ThisThread::recorder().begin_then(y == '?')) {
+    x[2] = 'B';
+  }
+  if (ThisThread::recorder().begin_else()) {
+    x[2] = 'C';
+  }
+  ThisThread::recorder().end_branch();
+  a = x[2];
+
+  // Create properties within main thread context
+  std::unique_ptr<ReadInstr<bool>> c0(!(a == 'B'));
+  std::unique_ptr<ReadInstr<bool>> c1(a == 'C');
+  std::unique_ptr<ReadInstr<bool>> c2(!(a == 'B') || a == 'C');
+  std::unique_ptr<ReadInstr<bool>> c3((a == 'B') || !(a == 'C'));
+
+  Threads::end_main_thread(z3);
+
+  EXPECT_EQ(z3::sat, z3.solver.check());
+
+  z3.solver.push();
+
+  Threads::expect(std::move(c0), z3);
+  EXPECT_EQ(z3::sat, z3.solver.check());
+
+  z3.solver.pop();
+
+  z3.solver.push();
+
+  Threads::expect(std::move(c1), z3);
+  EXPECT_EQ(z3::sat, z3.solver.check());
+
+  z3.solver.pop();
+
+  z3.solver.push();
+
+  Threads::expect(std::move(c2), z3);
+  EXPECT_EQ(z3::sat, z3.solver.check());
+
+  z3.solver.pop();
+
+  z3.solver.push();
+
+  Threads::expect(std::move(c3), z3);
+  EXPECT_EQ(z3::sat, z3.solver.check());
+
+  z3.solver.pop();
+}
+
+TEST(ConcurrentFunctionalTest, SatJoinPathsInSingleThreadWithDeterminsticConditionAndArraySharedVar) {
+  Z3 z3;
+
+  Threads::reset();
+  Threads::begin_main_thread();
+
+  SharedVar<char[3]> x;
+  LocalVar<char> p;
+  LocalVar<char> a;
+
+  p = '?';
+  x[2] = 'A';
+  if (ThisThread::recorder().begin_then(p == '?')) {
+    x[2] = 'B'; // choose always 'B' branch
+  }
+  if (ThisThread::recorder().begin_else()) {
+    x[2] = 'C';
+  }
+  ThisThread::recorder().end_branch();
+  a = x[2];
+
+  // Create properties within main thread context
+  std::unique_ptr<ReadInstr<bool>> c0(!(a == 'B'));
+  std::unique_ptr<ReadInstr<bool>> c1(a == 'C');
+  std::unique_ptr<ReadInstr<bool>> c3((a == 'B') || !(a == 'C'));
+
+  Threads::end_main_thread(z3);
+
+  EXPECT_EQ(z3::sat, z3.solver.check());
+
+  z3.solver.push();
+
+  Threads::expect(std::move(c0), z3);
+  EXPECT_EQ(z3::sat, z3.solver.check());
+
+  z3.solver.pop();
+
+  z3.solver.push();
+
+  Threads::expect(std::move(c1), z3);
+  EXPECT_EQ(z3::sat, z3.solver.check());
+
+  z3.solver.pop();
+
+  z3.solver.push();
+
+  Threads::expect(std::move(c3), z3);
+  EXPECT_EQ(z3::unsat, z3.solver.check());
+
+  z3.solver.pop();
+}
+
+TEST(ConcurrentFunctionalTest, UnsatJoinPathsInSingleThreadWithArraySharedVar) {
+  Z3 z3;
+
+  Threads::reset();
+  Threads::begin_main_thread();
+
+  SharedVar<char[3]> x;
+  LocalVar<char> a;
+
+  a = 'X';
+  x[2] = 'A';
+  if (ThisThread::recorder().begin_then(a == '?')) {
+    x[2] = 'B';
+  }
+  if (ThisThread::recorder().begin_else()) {
+    x[2] = 'C';
+  }
+  ThisThread::recorder().end_branch();
+  a = x[2];
 
   // Create properties within main thread context
   std::unique_ptr<ReadInstr<bool>> c0(a == 'B' || a == 'C');

@@ -251,6 +251,10 @@ private:
 public:
   const MemoryAddr& addr() const { return m_memory.offset_addr(); }
 
+  std::unique_ptr<DerefReadInstr<Range[N], Domain>> deref_instr_ptr() {
+    return std::move(m_memory.m_deref_instr_ptr);
+  }
+
   void operator=(std::unique_ptr<ReadInstr<Range>> instr_ptr) {
     m_memory = std::move(instr_ptr);
   }
@@ -359,8 +363,8 @@ public:
   }
 
   template<typename Domain, size_t N>
-  LocalVar<T>& operator=(SharedMemory<T, Domain, N>&& local_memory) {
-    return operator=(alloc_read_instr(std::move(local_memory)));
+  LocalVar<T>& operator=(SharedMemory<T, Domain, N>&& shared_memory) {
+    return operator=(alloc_read_instr(std::move(shared_memory)));
   }
 
   LocalVar<T>& operator=(const SharedVar<T>& shared_var) {

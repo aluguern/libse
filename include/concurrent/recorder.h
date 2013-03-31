@@ -348,6 +348,7 @@ public:
     std::unique_ptr<ReadInstr<T>> instr_ptr) {
 
     insert_all<T>(*instr_ptr);
+    insert_all<T>(*deref_instr_ptr);
 
     std::shared_ptr<IndirectWriteEvent<T, U, N>> write_event_ptr(
       new IndirectWriteEvent<T, U, N>(m_thread_id, addr,
