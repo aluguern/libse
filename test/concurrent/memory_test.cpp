@@ -85,28 +85,83 @@ TEST(MemoryAddrTest, ArrayAddr) {
 TEST(MemoryAddrTest, DefaultIsShared) {
   const MemoryAddr addr = MemoryAddr::alloc<int>();
   EXPECT_TRUE(addr.is_shared());
+  EXPECT_FALSE(addr.is_bottom());
 }
 
 TEST(MemoryAddrTest, JoinBothAreNotShared) {
   const MemoryAddr addr_a = MemoryAddr::alloc<int>(false);
   const MemoryAddr addr_b = MemoryAddr::alloc<long>(false);
 
-  const MemoryAddr join_addr = MemoryAddr::join(addr_a, addr_b);
+  const MemoryAddr join_addr = addr_a.join(addr_b);
   EXPECT_FALSE(join_addr.is_shared());
+  EXPECT_FALSE(join_addr.is_bottom());
 }
 
 TEST(MemoryAddrTest, JoinLeftIsShared) {
   const MemoryAddr addr_a = MemoryAddr::alloc<int>(true);
   const MemoryAddr addr_b = MemoryAddr::alloc<long>(false);
 
-  const MemoryAddr join_addr = MemoryAddr::join(addr_a, addr_b);
+  const MemoryAddr join_addr = addr_a.join(addr_b);
   EXPECT_TRUE(join_addr.is_shared());
+  EXPECT_FALSE(join_addr.is_bottom());
 }
 
 TEST(MemoryAddrTest, JoinRightIsShared) {
   const MemoryAddr addr_a = MemoryAddr::alloc<int>(false);
   const MemoryAddr addr_b = MemoryAddr::alloc<long>(true);
 
-  const MemoryAddr join_addr = MemoryAddr::join(addr_a, addr_b);
+  const MemoryAddr join_addr = addr_a.join(addr_b);
   EXPECT_TRUE(join_addr.is_shared());
+  EXPECT_FALSE(join_addr.is_bottom());
+}
+
+TEST(MemoryAddrTest, MeetBothAreShared) {
+  const MemoryAddr addr_a = MemoryAddr::alloc<int>(true);
+  const MemoryAddr addr_b = MemoryAddr::alloc<long>(true);
+  const MemoryAddr addr_c = addr_a.join(addr_b);
+
+  EXPECT_TRUE(addr_a.meet(addr_b).is_bottom());
+  EXPECT_TRUE(addr_a.meet(addr_b).is_shared());
+
+  EXPECT_TRUE(addr_b.meet(addr_a).is_bottom());
+  EXPECT_TRUE(addr_b.meet(addr_a).is_shared());
+
+  EXPECT_FALSE(addr_a.meet(addr_c).is_bottom());
+  EXPECT_TRUE(addr_a.meet(addr_c).is_shared());
+
+  EXPECT_FALSE(addr_c.meet(addr_a).is_bottom());
+  EXPECT_TRUE(addr_c.meet(addr_a).is_shared());
+
+  EXPECT_FALSE(addr_b.meet(addr_c).is_bottom());
+  EXPECT_TRUE(addr_b.meet(addr_c).is_shared());
+
+  EXPECT_FALSE(addr_c.meet(addr_b).is_bottom());
+  EXPECT_TRUE(addr_c.meet(addr_b).is_shared());
+}
+
+TEST(MemoryAddrTest, MeetRightIsShared) {
+  const MemoryAddr addr_a = MemoryAddr::alloc<int>(false);
+  const MemoryAddr addr_b = MemoryAddr::alloc<long>(true);
+
+  const MemoryAddr meet_addr = addr_a.meet(addr_b);
+  EXPECT_FALSE(meet_addr.is_shared());
+  EXPECT_TRUE(meet_addr.is_bottom());
+}
+
+TEST(MemoryAddrTest, MeetLeftIsShared) {
+  const MemoryAddr addr_a = MemoryAddr::alloc<int>(true);
+  const MemoryAddr addr_b = MemoryAddr::alloc<long>(false);
+
+  const MemoryAddr meet_addr = addr_a.meet(addr_b);
+  EXPECT_FALSE(meet_addr.is_shared());
+  EXPECT_TRUE(meet_addr.is_bottom());
+}
+
+TEST(MemoryAddrTest, MeetBothAreNotShared) {
+  const MemoryAddr addr_a = MemoryAddr::alloc<int>(false);
+  const MemoryAddr addr_b = MemoryAddr::alloc<long>(false);
+
+  const MemoryAddr meet_addr = addr_a.meet(addr_b);
+  EXPECT_FALSE(meet_addr.is_shared());
+  EXPECT_TRUE(meet_addr.is_bottom());
 }
