@@ -1,12 +1,8 @@
-#include "concurrent.h"
+#include "libse.h"
+
+se::SharedVar<char> x;
 
 int main(void) {
-  se::Z3 z3;
-
-  se::Threads::reset();
-  se::Threads::begin_main_thread();
-
-  se::SharedVar<char> x;
   se::LocalVar<char> a;
 
   x = 'A';
@@ -19,8 +15,8 @@ int main(void) {
   se::ThisThread::recorder().end_branch();
   a = x;
 
-  se::Threads::error(!(a == 'B' || a == 'C'), z3);
-  se::Threads::end_main_thread(z3);
+  se::Thread::error(!(a == 'B' || a == 'C'));
+  se::Thread::end_main_thread();
 
-  return z3::sat == z3.solver.check();
+  return z3::sat == se::Thread::z3().solver.check();
 }

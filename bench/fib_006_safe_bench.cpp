@@ -1,34 +1,36 @@
 // Adapted from the SV-COMP'13 benchmark:
 //   https://svn.sosy-lab.org/software/sv-benchmarks/trunk/c/pthread/fib_bench_longer_safe.c
 
-#include "concurrent.h"
+#include "libse.h"
 
 #define N 6
 
-int main(void) {
-  se::Z3 z3;
+se::SharedVar<int> i = 1, j = 1;
 
-  se::Threads::reset();
-  se::Threads::begin_main_thread();
-
-  se::SharedVar<int> i = 1, j = 1;
-
+void f0() {
   int k;
-
-  se::Threads::begin_thread(/* T0 */);
   for (k = 0; k < N; k++) {
     i = i + j;
   }
-  se::Threads::end_thread(z3);
+}
 
-  se::Threads::begin_thread(/* T1 */);
+void f1() {
+  int k;
   for (k = 0; k < N; k++) {
     j = j + i;
   }
-  se::Threads::end_thread(z3);
+}
 
-  se::Threads::error(377 < i || 377 < j, z3);
-  se::Threads::end_main_thread(z3);
+int main(void) {
+  se::Thread t0(f0);
+  se::Thread t1(f1);
 
-  return z3::sat == z3.solver.check();
+  se::Thread::error(377 < i || 377 < j);
+
+  t0.join();
+  t1.join();
+
+  se::Thread::end_main_thread();
+
+  return z3::sat == se::Thread::z3().solver.check();
 }
