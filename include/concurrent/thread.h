@@ -136,6 +136,7 @@ public:
 
   /// Calls end_thread(Z3&) and then encodes all memory accesses between threads
   static void end_main_thread(Z3& z3) {
+    assert(s_singleton.m_recorder_stack.size() == 1);
     end_thread(z3);
 
     const MemoryAddrRelation<Event>& rel = s_singleton.m_memory_addr_relation;
@@ -176,6 +177,15 @@ private:
   static Z3 s_z3;
 
 public:
+  static Z3& z3() { return s_z3; }
+
+  /// Terminate the recording of the main thread
+  static void end_main_thread() { Threads::end_main_thread(s_z3); }
+
+  /// Give a property that exposes a bug if it is satisfiable
+  static void error(std::unique_ptr<ReadInstr<bool>> condition_ptr) {
+    Threads::error(std::move(condition_ptr), s_z3);
+  }
 
   /// Symbolically spawn `f(args...)` as a new thread of execution
 
