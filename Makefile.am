@@ -34,8 +34,10 @@ test: check-local check
 
 bench: all
 	time -p bench/if
-	time -p bench/fib_safe
-	time -p bench/fib_unsafe
+	time -p bench/fib_005_safe
+	time -p bench/fib_005_unsafe
+	time -p bench/fib_006_safe
+	time -p bench/fib_006_unsafe
 
 .PHONY: bench doc
 
@@ -124,15 +126,28 @@ test_se_LDADD = $(top_builddir)/gtest/lib/libgtest_main.la lib/libse.la
 
 # Benchmarks
 
-bin_PROGRAMS = bench/if bench/fib_safe bench/fib_unsafe
+bin_PROGRAMS = bench/if \
+               bench/fib_005_safe \
+               bench/fib_005_unsafe \
+               bench/fib_006_safe \
+               bench/fib_006_unsafe
+
 bench_if_SOURCES = bench/if_bench.cpp
 bench_if_CPPFLAGS = -std=c++0x -I$(srcdir)/include
 bench_if_LDADD = lib/libse.la
 
-bench_fib_safe_SOURCES = bench/fib_safe_bench.cpp
-bench_fib_safe_CPPFLAGS = -std=c++0x -I$(srcdir)/include
-bench_fib_safe_LDADD = lib/libse.la
+bench_fib_005_safe_SOURCES = bench/fib_005_safe_bench.cpp
+bench_fib_005_safe_CPPFLAGS = -std=c++0x -I$(srcdir)/include
+bench_fib_005_safe_LDADD = lib/libse.la
 
-bench_fib_unsafe_SOURCES = bench/fib_unsafe_bench.cpp
-bench_fib_unsafe_CPPFLAGS = -std=c++0x -I$(srcdir)/include
-bench_fib_unsafe_LDADD = lib/libse.la
+bench_fib_005_unsafe_SOURCES = bench/fib_005_unsafe_bench.cpp
+bench_fib_005_unsafe_CPPFLAGS = -std=c++0x -I$(srcdir)/include
+bench_fib_005_unsafe_LDADD = lib/libse.la
+
+bench_fib_006_safe_SOURCES = bench/fib_006_safe_bench.cpp
+bench_fib_006_safe_CPPFLAGS = -std=c++0x -I$(srcdir)/include
+bench_fib_006_safe_LDADD = lib/libse.la
+
+bench_fib_006_unsafe_SOURCES = bench/fib_006_unsafe_bench.cpp
+bench_fib_006_unsafe_CPPFLAGS = -std=c++0x -I$(srcdir)/include
+bench_fib_006_unsafe_LDADD = lib/libse.la
