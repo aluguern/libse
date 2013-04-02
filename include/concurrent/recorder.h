@@ -123,15 +123,6 @@ private:
       condition_ptr));
   }
 
-  /// Insert in the body all those read events that are in the given instruction
-  template<typename T>
-  void insert_all(const ReadInstr<T>& instr) {
-    std::forward_list<std::shared_ptr<Event>> read_event_ptrs;
-    instr.filter(read_event_ptrs);
-
-    m_current_block_ptr->insert_all(read_event_ptrs);
-  }
-
 public:
   Recorder(unsigned thread_id) : m_thread_id(thread_id),
     m_most_outer_block_ptr(Block::make_root()),
@@ -149,6 +140,15 @@ public:
     m_loop_stack(std::move(other.m_loop_stack)) {}
 
   unsigned thread_id() const { return m_thread_id; }
+
+  /// Insert in the body all those read events that are in the given instruction
+  template<typename T>
+  void insert_all(const ReadInstr<T>& instr) {
+    std::forward_list<std::shared_ptr<Event>> read_event_ptrs;
+    instr.filter(read_event_ptrs);
+
+    m_current_block_ptr->insert_all(read_event_ptrs);
+  }
 
   /// Root of the series-parallel graph
   

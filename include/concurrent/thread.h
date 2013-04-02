@@ -146,13 +146,25 @@ public:
     z3.solver.add(order_encoder.ws_encode(rel, z3));
   }
 
-  /// Add the negation of the given condition as a conjecture to the SAT solver
-  static void expect(std::unique_ptr<ReadInstr<bool>> condition_ptr, Z3& z3) {
-    std::unique_ptr<ReadInstr<bool>> negation_ptr(new UnaryReadInstr<NOT, bool>(
-      std::move(condition_ptr)));
+  /// \internal Assert given condition in the SAT solver
+
+  /// \pre: All read events in the condition must only access thread-local
+  ///       memory (cf. MemoryAddr::is_shared())
+  ///
+  /// \remark Use Threads::error() when the above precondition is not satisfied
+  static void internal_error(std::unique_ptr<ReadInstr<bool>> condition_ptr, Z3& z3) {
+    const z3::expr boolean_expr(s_singleton.m_value_encoder.encode_eq(
+      std::move(condition_ptr), z3));
+
+    z3.solver.add(boolean_expr);
+  }
+
+  /// Assert condition in the SAT solver and record the condition's read events
+  static void error(std::unique_ptr<ReadInstr<bool>> condition_ptr, Z3& z3) {
+    ThisThread::recorder().insert_all(*condition_ptr);
 
     const z3::expr boolean_expr(s_singleton.m_value_encoder.encode_eq(
-      std::move(negation_ptr), z3));
+      std::move(condition_ptr), z3));
 
     z3.solver.add(boolean_expr);
   }

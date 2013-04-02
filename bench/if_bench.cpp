@@ -19,12 +19,8 @@ int main(void) {
   se::ThisThread::recorder().end_branch();
   a = x;
 
-  se::Threads::expect(a == 'B' || a == 'C', z3);
+  se::Threads::error(!(a == 'B' || a == 'C'), z3);
   se::Threads::end_main_thread(z3);
 
-  if (z3::unsat == z3.solver.check()) {
-    return 0;
-  }
-
-  return 1;
+  return z3::sat == z3.solver.check();
 }
