@@ -77,11 +77,11 @@ TEST(EncoderTest, Z3BvConstant) {
   const MemoryAddr addr = MemoryAddr::alloc<int>();
   const ReadEvent<int> event(thread_id, addr);
 
-  EXPECT_TRUE(z3.constant(event).is_bv());
+  EXPECT_TRUE(event.constant(z3).is_bv());
   EXPECT_EQ(TypeInfo<int>::s_type.bv_size(),
-    z3.constant(event).get_sort().bv_size());
+    event.constant(z3).get_sort().bv_size());
 
-  z3.solver.add(z3.constant(event) != z3.constant(event));
+  z3.solver.add(event.constant(z3) != event.constant(z3));
 
   // Proves that both bit vector constants are equal
   EXPECT_EQ(z3::unsat, z3.solver.check());
@@ -94,9 +94,9 @@ TEST(EncoderTest, Z3BoolConstant) {
   const MemoryAddr addr = MemoryAddr::alloc<bool>();
   const ReadEvent<bool> event(thread_id, addr);
 
-  EXPECT_TRUE(z3.constant(event).is_bool());
+  EXPECT_TRUE(event.constant(z3).is_bool());
 
-  z3.solver.add(z3.constant(event) != z3.constant(event));
+  z3.solver.add(event.constant(z3) != event.constant(z3));
 
   // Proves that both Boolean constants are equal
   EXPECT_EQ(z3::unsat, z3.solver.check());
@@ -109,7 +109,7 @@ TEST(EncoderTest, Z3ArrayConstant) {
   const MemoryAddr addr = MemoryAddr::alloc<int[5]>();
   const ReadEvent<int[5]> read_event(thread_id, addr);
 
-  const z3::expr event_expr(z3.constant(read_event));
+  const z3::expr event_expr(read_event.constant(z3));
   EXPECT_TRUE(event_expr.is_array());
 
   EXPECT_TRUE(event_expr.get_sort().array_range().is_bv());
@@ -122,7 +122,7 @@ TEST(EncoderTest, Z3ArrayConstant) {
 
   z3.solver.push();
 
-  z3.solver.add(event_expr != z3.constant(read_event));
+  z3.solver.add(event_expr != read_event.constant(z3));
 
   // Proves that both bit vector constants are equal
   EXPECT_EQ(z3::unsat, z3.solver.check());
@@ -134,7 +134,7 @@ TEST(EncoderTest, Z3ArrayConstant) {
   // 1:
   z3.solver.push();
 
-  z3.solver.add(event_expr == z3.constant(read_event));
+  z3.solver.add(event_expr == read_event.constant(z3));
   EXPECT_EQ(z3::sat, z3.solver.check());
 
   z3.solver.pop();
@@ -146,7 +146,7 @@ TEST(EncoderTest, Z3ArrayConstant) {
   const int value_a = 7;
   const int value_b = 8;
   z3::expr array_a(z3::store(event_expr, index, value_a));
-  z3::expr array_b(z3::store(z3.constant(read_event), index, value_b));
+  z3::expr array_b(z3::store(read_event.constant(z3), index, value_b));
 
   z3.solver.add(array_a == array_b);
   EXPECT_EQ(z3::unsat, z3.solver.check());
@@ -164,7 +164,7 @@ TEST(EncoderTest, Z3ArrayConstant) {
   // 4:
   z3.solver.push();
 
-  z3.solver.add(z3.constant(read_event) == array_b);
+  z3.solver.add(read_event.constant(z3) == array_b);
   z3.solver.add(z3::select(event_expr, index) == value_b);
   EXPECT_EQ(z3::sat, z3.solver.check());
 
@@ -173,7 +173,7 @@ TEST(EncoderTest, Z3ArrayConstant) {
   // 5:
   z3.solver.push();
 
-  z3.solver.add(z3.constant(read_event) == array_b);
+  z3.solver.add(read_event.constant(z3) == array_b);
   z3.solver.add(z3::select(event_expr, index) != value_b);
   EXPECT_EQ(z3::unsat, z3.solver.check());
 
@@ -216,7 +216,7 @@ TEST(EncoderTest, Z3IndirectWriteEventConstant) {
   const IndirectWriteEvent<char, size_t, array_size> write_event(thread_id, write_addr,
     std::move(deref_read_instr_ptr), std::move(read_instr_ptr));
 
-  const z3::expr event_expr(z3.constant(write_event));
+  const z3::expr event_expr(write_event.constant(z3));
   EXPECT_TRUE(event_expr.is_array());
 
   EXPECT_TRUE(event_expr.get_sort().array_range().is_bv());
@@ -282,7 +282,7 @@ TEST(EncoderTest, Z3ReadEncoderForBasicReadInstrAsBv) {
   std::unique_ptr<ReadEvent<int>> event_ptr(new ReadEvent<int>(thread_id, addr));
   const BasicReadInstr<int> instr(std::move(event_ptr));
 
-  z3.solver.add(encoder.encode(instr, z3) != z3.constant(*instr.event_ptr()));
+  z3.solver.add(encoder.encode(instr, z3) != instr.event_ptr()->constant(z3));
 
   EXPECT_EQ(z3::unsat, z3.solver.check());
 }
@@ -297,7 +297,7 @@ TEST(EncoderTest, Z3ReadEncoderForBasicReadInstrAsArray) {
   const BasicReadInstr<char[5]> instr(std::move(event_ptr));
 
   // See also Z3ArrayConstant test
-  z3.solver.add(encoder.encode(instr, z3) != z3.constant(*instr.event_ptr()));
+  z3.solver.add(encoder.encode(instr, z3) != instr.event_ptr()->constant(z3));
   EXPECT_EQ(z3::unsat, z3.solver.check());
 
   const z3::expr& expr = encoder.encode(instr, z3);
@@ -457,7 +457,7 @@ TEST(EncoderTest, Z3ValueEncoderDirectWriteEvent) {
 
   EXPECT_EQ(z3::sat, z3.solver.check());
   
-  z3::expr disequality(z3.constant(write_event) != 42);
+  z3::expr disequality(write_event.constant(z3) != 42);
   z3.solver.add(disequality);
   EXPECT_EQ(z3::unsat, z3.solver.check());
 }
@@ -479,7 +479,7 @@ TEST(EncoderTest, Z3ValueEncoderDirectWriteEventThroughDispatch) {
 
   EXPECT_EQ(z3::sat, z3.solver.check());
   
-  z3::expr disequality(z3.constant(write_event) != 42);
+  z3::expr disequality(write_event.constant(z3) != 42);
   z3.solver.add(disequality);
   EXPECT_EQ(z3::unsat, z3.solver.check());
 }
@@ -508,7 +508,7 @@ TEST(EncoderTest, Z3ValueEncoderIndirectWriteEvent) {
     std::move(deref_read_instr_ptr), std::move(read_instr_ptr));
 
   z3.solver.add(encoder.encode_eq(write_event, z3));
-  z3::expr new_array(z3.constant(write_event));
+  z3::expr new_array(write_event.constant(z3));
 
   z3.solver.push();
 
@@ -551,7 +551,7 @@ TEST(EncoderTest, Z3ValueEncoderIndirectWriteEventThroughDispatch) {
   const Event& event = write_event;
 
   z3.solver.add(event.encode_eq(encoder, z3));
-  z3::expr new_array(z3.constant(write_event));
+  z3::expr new_array(write_event.constant(z3));
 
   z3.solver.push();
 
@@ -621,10 +621,10 @@ TEST(EncoderTest, Z3OrderEncoderForRfWithoutCondition) {
   z3.solver.add(encoder.rfe_encode(relation, z3));
   EXPECT_EQ(z3::sat, z3.solver.check());
 
-  z3.solver.add(z3.constant(*read_event_ptr) == 3);
+  z3.solver.add(read_event_ptr->constant(z3) == 3);
   EXPECT_EQ(z3::sat, z3.solver.check());
 
-  z3.solver.add(z3.constant(*write_event_ptr) != 3);
+  z3.solver.add(write_event_ptr->constant(z3) != 3);
   EXPECT_EQ(z3::unsat, z3.solver.check());
 }
 
@@ -691,7 +691,7 @@ TEST(EncoderTest, Z3OrderEncoderForFrWithoutCondition) {
   z3.solver.push();
 
   z3.solver.add(z3.constant(*major_write_event_ptr, *read_event_ptr));
-  z3.solver.add(z3.constant(*read_event_ptr) == 5);
+  z3.solver.add(read_event_ptr->constant(z3) == 5);
   EXPECT_EQ(z3::sat, z3.solver.check());
 
   z3.solver.pop();
@@ -699,7 +699,7 @@ TEST(EncoderTest, Z3OrderEncoderForFrWithoutCondition) {
   z3.solver.push();
 
   z3.solver.add(z3.constant(*major_write_event_ptr, *read_event_ptr));
-  z3.solver.add(z3.constant(*read_event_ptr) == 7);
+  z3.solver.add(read_event_ptr->constant(z3) == 7);
   EXPECT_EQ(z3::unsat, z3.solver.check());
 
   z3.solver.pop();
@@ -707,7 +707,7 @@ TEST(EncoderTest, Z3OrderEncoderForFrWithoutCondition) {
   z3.solver.push();
 
   z3.solver.add(z3.constant(*minor_write_event_ptr, *read_event_ptr));
-  z3.solver.add(z3.constant(*read_event_ptr) == 7);
+  z3.solver.add(read_event_ptr->constant(z3) == 7);
   EXPECT_EQ(z3::sat, z3.solver.check());
 
   z3.solver.pop();
@@ -715,7 +715,7 @@ TEST(EncoderTest, Z3OrderEncoderForFrWithoutCondition) {
   z3.solver.push();
 
   z3.solver.add(z3.constant(*minor_write_event_ptr, *read_event_ptr));
-  z3.solver.add(z3.constant(*read_event_ptr) == 5);
+  z3.solver.add(read_event_ptr->constant(z3) == 5);
   EXPECT_EQ(z3::unsat, z3.solver.check());
 
   z3.solver.pop();

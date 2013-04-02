@@ -21,6 +21,15 @@ public:
   z3::solver solver;
 
 private:
+  friend class Z3ValueEncoder;
+  friend class Z3ReadEncoder;
+
+  template<typename T> friend z3::expr ReadEvent<T>::constant(Z3&) const;
+  template<typename T> friend z3::expr DirectWriteEvent<T>::constant(Z3&) const;
+
+  template<typename T, typename U, size_t N>
+  friend z3::expr IndirectWriteEvent<T, U, N>::constant(Z3&) const;
+
   unsigned join_id;
 
   z3::symbol create_symbol(const Event& event) {
@@ -36,46 +45,8 @@ private:
     return context.constant(create_symbol(event), array_sort);
   }
 
-public:
-  Z3() : context(), solver(context), join_id(0) {}
-
-  template<typename T, class = typename std::enable_if<
-    std::is_arithmetic<T>::value>::type>
-  z3::expr literal(const LiteralReadInstr<T>& instr) {
-
-    const char* str = std::to_string(instr.literal()).c_str();
-    return context.bv_val(str, TypeInfo<T>::s_type.bv_size());
-  }
-
-  /// Individual array element literal
-  template<typename T, size_t N = std::extent<T>::value,
-    class = typename std::enable_if<std::is_array<T>::value and 0 < N>::type>
-  z3::expr literal(const LiteralReadInstr<T>& instr) {
-
-    typedef typename std::remove_extent<T>::type ElementType;
-    return literal(LiteralReadInstr<ElementType>(instr.element_literal()));
-  }
-
-  z3::expr literal(const LiteralReadInstr<bool>& instr) {
-    return context.bool_val(instr.literal());
-  }
-
-  z3::expr constant(const Event& event) {
-    z3::sort sort(context.bv_sort(event.type().bv_size()));
-    return context.constant(create_symbol(event), sort);
-  }
-
   z3::expr constant(const ReadEvent<bool>& event) {
     return context.constant(create_symbol(event), context.bool_sort());
-  }
-
-  /// Creates a unique Boolean constant for two events
-  z3::expr constant(const Event& event_a, const Event& event_b) {
-    const std::string name = std::to_string(event_a.event_id()) + ":" +
-      std::to_string(event_b.event_id());
-
-    z3::symbol symbol(context.str_symbol(name.c_str()));
-    return context.constant(symbol, context.bool_sort());
   }
 
   template<typename T, size_t N>
@@ -91,6 +62,45 @@ public:
   template<typename T, typename U, size_t N>
   z3::expr constant(const IndirectWriteEvent<T, U, N>& event) {
     return create_array_constant<T, N>(event);
+  }
+
+public:
+  Z3() : context(), solver(context), join_id(0) {}
+
+  /// Creates a Z3 constant according to the event's \ref Event::type() "type"
+  z3::expr constant(const Event& event) {
+    z3::sort sort(context.bv_sort(event.type().bv_size()));
+    return context.constant(create_symbol(event), sort);
+  }
+
+  /// Creates a unique Boolean constant for two events
+  z3::expr constant(const Event& event_a, const Event& event_b) {
+    const std::string name = std::to_string(event_a.event_id()) + ":" +
+      std::to_string(event_b.event_id());
+
+    z3::symbol symbol(context.str_symbol(name.c_str()));
+    return context.constant(symbol, context.bool_sort());
+  }
+
+  /// Individual array element literal
+  template<typename T, size_t N = std::extent<T>::value,
+    class = typename std::enable_if<std::is_array<T>::value and 0 < N>::type>
+  z3::expr literal(const LiteralReadInstr<T>& instr) {
+
+    typedef typename std::remove_extent<T>::type ElementType;
+    return literal(LiteralReadInstr<ElementType>(instr.element_literal()));
+  }
+
+  z3::expr literal(const LiteralReadInstr<bool>& instr) {
+    return context.bool_val(instr.literal());
+  }
+
+  template<typename T, class = typename std::enable_if<
+    std::is_arithmetic<T>::value>::type>
+  z3::expr literal(const LiteralReadInstr<T>& instr) {
+
+    const char* str = std::to_string(instr.literal()).c_str();
+    return context.bv_val(str, TypeInfo<T>::s_type.bv_size());
   }
 
   z3::expr clock(const Event& event) {
