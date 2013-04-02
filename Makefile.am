@@ -65,7 +65,8 @@ lib_libse_la_SOURCES = \
   src/concurrent/event.cpp \
   src/concurrent/recorder.cpp \
   src/concurrent/relation.cpp \
-  src/concurrent/thread.cpp
+  src/concurrent/thread.cpp \
+  src/libse.cpp
 
 pkginclude_HEADERS = \
   include/core/op.h \
@@ -80,7 +81,8 @@ pkginclude_HEADERS = \
   include/concurrent/var.h \
   include/concurrent/relation.h \
   include/concurrent/thread.h \
-  include/concurrent.h
+  include/concurrent.h \
+  include/libse.h
 
 # Build rules for functional and unit tests.
 # Recall the Automake naming conventions:
