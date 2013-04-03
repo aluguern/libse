@@ -110,19 +110,44 @@ public:
 
   /// Start recording a new thread of execution
   static void begin_thread() {
-    s_singleton.m_recorder_stack.push(Recorder(s_singleton.m_next_thread_id++));
+    Recorder child_recorder(s_singleton.m_next_thread_id++);
+
+    if (!s_singleton.m_recorder_stack.empty()) {
+      Recorder& parent_recorder = s_singleton.current_recorder();
+      const std::shared_ptr<SendEvent> send_event_ptr(new SendEvent(
+        parent_recorder.thread_id(), parent_recorder.block_condition_ptr()));
+      parent_recorder.insert_event_ptr(send_event_ptr);
+
+      std::unique_ptr<ReceiveEvent> receive_event_ptr(new ReceiveEvent(
+        child_recorder.thread_id(), send_event_ptr->addr(),
+        child_recorder.block_condition_ptr()));
+
+      child_recorder.insert_event_ptr(std::move(receive_event_ptr));
+    }
+
+    s_singleton.m_recorder_stack.push(std::move(child_recorder));
   }
 
   /// Encode the concurrent SSA and control structure of the current thread
-  static void end_thread(Z3& z3) {
+
+  /// \returns event that demarcates the end of the recorded thread
+  static std::shared_ptr<SendEvent> end_thread(Z3& z3) {
+    Recorder& current_recorder = s_singleton.current_recorder();
+    const std::shared_ptr<SendEvent> send_event_ptr(new SendEvent(
+      current_recorder.thread_id(), current_recorder.block_condition_ptr()));
+
+    current_recorder.insert_event_ptr(send_event_ptr);
+
     const std::shared_ptr<Block>& most_outer_block_ptr(
-      current_recorder().most_outer_block_ptr());
+      current_recorder.most_outer_block_ptr());
 
     s_singleton.internal_encode_events(most_outer_block_ptr, z3);
     s_singleton.internal_relate_events(most_outer_block_ptr);
     s_singleton.m_order_encoder.encode_spo(most_outer_block_ptr, z3);
 
     s_singleton.m_recorder_stack.pop();
+
+    return send_event_ptr;
   }
 
   /// Start recording the main thread
@@ -145,6 +170,15 @@ public:
     z3.solver.add(order_encoder.rfe_encode(rel, z3));
     z3.solver.add(order_encoder.fr_encode(rel, z3));
     z3.solver.add(order_encoder.ws_encode(rel, z3));
+  }
+
+  static void join(const std::shared_ptr<SendEvent>& send_event_ptr) {
+    Recorder& current_recorder = s_singleton.current_recorder();
+    std::unique_ptr<ReceiveEvent> receive_event_ptr(new ReceiveEvent(
+      current_recorder.thread_id(), send_event_ptr->addr(),
+      current_recorder.block_condition_ptr()));
+
+    current_recorder.insert_event_ptr(std::move(receive_event_ptr));
   }
 
   /// \internal Assert given condition in the SAT solver
@@ -176,6 +210,9 @@ class Thread {
 private:
   static Z3 s_z3;
 
+  // Constant and never null once the constructor body has been executed
+  std::shared_ptr<SendEvent> m_send_event_ptr;
+
 public:
   static Z3& z3() { return s_z3; }
 
@@ -197,12 +234,10 @@ public:
   explicit Thread(Function&& f, Args&&... args) {
     Threads::begin_thread();
     f(args...);
-    Threads::end_thread(s_z3);
+    m_send_event_ptr = Threads::end_thread(s_z3);
   }
 
-  void join() noexcept {
-
-  }
+  void join() noexcept { Threads::join(m_send_event_ptr); }
 };
 
 }

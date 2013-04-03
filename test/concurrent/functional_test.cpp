@@ -31,7 +31,8 @@ TEST(ConcurrentFunctionalTest, LocalArray) {
   out << z3.solver;
   EXPECT_EQ("(solver\n  (not (= (select k!3 #x0000000000000002) #x5a))\n"
             "  (= k!1 ((as const (Array (_ BitVec 64) (_ BitVec 8))) #x00))\n"
-            "  (= k!3 (store k!1 #x0000000000000002 #x5a)))", out.str());
+            "  (= k!3 (store k!1 #x0000000000000002 #x5a))\n"
+            "  true\n  (> k!5 0)\n  (< epoch_clock k!5))", out.str());
 }
 
 class CharBlockPrinter {
@@ -790,4 +791,47 @@ TEST(ConcurrentFunctionalTest, UnsatJoinPathsInSingleThreadWithArraySharedVar) {
   EXPECT_EQ(z3::unsat, z3.solver.check());
 
   z3.solver.pop();
+}
+
+TEST(ConcurrentFunctionalTest, SatJoinThreads) {
+  Z3 z3;
+
+  Threads::reset();
+  Threads::begin_main_thread();
+
+  SharedVar<char> x;
+
+  Threads::begin_thread();
+
+  x = 'A';
+
+  Threads::end_thread(z3);
+
+  Threads::error(x == '\0', z3);
+
+  Threads::end_main_thread(z3);
+
+  EXPECT_EQ(z3::sat, z3.solver.check());
+}
+
+TEST(ConcurrentFunctionalTest, UnsatJoinThreads) {
+  Z3 z3;
+
+  Threads::reset();
+  Threads::begin_main_thread();
+
+  SharedVar<char> x;
+
+  Threads::begin_thread();
+
+  x = 'A';
+
+  const std::shared_ptr<SendEvent> send_event_ptr = Threads::end_thread(z3);
+
+  Threads::join(send_event_ptr);
+  Threads::error(x == '\0', z3);
+
+  Threads::end_main_thread(z3);
+
+  EXPECT_EQ(z3::unsat, z3.solver.check());
 }

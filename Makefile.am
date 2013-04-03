@@ -63,6 +63,7 @@ lib_libse_la_SOURCES = \
   src/core/op.cpp \
   src/concurrent/memory.cpp \
   src/concurrent/event.cpp \
+  src/concurrent/encoder.cpp \
   src/concurrent/recorder.cpp \
   src/concurrent/relation.cpp \
   src/concurrent/thread.cpp \

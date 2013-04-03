@@ -228,6 +228,41 @@ public:
   DECL_CONSTANT_ENCODER_FN
 };
 
+/// \internal Event for thread synchronization
+class SyncEvent : public Event {
+private:
+  typedef bool Sync;
+
+  DECL_VALUE_ENCODER_FN
+  DECL_CONSTANT_ENCODER_FN
+
+protected:
+  static MemoryAddr make_addr() { return MemoryAddr::alloc<Sync>(true); }
+
+  SyncEvent(unsigned thread_id, const MemoryAddr& addr, bool receive,
+    const std::shared_ptr<ReadInstr<bool>>& condition_ptr = nullptr) :
+    Event(thread_id, addr, receive, &TypeInfo<Sync>::s_type, condition_ptr) {}
+};
+
+/// \internal Write event for thread synchronization
+
+/// Synchronization occurs through a unique \ref Event::addr() "memory address".
+class SendEvent : public SyncEvent {
+public:
+  SendEvent(unsigned thread_id,
+    const std::shared_ptr<ReadInstr<bool>>& condition_ptr = nullptr) :
+    SyncEvent(thread_id, make_addr(), false, condition_ptr) {}
+};
+
+/// \internal Read event for thread synchronization
+class ReceiveEvent : public SyncEvent {
+public:
+  /// Event that reads from the given address, preferably SendEvent::addr().
+  ReceiveEvent(unsigned thread_id, const MemoryAddr& addr,
+    const std::shared_ptr<ReadInstr<bool>>& condition_ptr = nullptr) :
+    SyncEvent(thread_id, addr, true, condition_ptr) {}
+};
+
 }
 
 #endif

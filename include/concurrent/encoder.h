@@ -206,6 +206,10 @@ public:
     return helper.context.bool_val(false);
   }
 
+  z3::expr encode_eq(const SyncEvent& event, Z3& helper) const {
+    return helper.context.bool_val(true);
+  }
+
   template<typename T>
   z3::expr encode_eq(const DirectWriteEvent<T>& event, Z3& helper) const {
     z3::expr lhs_expr(helper.constant(event));
