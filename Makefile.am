@@ -82,6 +82,7 @@ pkginclude_HEADERS = \
   include/concurrent/var.h \
   include/concurrent/relation.h \
   include/concurrent/thread.h \
+  include/concurrent/mutex.h \
   include/concurrent.h \
   include/libse.h
 
@@ -121,6 +122,7 @@ test_se_SOURCES = \
   test/concurrent/var_test.cpp \
   test/concurrent/relation_test.cpp \
   test/concurrent/thread_test.cpp \
+  test/concurrent/mutex_test.cpp \
   test/concurrent_test.cpp \
   test/concurrent/functional_test.cpp
 
