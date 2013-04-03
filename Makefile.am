@@ -40,6 +40,8 @@ bench: all
 	time -p bench/fib_006_unsafe
 	time -p bench/stateful01_safe
 	time -p bench/stateful01_unsafe
+	time -p bench/stack_007_slice_safe
+	time -p bench/stack_007_slice_unsafe
 
 .PHONY: bench doc
 
@@ -139,7 +141,9 @@ bin_PROGRAMS = bench/if \
                bench/fib_006_safe \
                bench/fib_006_unsafe \
                bench/stateful01_safe \
-               bench/stateful01_unsafe
+               bench/stateful01_unsafe \
+               bench/stack_007_slice_safe \
+               bench/stack_007_slice_unsafe
 
 bench_if_SOURCES = bench/if_bench.cpp
 bench_if_CPPFLAGS = -std=c++0x -I$(srcdir)/include
@@ -168,3 +172,11 @@ bench_stateful01_safe_LDADD = lib/libse.la
 bench_stateful01_unsafe_SOURCES = bench/stateful01_unsafe_bench.cpp
 bench_stateful01_unsafe_CPPFLAGS = -std=c++0x -I$(srcdir)/include
 bench_stateful01_unsafe_LDADD = lib/libse.la
+
+bench_stack_007_slice_safe_SOURCES = bench/stack_007_slice_safe_bench.cpp
+bench_stack_007_slice_safe_CPPFLAGS = -std=c++0x -I$(srcdir)/include
+bench_stack_007_slice_safe_LDADD = lib/libse.la
+
+bench_stack_007_slice_unsafe_SOURCES = bench/stack_007_slice_unsafe_bench.cpp
+bench_stack_007_slice_unsafe_CPPFLAGS = -std=c++0x -I$(srcdir)/include
+bench_stack_007_slice_unsafe_LDADD = lib/libse.la
