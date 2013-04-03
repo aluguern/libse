@@ -38,6 +38,8 @@ bench: all
 	time -p bench/fib_005_unsafe
 	time -p bench/fib_006_safe
 	time -p bench/fib_006_unsafe
+	time -p bench/stateful01_safe
+	time -p bench/stateful01_unsafe
 
 .PHONY: bench doc
 
@@ -135,7 +137,9 @@ bin_PROGRAMS = bench/if \
                bench/fib_005_safe \
                bench/fib_005_unsafe \
                bench/fib_006_safe \
-               bench/fib_006_unsafe
+               bench/fib_006_unsafe \
+               bench/stateful01_safe \
+               bench/stateful01_unsafe
 
 bench_if_SOURCES = bench/if_bench.cpp
 bench_if_CPPFLAGS = -std=c++0x -I$(srcdir)/include
@@ -156,3 +160,11 @@ bench_fib_006_safe_LDADD = lib/libse.la
 bench_fib_006_unsafe_SOURCES = bench/fib_006_unsafe_bench.cpp
 bench_fib_006_unsafe_CPPFLAGS = -std=c++0x -I$(srcdir)/include
 bench_fib_006_unsafe_LDADD = lib/libse.la
+
+bench_stateful01_safe_SOURCES = bench/stateful01_safe_bench.cpp
+bench_stateful01_safe_CPPFLAGS = -std=c++0x -I$(srcdir)/include
+bench_stateful01_safe_LDADD = lib/libse.la
+
+bench_stateful01_unsafe_SOURCES = bench/stateful01_unsafe_bench.cpp
+bench_stateful01_unsafe_CPPFLAGS = -std=c++0x -I$(srcdir)/include
+bench_stateful01_unsafe_LDADD = lib/libse.la
