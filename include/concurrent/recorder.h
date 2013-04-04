@@ -222,6 +222,7 @@ public:
   /// \return execute "then" block?
   bool begin_then(std::unique_ptr<ReadInstr<bool>> condition_ptr) {
     assert(nullptr != condition_ptr);
+    insert_all(*condition_ptr);
 
     if (m_current_block_ptr->condition_ptr()) {
       // start nested branch inside current conditional block

@@ -59,6 +59,8 @@ public:
     indent += 2;
 
     for (std::shared_ptr<Event> event_ptr : block_ptr->body()) {
+      if (event_ptr->is_read()) { continue; }
+
       const WriteEvent<char>& write_event =
         static_cast<const WriteEvent<char>&>(*event_ptr);
 
@@ -96,7 +98,7 @@ TEST(ConcurrentFunctionalTest, Else) {
   SharedVar<char> x;
 
   x = 'A';
-  if (ThisThread::recorder().begin_then(x == '?')) {
+  if (ThisThread::recorder().begin_then(any<bool>())) {
     x = 'B';
   }
   if (ThisThread::recorder().begin_else()) {
@@ -132,10 +134,10 @@ TEST(ConcurrentFunctionalTest, ElseIf) {
   SharedVar<char> x;
 
   x = 'A';
-  ThisThread::recorder().begin_then(x == '?'); {
+  ThisThread::recorder().begin_then(any<bool>()); {
   } ThisThread::recorder().begin_else(); {
-      ThisThread::recorder().begin_then(x == '?'); {
-        ThisThread::recorder().begin_then(x == '?'); {
+      ThisThread::recorder().begin_then(any<bool>()); {
+        ThisThread::recorder().begin_then(any<bool>()); {
           x = 'B';
         } ThisThread::recorder().begin_else(); {
           x = 'C';
@@ -172,6 +174,10 @@ TEST(ConcurrentFunctionalTest, ElseIf) {
             "}\n", printer.out.str());
 }
 
+// Do not introduce any new read events as part of a conditional check
+#define TRUE_READ_INSTR \
+  (std::unique_ptr<ReadInstr<bool>>(new LiteralReadInstr<bool>(true)))
+
 TEST(ConcurrentFunctionalTest, SeriesParallelGraph) {
   CharBlockPrinter printer;
 
@@ -181,75 +187,75 @@ TEST(ConcurrentFunctionalTest, SeriesParallelGraph) {
   SharedVar<char> x;
 
   x = 'A';
-  ThisThread::recorder().begin_then(x == '?'); {
+  ThisThread::recorder().begin_then(TRUE_READ_INSTR); {
     x = 'B';
-    ThisThread::recorder().begin_then(x == '?'); {
-      ThisThread::recorder().begin_then(x == '?'); {
+    ThisThread::recorder().begin_then(TRUE_READ_INSTR); {
+      ThisThread::recorder().begin_then(TRUE_READ_INSTR); {
         x = 'C';
       } ThisThread::recorder().end_branch();
-      ThisThread::recorder().begin_then(x == '?'); {
+      ThisThread::recorder().begin_then(TRUE_READ_INSTR); {
         x = 'D';
       } ThisThread::recorder().end_branch();
     } ThisThread::recorder().end_branch();
-    ThisThread::recorder().begin_then(x == '?'); {
+    ThisThread::recorder().begin_then(TRUE_READ_INSTR); {
       x = 'E';
-      ThisThread::recorder().begin_then(x == '?'); {
+      ThisThread::recorder().begin_then(TRUE_READ_INSTR); {
         x = 'F';
       } ThisThread::recorder().end_branch();
-      ThisThread::recorder().begin_then(x == '?'); {
+      ThisThread::recorder().begin_then(TRUE_READ_INSTR); {
         x = 'G';
       } ThisThread::recorder().end_branch();
     } ThisThread::recorder().end_branch();
-    ThisThread::recorder().begin_then(x == '?'); {
-      ThisThread::recorder().begin_then(x == '?'); {
+    ThisThread::recorder().begin_then(TRUE_READ_INSTR); {
+      ThisThread::recorder().begin_then(TRUE_READ_INSTR); {
         x = 'H';
       } ThisThread::recorder().end_branch();
       x = 'I';
-      ThisThread::recorder().begin_then(x == '?'); {
+      ThisThread::recorder().begin_then(TRUE_READ_INSTR); {
         x = 'J';
       } ThisThread::recorder().end_branch();
     } ThisThread::recorder().end_branch();
-    ThisThread::recorder().begin_then(x == '?'); {
+    ThisThread::recorder().begin_then(TRUE_READ_INSTR); {
       x = 'K';
-      ThisThread::recorder().begin_then(x == '?'); {
+      ThisThread::recorder().begin_then(TRUE_READ_INSTR); {
         x = 'L';
       } ThisThread::recorder().end_branch();
       x = 'M';
-      ThisThread::recorder().begin_then(x == '?'); {
+      ThisThread::recorder().begin_then(TRUE_READ_INSTR); {
         x = 'N';
       } ThisThread::recorder().end_branch();
     } ThisThread::recorder().end_branch();
   } ThisThread::recorder().begin_else(); {
-    ThisThread::recorder().begin_then(x == '?'); {
-      ThisThread::recorder().begin_then(x == '?'); {
+    ThisThread::recorder().begin_then(TRUE_READ_INSTR); {
+      ThisThread::recorder().begin_then(TRUE_READ_INSTR); {
         x = 'O';
       } ThisThread::recorder().begin_else(); {
         x = 'P';
       } ThisThread::recorder().end_branch();
     } ThisThread::recorder().end_branch();
     x = 'Q';
-    ThisThread::recorder().begin_then(x == '?'); {
+    ThisThread::recorder().begin_then(TRUE_READ_INSTR); {
       x = 'R';
-      ThisThread::recorder().begin_then(x == '?'); {
+      ThisThread::recorder().begin_then(TRUE_READ_INSTR); {
         x = 'S';
       } ThisThread::recorder().begin_else(); {
         x = 'T';
       } ThisThread::recorder().end_branch();
     } ThisThread::recorder().end_branch();
-    ThisThread::recorder().begin_then(x == '?'); {
-      ThisThread::recorder().begin_then(x == '?'); {
+    ThisThread::recorder().begin_then(TRUE_READ_INSTR); {
+      ThisThread::recorder().begin_then(TRUE_READ_INSTR); {
         x = 'U';
       } ThisThread::recorder().begin_else(); {
         x = 'W';
       } ThisThread::recorder().end_branch();
       x = 'V';
     } ThisThread::recorder().end_branch();
-    ThisThread::recorder().begin_then(x == '?'); {
+    ThisThread::recorder().begin_then(TRUE_READ_INSTR); {
       x = 'X';
-      ThisThread::recorder().begin_then(x == '?'); {
+      ThisThread::recorder().begin_then(TRUE_READ_INSTR); {
         x = 'Y';
       } ThisThread::recorder().end_branch();
-      ThisThread::recorder().begin_then(x == '?'); {
+      ThisThread::recorder().begin_then(TRUE_READ_INSTR); {
         x = 'Z';
       } ThisThread::recorder().end_branch();
       x = '!';
@@ -504,7 +510,7 @@ TEST(ConcurrentFunctionalTest, SatJoinPathsInSingleThreadWithSharedVar) {
   LocalVar<char> a;
 
   x = 'A';
-  if (ThisThread::recorder().begin_then(x == '?')) {
+  if (ThisThread::recorder().begin_then(any<bool>())) {
     x = 'B';
   }
   if (ThisThread::recorder().begin_else()) {
@@ -517,7 +523,9 @@ TEST(ConcurrentFunctionalTest, SatJoinPathsInSingleThreadWithSharedVar) {
   std::unique_ptr<ReadInstr<bool>> c0(a == 'B');
   std::unique_ptr<ReadInstr<bool>> c1(!(a == 'C'));
   std::unique_ptr<ReadInstr<bool>> c2(a == 'B' && !(a == 'C'));
-  std::unique_ptr<ReadInstr<bool>> c3(!(a == 'B') && a == 'C');
+  std::unique_ptr<ReadInstr<bool>> c3(a == 'C');
+  std::unique_ptr<ReadInstr<bool>> c4(!(a == 'B') && a == 'C');
+  std::unique_ptr<ReadInstr<bool>> c5(a == 'A');
 
   Threads::end_main_thread(z3);
 
@@ -548,6 +556,20 @@ TEST(ConcurrentFunctionalTest, SatJoinPathsInSingleThreadWithSharedVar) {
 
   Threads::internal_error(std::move(c3), z3);
   EXPECT_EQ(z3::sat, z3.solver.check());
+
+  z3.solver.pop();
+
+  z3.solver.push();
+
+  Threads::internal_error(std::move(c4), z3);
+  EXPECT_EQ(z3::sat, z3.solver.check());
+
+  z3.solver.pop();
+
+  z3.solver.push();
+
+  Threads::internal_error(std::move(c5), z3);
+  EXPECT_EQ(z3::unsat, z3.solver.check());
 
   z3.solver.pop();
 }
@@ -652,7 +674,7 @@ TEST(ConcurrentFunctionalTest, SatJoinPathsInSingleThreadWithNondetermisticCondi
   LocalVar<char> a;
 
   x[2] = 'A';
-  if (ThisThread::recorder().begin_then(y == '?')) {
+  if (ThisThread::recorder().begin_then(any<bool>())) {
     x[2] = 'B';
   }
   if (ThisThread::recorder().begin_else()) {

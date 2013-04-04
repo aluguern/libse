@@ -79,9 +79,7 @@ TEST(RecorderTest, ThenBlockWithEmptyBlock) {
   Recorder recorder(thread_id);
 
   const MemoryAddr addr = MemoryAddr::alloc<long>();
-  std::unique_ptr<ReadEvent<long>> event_ptr(new ReadEvent<long>(thread_id, addr));
-  std::unique_ptr<ReadInstr<long>> linstr_ptr(new BasicReadInstr<long>(std::move(event_ptr)));
-
+  std::unique_ptr<ReadInstr<long>> linstr_ptr(new LiteralReadInstr<long>(42L));
   std::unique_ptr<ReadInstr<char>> rinstr_ptr(new LiteralReadInstr<char>('Z'));
 
   std::unique_ptr<ReadInstr<bool>> condition_ptr(new BinaryReadInstr<LSS, long, char>(
@@ -287,9 +285,7 @@ TEST(RecorderTest, ElseBlockWithEmptyBlock) {
   Recorder recorder(thread_id);
 
   const MemoryAddr addr = MemoryAddr::alloc<long>();
-  std::unique_ptr<ReadEvent<long>> event_ptr(new ReadEvent<long>(thread_id, addr));
-  std::unique_ptr<ReadInstr<long>> linstr_ptr(new BasicReadInstr<long>(std::move(event_ptr)));
-
+  std::unique_ptr<ReadInstr<long>> linstr_ptr(new LiteralReadInstr<long>(42L));
   std::unique_ptr<ReadInstr<char>> rinstr_ptr(new LiteralReadInstr<char>('Z'));
 
   std::unique_ptr<ReadInstr<bool>> condition_ptr(new BinaryReadInstr<LSS, long, char>(
@@ -403,9 +399,7 @@ TEST(RecorderTest, ElseWithNestedEmptyBlock) {
   Recorder recorder(thread_id);
 
   const MemoryAddr addr = MemoryAddr::alloc<long>();
-  std::unique_ptr<ReadEvent<long>> event_ptr(new ReadEvent<long>(thread_id, addr));
-  std::unique_ptr<ReadInstr<long>> linstr_ptr(new BasicReadInstr<long>(std::move(event_ptr)));
-
+  std::unique_ptr<ReadInstr<long>> linstr_ptr(new LiteralReadInstr<long>(42L));
   std::unique_ptr<ReadInstr<char>> rinstr_ptr(new LiteralReadInstr<char>('Z'));
 
   std::unique_ptr<ReadInstr<bool>> condition_ptr(new BinaryReadInstr<LSS, long, char>(
@@ -466,9 +460,7 @@ TEST(RecorderTest, ElseWithNestedNonemptyBlock) {
   Recorder recorder(thread_id);
 
   const MemoryAddr addr = MemoryAddr::alloc<long>();
-  std::unique_ptr<ReadEvent<long>> event_ptr(new ReadEvent<long>(thread_id, addr));
-  std::unique_ptr<ReadInstr<long>> linstr_ptr(new BasicReadInstr<long>(std::move(event_ptr)));
-
+  std::unique_ptr<ReadInstr<long>> linstr_ptr(new LiteralReadInstr<long>(42L));
   std::unique_ptr<ReadInstr<char>> rinstr_ptr(new LiteralReadInstr<char>('Z'));
 
   std::unique_ptr<ReadInstr<bool>> condition_ptr(new BinaryReadInstr<LSS, long, char>(
@@ -528,9 +520,7 @@ TEST(RecorderTest, NestedElseWithEmptyBlock) {
   Recorder recorder(thread_id);
 
   const MemoryAddr addr = MemoryAddr::alloc<long>();
-  std::unique_ptr<ReadEvent<long>> event_ptr(new ReadEvent<long>(thread_id, addr));
-  std::unique_ptr<ReadInstr<long>> linstr_ptr(new BasicReadInstr<long>(std::move(event_ptr)));
-
+  std::unique_ptr<ReadInstr<long>> linstr_ptr(new LiteralReadInstr<long>(42L));
   std::unique_ptr<ReadInstr<char>> rinstr_ptr(new LiteralReadInstr<char>('Z'));
 
   std::unique_ptr<ReadInstr<bool>> condition_ptr(new BinaryReadInstr<LSS, long, char>(
@@ -586,9 +576,7 @@ TEST(RecorderTest, NestedElseWithNonemptyBlock) {
   Recorder recorder(thread_id);
 
   const MemoryAddr addr = MemoryAddr::alloc<long>();
-  std::unique_ptr<ReadEvent<long>> event_ptr(new ReadEvent<long>(thread_id, addr));
-  std::unique_ptr<ReadInstr<long>> linstr_ptr(new BasicReadInstr<long>(std::move(event_ptr)));
-
+  std::unique_ptr<ReadInstr<long>> linstr_ptr(new LiteralReadInstr<long>(42L));
   std::unique_ptr<ReadInstr<char>> rinstr_ptr(new LiteralReadInstr<char>('Z'));
 
   std::unique_ptr<ReadInstr<bool>> condition_ptr(new BinaryReadInstr<LSS, long, char>(
