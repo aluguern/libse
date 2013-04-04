@@ -913,3 +913,52 @@ TEST(ConcurrentFunctionalTest, CopySharedVarToLocalVar) {
 
   z3.solver.pop();
 }
+
+TEST(ConcurrentFunctionalTest, AnyReadInstr) {
+  Z3 z3;
+
+  Threads::reset();
+  Threads::begin_main_thread();
+
+  LocalVar<char> a = 'A';
+
+  a = any<char>();
+
+  std::unique_ptr<ReadInstr<bool>> c0(a == '*');
+  std::unique_ptr<ReadInstr<bool>> c1(!(a == '*'));
+
+  a = '*';
+  std::unique_ptr<ReadInstr<bool>> c2(a == '*');
+  std::unique_ptr<ReadInstr<bool>> c3(!(a == '*'));
+
+  Threads::end_main_thread(z3);
+
+  z3.solver.push();
+
+  Threads::internal_error(std::move(c0), z3);
+  EXPECT_EQ(z3::sat, z3.solver.check());
+
+  z3.solver.pop();
+
+  z3.solver.push();
+
+  Threads::internal_error(std::move(c1), z3);
+  EXPECT_EQ(z3::sat, z3.solver.check());
+
+  z3.solver.pop();
+
+  z3.solver.push();
+
+  Threads::internal_error(std::move(c2), z3);
+  EXPECT_EQ(z3::sat, z3.solver.check());
+
+  z3.solver.pop();
+
+  z3.solver.push();
+
+  Threads::internal_error(std::move(c3), z3);
+  EXPECT_EQ(z3::unsat, z3.solver.check());
+
+  z3.solver.pop();
+
+}

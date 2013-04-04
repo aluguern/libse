@@ -515,6 +515,16 @@ public:
   }
 };
 
+template<typename T>
+std::unique_ptr<ReadInstr<T>> any() {
+  std::unique_ptr<ReadEvent<T>> nondeterministic_event_ptr(new ReadEvent<T>(
+    ThisThread::thread_id(), MemoryAddr::alloc<T>(false),
+    ThisThread::recorder().block_condition_ptr()));
+
+  return std::unique_ptr<ReadInstr<T>>(new BasicReadInstr<T>(
+    std::move(nondeterministic_event_ptr)));
+}
+
 }
 
 #endif
