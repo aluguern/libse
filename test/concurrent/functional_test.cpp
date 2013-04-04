@@ -874,3 +874,42 @@ TEST(ConcurrentFunctionalTest, CopyLocalVar) {
 
   z3.solver.pop();
 }
+
+TEST(ConcurrentFunctionalTest, CopySharedVarToLocalVar) {
+  Z3 z3;
+
+  Threads::reset();
+  Threads::begin_main_thread();
+
+  SharedVar<char> a = 'A';
+  LocalVar<char> b = a;
+
+  std::unique_ptr<ReadInstr<bool>> c0(b == 'A');
+  std::unique_ptr<ReadInstr<bool>> c1(!(b == 'A'));
+
+  a = 'B';
+  std::unique_ptr<ReadInstr<bool>> c2(!(b == 'A'));
+
+  Threads::end_main_thread(z3);
+
+  z3.solver.push();
+
+  Threads::internal_error(std::move(c0), z3);
+  EXPECT_EQ(z3::sat, z3.solver.check());
+
+  z3.solver.pop();
+
+  z3.solver.push();
+
+  Threads::internal_error(std::move(c1), z3);
+  EXPECT_EQ(z3::unsat, z3.solver.check());
+
+  z3.solver.pop();
+
+  z3.solver.push();
+
+  Threads::internal_error(std::move(c2), z3);
+  EXPECT_EQ(z3::unsat, z3.solver.check());
+
+  z3.solver.pop();
+}

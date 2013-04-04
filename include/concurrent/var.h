@@ -130,6 +130,10 @@ public:
     return *m_direct_write_event_ptr;
   }
 
+  std::shared_ptr<DirectWriteEvent<T>> direct_write_event_ptr() const {
+    return m_direct_write_event_ptr;
+  }
+
   /// \pre argument must not be null
   void set_direct_write_event_ptr(const std::shared_ptr<DirectWriteEvent<T>>& event_ptr) {
     assert(nullptr != event_ptr);
@@ -356,6 +360,14 @@ public:
   LocalVar(const LocalVar& other) : m_var(false, alloc_read_instr(other)),
     m_local_read(internal_make_read_event<T>(m_var.addr(),
       m_var.direct_write_event_ref().event_id())) {}
+
+  LocalVar(const SharedVar<T>& other) : m_var(false, alloc_read_instr(other)),
+    m_local_read(internal_make_read_event<T>(m_var.addr(),
+      m_var.direct_write_event_ref().event_id())) {
+
+    ThisThread::recorder().insert_all(m_var.direct_write_event_ref().instr_ref());
+    ThisThread::recorder().insert_event_ptr(m_var.direct_write_event_ptr());
+  }
 
   template<class U = T, class = typename std::enable_if<
     std::is_array<U>::value or std::is_pointer<U>::value>::type>
