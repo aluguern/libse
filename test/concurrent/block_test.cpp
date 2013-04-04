@@ -49,3 +49,14 @@ TEST(BlockTest, InsertEvents) {
 
   EXPECT_TRUE(body.empty());
 }
+
+TEST(BlockTest, InsertAllEmpty) {
+  std::unique_ptr<Block> root_ptr(Block::make_root());
+  EXPECT_NE(nullptr, root_ptr);
+
+  std::forward_list<std::shared_ptr<Event>> event_ptrs;
+
+  root_ptr->insert_all(event_ptrs);
+
+  EXPECT_TRUE(root_ptr->body().empty());
+}
