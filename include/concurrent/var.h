@@ -42,9 +42,6 @@ std::unique_ptr<ReadEvent<T>> internal_make_read_event(const MemoryAddr& addr,
     addr, ThisThread::recorder().block_condition_ptr()));
 }
 
-/// Identifier of the main thread from which others can be spawn
-static constexpr unsigned MAIN_THREAD_ID = 0;
-
 /// Variable declaration allowing only direct memory writes
 
 /// Every object has a \ref DeclVar<T>::addr() "memory address" that identifies
@@ -73,11 +70,11 @@ private:
 
   template<typename U>
   static std::shared_ptr<DirectWriteEvent<U>> make_direct_write_event(
-    const MemoryAddr& addr, const T v) {
+    const MemoryAddr& addr, std::unique_ptr<ReadInstr<U>> instr_ptr) {
 
-    std::unique_ptr<ReadInstr<U>> instr_ptr(new LiteralReadInstr<U>(v));
     const std::shared_ptr<DirectWriteEvent<U>> direct_write_event_ptr(
-      new DirectWriteEvent<U>(MAIN_THREAD_ID, addr, std::move(instr_ptr)));
+      new DirectWriteEvent<U>(ThisThread::thread_id(), addr,
+        std::move(instr_ptr)));
 
     return direct_write_event_ptr;
   }
@@ -101,12 +98,28 @@ public:
   /// Declare a variable of type `T` that only allows direct memory writes
 
   /// \param is_shared - can other threads modify the variable?
+  /// \param instr_ptr - initialization instruction
+  ///
+  /// The newly declared variable is initialized according to the given
+  /// instruction that is assumed to execute within the current thread.
+  DeclVar(bool is_shared, std::unique_ptr<ReadInstr<T>> instr_ptr) :
+    m_addr(MemoryAddr::alloc<T>(is_shared)),
+    m_direct_write_event_ptr(make_direct_write_event<T>(m_addr,
+      std::move(instr_ptr))) {
+
+    ThisThread::recorder().insert_event_ptr(m_direct_write_event_ptr);
+  }
+
+  /// Declare a variable of type `T` that only allows direct memory writes
+
+  /// \param is_shared - can other threads modify the variable?
   /// \param v - initialization value
   ///
   /// The newly declared variable is initialized to `v`. This is accomplished
-  /// through a direct write event from within the main thread.
+  /// through a direct write event from within the current thread.
   DeclVar(bool is_shared, const T v = 0) : m_addr(MemoryAddr::alloc<T>(is_shared)),
-    m_direct_write_event_ptr(make_direct_write_event<T>(m_addr, v)) {
+    m_direct_write_event_ptr(make_direct_write_event<T>(m_addr,
+      std::unique_ptr<ReadInstr<T>>(new LiteralReadInstr<T>(v)))) {
 
     ThisThread::recorder().insert_event_ptr(m_direct_write_event_ptr);
   }
@@ -141,7 +154,8 @@ private:
 
     std::unique_ptr<ReadInstr<U>> instr_ptr(new LiteralReadInstr<U>());
     const std::shared_ptr<DirectWriteEvent<U>> direct_write_event_ptr(
-      new DirectWriteEvent<U>(MAIN_THREAD_ID, addr, std::move(instr_ptr)));
+      new DirectWriteEvent<U>(ThisThread::thread_id(), addr,
+        std::move(instr_ptr)));
 
     return direct_write_event_ptr;
   }
@@ -336,6 +350,10 @@ public:
     m_var.addr(), m_var.direct_write_event_ref().event_id())) {}
 
   LocalVar(const T v) : m_var(false, v),
+    m_local_read(internal_make_read_event<T>(m_var.addr(),
+      m_var.direct_write_event_ref().event_id())) {}
+
+  LocalVar(const LocalVar& other) : m_var(false, alloc_read_instr(other)),
     m_local_read(internal_make_read_event<T>(m_var.addr(),
       m_var.direct_write_event_ref().event_id())) {}
 

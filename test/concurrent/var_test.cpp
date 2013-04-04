@@ -76,3 +76,15 @@ TEST(VarTest, SharedVarInitArray) {
   EXPECT_TRUE(var[3].addr().is_shared());
   EXPECT_TRUE(var[4].addr().is_shared());
 }
+
+TEST(VarTest, CopyLocalVar) {
+  Threads::reset(7);
+  Threads::begin_main_thread();
+
+  LocalVar<char> var;
+  EXPECT_EQ(2*7+1, var.direct_write_event_ref().event_id());
+
+  LocalVar<char> other = var;
+  EXPECT_EQ(2*8+1, other.direct_write_event_ref().event_id());
+  EXPECT_NE(var.addr(), other.addr());
+}

@@ -835,3 +835,42 @@ TEST(ConcurrentFunctionalTest, UnsatJoinThreads) {
 
   EXPECT_EQ(z3::unsat, z3.solver.check());
 }
+
+TEST(ConcurrentFunctionalTest, CopyLocalVar) {
+  Z3 z3;
+
+  Threads::reset();
+  Threads::begin_main_thread();
+
+  LocalVar<char> a = 'A';
+  LocalVar<char> b = a;
+
+  std::unique_ptr<ReadInstr<bool>> c0(!(b == 'A'));
+  std::unique_ptr<ReadInstr<bool>> c1(!(b == a));
+
+  a = 'B';
+  std::unique_ptr<ReadInstr<bool>> c2(!(b == a));
+
+  Threads::end_main_thread(z3);
+
+  z3.solver.push();
+
+  Threads::internal_error(std::move(c0), z3);
+  EXPECT_EQ(z3::unsat, z3.solver.check());
+
+  z3.solver.pop();
+
+  z3.solver.push();
+
+  Threads::internal_error(std::move(c1), z3);
+  EXPECT_EQ(z3::unsat, z3.solver.check());
+
+  z3.solver.pop();
+
+  z3.solver.push();
+
+  Threads::internal_error(std::move(c2), z3);
+  EXPECT_EQ(z3::sat, z3.solver.check());
+
+  z3.solver.pop();
+}
