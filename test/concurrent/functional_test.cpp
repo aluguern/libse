@@ -982,5 +982,64 @@ TEST(ConcurrentFunctionalTest, AnyReadInstr) {
   EXPECT_EQ(z3::unsat, z3.solver.check());
 
   z3.solver.pop();
+}
 
+TEST(ConcurrentFunctionalTest, ConditionalErrorSingleThread) {
+  Z3 z3;
+
+  Threads::reset();
+  Threads::begin_main_thread();
+
+  SharedVar<int> var;
+  var = any<int>();
+
+  if (ThisThread::recorder().begin_then(0 < var)) {
+    Threads::error(var == 0, z3);
+  }
+  ThisThread::recorder().end_branch();
+  Threads::end_main_thread(z3);
+
+  EXPECT_EQ(z3::unsat, z3.solver.check());
+}
+
+TEST(ConcurrentFunctionalTest, ConditionalErrorMultipleThreads) {
+  Z3 z3;
+
+  Threads::reset();
+  Threads::begin_main_thread();
+
+  SharedVar<int> var;
+  var = any<int>();
+
+  Threads::begin_thread();
+
+  if (ThisThread::recorder().begin_then(0 < var)) {
+    Threads::error(var == 0, z3);
+  }
+  ThisThread::recorder().end_branch();
+
+  Threads::end_thread(z3);
+  Threads::end_main_thread(z3);
+
+  EXPECT_EQ(z3::unsat, z3.solver.check());
+}
+
+TEST(ConcurrentFunctionalTest, FalseConditionalError) {
+  Z3 z3;
+
+  Threads::reset();
+  Threads::begin_main_thread();
+
+  SharedVar<int> var = 0;
+
+  Threads::begin_thread();
+  if (ThisThread::recorder().begin_then(1 == var)) {
+    Threads::error(any<int>() == 0, z3);
+  }
+  ThisThread::recorder().end_branch();
+  Threads::end_thread(z3);
+
+  Threads::end_main_thread(z3);
+
+  EXPECT_EQ(z3::unsat, z3.solver.check());
 }

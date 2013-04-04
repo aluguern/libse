@@ -188,20 +188,25 @@ public:
   ///
   /// \remark Use Threads::error() when the above precondition is not satisfied
   static void internal_error(std::unique_ptr<ReadInstr<bool>> condition_ptr, Z3& z3) {
-    const z3::expr boolean_expr(s_singleton.m_value_encoder.encode_eq(
+    const z3::expr condition_expr(s_singleton.m_value_encoder.encode_eq(
       std::move(condition_ptr), z3));
 
-    z3.solver.add(boolean_expr);
+    z3.solver.add(condition_expr);
   }
 
   /// Assert condition in the SAT solver and record the condition's read events
   static void error(std::unique_ptr<ReadInstr<bool>> condition_ptr, Z3& z3) {
     ThisThread::recorder().insert_all(*condition_ptr);
 
-    const z3::expr boolean_expr(s_singleton.m_value_encoder.encode_eq(
-      std::move(condition_ptr), z3));
+    internal_error(std::move(condition_ptr), z3);
 
-    z3.solver.add(boolean_expr);
+    const std::shared_ptr<ReadInstr<bool>>& necessary_condition_ptr =
+      ThisThread::recorder().block_condition_ptr();
+
+    if (necessary_condition_ptr) {
+      const Z3ReadEncoder read_encoder;
+      z3.solver.add(necessary_condition_ptr->encode(read_encoder, z3));
+    }
   }
 };
 
