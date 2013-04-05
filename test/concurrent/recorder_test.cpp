@@ -834,3 +834,30 @@ TEST(RecorderTest, Body) {
   event_ptrs.pop_front();
   EXPECT_TRUE(event_ptrs.empty());
 }
+
+TEST(RecorderTest, BlockConditionOfNestedThen) {
+  const unsigned thread_id = 3;
+  Recorder recorder(thread_id);
+
+  const MemoryAddr addr = MemoryAddr::alloc<long>();
+  std::unique_ptr<ReadEvent<long>> event_ptr(new ReadEvent<long>(thread_id, addr));
+  std::unique_ptr<ReadInstr<long>> linstr_ptr(new BasicReadInstr<long>(std::move(event_ptr)));
+
+  std::unique_ptr<ReadInstr<char>> rinstr_ptr(new LiteralReadInstr<char>('Z'));
+
+  std::unique_ptr<ReadInstr<bool>> condition_ptr(new BinaryReadInstr<LSS, long, char>(
+    std::move(linstr_ptr), std::move(rinstr_ptr)));
+
+  recorder.insert_event_ptr(std::unique_ptr<Event>(new ReadEvent<bool>(thread_id, addr)));
+
+  const std::shared_ptr<Block> most_outer_block_ptr(recorder.current_block_ptr()->outer_block_ptr());
+  EXPECT_EQ(recorder.most_outer_block_ptr(), most_outer_block_ptr);
+
+  recorder.begin_then(std::move(condition_ptr));
+  
+  const std::shared_ptr<Block> outer_then_block_ptr(recorder.current_block_ptr());
+  recorder.begin_then(std::unique_ptr<ReadInstr<bool>>(new LiteralReadInstr<bool>(true)));
+
+  const NaryReadInstr<LAND, bool>& block_condition_read_instr = dynamic_cast<const NaryReadInstr<LAND, bool>&>(*recorder.block_condition_ptr());
+  EXPECT_EQ(2, block_condition_read_instr.size());
+}

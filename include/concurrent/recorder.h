@@ -111,6 +111,7 @@ private:
   const std::shared_ptr<Block> m_most_outer_block_ptr;
 
   std::shared_ptr<Block> m_current_block_ptr;
+  std::shared_ptr<ReadInstr<bool>> m_current_block_condition_ptr;
 
   // Each structurally nested loop in program is pushed onto this stack. This
   // requires an inner loop to be fully unwound before a loop containing it.
@@ -123,11 +124,17 @@ private:
       condition_ptr));
   }
 
+  void set_current_block_ptr(const std::shared_ptr<Block>& block_ptr) {
+    m_current_block_ptr = block_ptr;
+    m_current_block_condition_ptr = nullptr;
+  }
+
 public:
   Recorder(unsigned thread_id) : m_thread_id(thread_id),
     m_most_outer_block_ptr(Block::make_root()),
     m_current_block_ptr(std::unique_ptr<Block>(new Block(
-      m_most_outer_block_ptr))), m_loop_stack(/* empty */) {
+      m_most_outer_block_ptr))), m_current_block_condition_ptr(),
+      m_loop_stack(/* empty */) {
 
     m_most_outer_block_ptr->push_inner_block_ptr(m_current_block_ptr);
   }
@@ -137,6 +144,7 @@ public:
   Recorder(Recorder&& other) : m_thread_id(other.m_thread_id),
     m_most_outer_block_ptr(std::move(other.m_most_outer_block_ptr)),
     m_current_block_ptr(std::move(other.m_current_block_ptr)),
+    m_current_block_condition_ptr(other.m_current_block_condition_ptr),
     m_loop_stack(std::move(other.m_loop_stack)) {}
 
   unsigned thread_id() const { return m_thread_id; }
@@ -163,9 +171,36 @@ public:
   }
 
   /// Conjunction of nested block conditions
-  std::shared_ptr<ReadInstr<bool>> block_condition_ptr() const {
-    // TODO: Keep on conjoining these conditions until reaching most outer block
-    return m_current_block_ptr->condition_ptr();
+  std::shared_ptr<ReadInstr<bool>> block_condition_ptr() {
+    // TODO: Use a stack and restore previously computed block conditions
+    if (m_current_block_condition_ptr) {
+      return m_current_block_condition_ptr;
+    }
+
+    std::forward_list<std::shared_ptr<ReadInstr<bool>>> condition_ptrs;
+    size_t nary_size = 0;
+    for (std::shared_ptr<Block> block_ptr(m_current_block_ptr->outer_block_ptr());
+         block_ptr != m_most_outer_block_ptr;
+         block_ptr = block_ptr->outer_block_ptr(), nary_size++) {
+
+      assert(nullptr != block_ptr->condition_ptr());
+      condition_ptrs.push_front(block_ptr->condition_ptr());
+    }
+
+    if (condition_ptrs.empty()) {
+      return m_current_block_ptr->condition_ptr();
+    }
+
+    if (m_current_block_ptr->condition_ptr()) {
+      nary_size++;
+      condition_ptrs.push_front(m_current_block_ptr->condition_ptr());
+    } else if (nary_size == 1) {
+      return condition_ptrs.front();
+    }
+
+    m_current_block_condition_ptr = std::unique_ptr<ReadInstr<bool>>(
+      new NaryReadInstr<LAND, bool>(std::move(condition_ptrs), nary_size));
+    return m_current_block_condition_ptr;
   }
 
   const Block& current_block_ref() const { return *m_current_block_ptr; }
@@ -230,7 +265,7 @@ public:
         m_current_block_ptr, std::move(condition_ptr)));
 
       m_current_block_ptr->push_inner_block_ptr(then_block_ptr);
-      m_current_block_ptr = then_block_ptr;
+      set_current_block_ptr(then_block_ptr);
     } else {
       // unconditional blocks cannot have inner blocks
       assert(m_current_block_ptr->inner_block_ptrs().empty());
@@ -247,7 +282,7 @@ public:
           std::move(condition_ptr)));
 
         outer_block_ptr->push_inner_block_ptr(then_block_ptr);
-        m_current_block_ptr = then_block_ptr;
+        set_current_block_ptr(then_block_ptr);
       }
     }
 
@@ -269,12 +304,12 @@ public:
       assert(m_current_block_ptr->inner_block_ptrs().empty());
 
       if (m_current_block_ptr->body().empty()) {
-        m_current_block_ptr = m_current_block_ptr->outer_block_ptr();
+        set_current_block_ptr(m_current_block_ptr->outer_block_ptr());
 
         // delete last empty inner block inside "then" branch
         m_current_block_ptr->pop_inner_block_ptr();
       } else {
-        m_current_block_ptr = m_current_block_ptr->outer_block_ptr();
+        set_current_block_ptr(m_current_block_ptr->outer_block_ptr());
       }
     }
 
@@ -285,7 +320,7 @@ public:
       negate(m_current_block_ptr->condition_ptr())));
 
     m_current_block_ptr->m_else_block_ptr = else_block_ptr;
-    m_current_block_ptr = else_block_ptr;
+    set_current_block_ptr(else_block_ptr);
 
     return true;
   }
@@ -314,7 +349,7 @@ public:
     // next block is initially unconditional and empty
     std::shared_ptr<Block> next_block_ptr(new Block(outer_block_ptr));
     outer_block_ptr->push_inner_block_ptr(next_block_ptr);
-    m_current_block_ptr = next_block_ptr;
+    set_current_block_ptr(next_block_ptr);
   }
 
   void end_thread() {}
