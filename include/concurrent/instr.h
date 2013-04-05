@@ -257,7 +257,7 @@ public:
   DECL_READ_ENCODER_FN
 };
 
-/// Load memory at an offset of type U through a memory address of type T
+/// Load memory of type `T` at an offset of type `U`
 template<typename T, typename U> class DerefReadInstr;
 
 /// Select an element in a fixed-size array

@@ -11,7 +11,7 @@
 
 #include "core/type.h"
 
-#include "concurrent/memory.h"
+#include "concurrent/tag.h"
 
 namespace z3 { class expr; }
 
@@ -46,7 +46,7 @@ private:
   const unsigned m_thread_id;
   const bool m_is_read;
   const Type* const m_type_ptr;
-  const MemoryAddr m_addr;
+  const Tag m_tag;
   const std::shared_ptr<ReadInstr<bool>> m_condition_ptr;
 
   // Even positive integers (m = 2k for k in 0 to 2^15-1) are for read
@@ -64,7 +64,7 @@ protected:
 
   /// Create a unique read or write event
 
-  /// \param addr - memory address read or written by the event
+  /// \param tag - label to link up events
   /// \param thread_id - unique thread identifier
   /// \param is_read - does the event cause memory to be read?
   /// \param type_ptr - pointer to statically allocated memory, never null
@@ -72,10 +72,10 @@ protected:
   ///
   /// The type_ptr describes the event in terms of its memory characteristics
   /// such as how many bytes are read or written.
-  Event(unsigned thread_id, const MemoryAddr& addr, bool is_read,
+  Event(unsigned thread_id, const Tag& tag, bool is_read,
     const Type* const type_ptr,
     const std::shared_ptr<ReadInstr<bool>>& condition_ptr = nullptr) :
-    m_event_id(next_id(is_read)), m_addr(addr), m_thread_id(thread_id),
+    m_event_id(next_id(is_read)), m_tag(tag), m_thread_id(thread_id),
     m_is_read(is_read), m_type_ptr(type_ptr), m_condition_ptr(condition_ptr) {
 
     assert(type_ptr != nullptr);
@@ -84,7 +84,7 @@ protected:
   /// Create a unique read or write event with a specific identifier
 
   /// \param event_id - unique event identifier
-  /// \param addr - memory address read or written by the event
+  /// \param tag - label to link up events
   /// \param thread_id - unique thread identifier
   /// \param is_read - does the event cause memory to be read?
   /// \param type_ptr - pointer to statically allocated memory, never null
@@ -92,10 +92,10 @@ protected:
   ///
   /// The type_ptr describes the event in terms of its memory characteristics
   /// such as how many bytes are read or written.
-  Event(size_t event_id, unsigned thread_id, const MemoryAddr& addr,
+  Event(size_t event_id, unsigned thread_id, const Tag& tag,
     bool is_read, const Type* const type_ptr,
     const std::shared_ptr<ReadInstr<bool>>& condition_ptr = nullptr) :
-    m_event_id(event_id), m_addr(addr), m_thread_id(thread_id),
+    m_event_id(event_id), m_tag(tag), m_thread_id(thread_id),
     m_is_read(is_read), m_type_ptr(type_ptr), m_condition_ptr(condition_ptr) {
 
     assert(type_ptr != nullptr);
@@ -108,7 +108,7 @@ public:
 
   size_t event_id() const { return m_event_id; }
   unsigned thread_id() const { return m_thread_id; }
-  const MemoryAddr& addr() const { return m_addr; }
+  const Tag& tag() const { return m_tag; }
   bool is_read() const { return m_is_read; }
   bool is_write() const { return !m_is_read; }
   const Type& type() const { return *m_type_ptr; }
@@ -134,7 +134,7 @@ public:
 #define DECL_CONSTANT_ENCODER_FN \
   z3::expr constant(Z3& helper) const;
 
-/// Event that writes `sizeof(T)` bytes to memory
+/// Event that writes to memory through a variable of type `T`
 template<typename T>
 class WriteEvent : public Event {
 private:
@@ -142,10 +142,10 @@ private:
   const std::unique_ptr<ReadInstr<T>> m_instr_ptr;
 
 protected:
-  WriteEvent(unsigned thread_id, const MemoryAddr& addr,
+  WriteEvent(unsigned thread_id, const Tag& tag,
     std::unique_ptr<ReadInstr<T>> instr_ptr,
     const std::shared_ptr<ReadInstr<bool>>& condition_ptr = nullptr) :
-    Event(thread_id, addr, false, &TypeInfo<T>::s_type, condition_ptr),
+    Event(thread_id, tag, false, &TypeInfo<T>::s_type, condition_ptr),
     m_instr_ptr(std::move(instr_ptr)) {
 
     assert(nullptr != m_instr_ptr);
@@ -157,17 +157,17 @@ public:
   const ReadInstr<T>& instr_ref() const { return *m_instr_ptr; }
 };
 
-/// Memory write without another address load required
+/// Direct memory write event
 
 /// If T is an array type, a direct write event has the effect of initializing
 /// every array element to the expression given by WriteEvent<T>::instr_ref().
 template<typename T>
 class DirectWriteEvent : public WriteEvent<T> {
 public:
-  DirectWriteEvent(unsigned thread_id, const MemoryAddr& addr,
+  DirectWriteEvent(unsigned thread_id, const Tag& tag,
     std::unique_ptr<ReadInstr<T>> instr_ptr,
     const std::shared_ptr<ReadInstr<bool>>& condition_ptr = nullptr) :
-    WriteEvent<T>(thread_id, addr, std::move(instr_ptr), condition_ptr) {}
+    WriteEvent<T>(thread_id, tag, std::move(instr_ptr), condition_ptr) {}
 
   ~DirectWriteEvent() {}
 
@@ -177,7 +177,7 @@ public:
 
 template<typename T, typename U> class DerefReadInstr;
 
-/// Memory write that depends on an address load
+/// Memory write that requires a memory load instruction
 template<typename T, typename U, size_t N>
 class IndirectWriteEvent : public WriteEvent<T> {
 private:
@@ -185,11 +185,11 @@ private:
   const std::unique_ptr<DerefReadInstr<T[N], U>> m_deref_instr_ptr;
 
 public:
-  IndirectWriteEvent(unsigned thread_id, const MemoryAddr& addr,
+  IndirectWriteEvent(unsigned thread_id, const Tag& tag,
     std::unique_ptr<DerefReadInstr<T[N], U>> deref_instr_ptr,
     std::unique_ptr<ReadInstr<T>> instr_ptr,
     const std::shared_ptr<ReadInstr<bool>>& condition_ptr = nullptr) :
-    WriteEvent<T>(thread_id, addr, std::move(instr_ptr), condition_ptr), 
+    WriteEvent<T>(thread_id, tag, std::move(instr_ptr), condition_ptr), 
     m_deref_instr_ptr(std::move(deref_instr_ptr)) {
 
     assert(nullptr != m_deref_instr_ptr);
@@ -211,16 +211,16 @@ class ReadEvent : public Event {
 private:
   template<typename U>
   friend std::unique_ptr<ReadEvent<U>> internal_make_read_event(
-    const MemoryAddr& addr, size_t event_id);
+    const Tag& tag, size_t event_id);
 
-  ReadEvent(size_t event_id, unsigned thread_id, const MemoryAddr& addr,
+  ReadEvent(size_t event_id, unsigned thread_id, const Tag& tag,
     const std::shared_ptr<ReadInstr<bool>>& condition_ptr = nullptr) :
-    Event(event_id, thread_id, addr, true, &TypeInfo<T>::s_type, condition_ptr) {}
+    Event(event_id, thread_id, tag, true, &TypeInfo<T>::s_type, condition_ptr) {}
 
 public:
-  ReadEvent(unsigned thread_id, const MemoryAddr& addr,
+  ReadEvent(unsigned thread_id, const Tag& tag,
     const std::shared_ptr<ReadInstr<bool>>& condition_ptr = nullptr) :
-    Event(thread_id, addr, true, &TypeInfo<T>::s_type, condition_ptr) {}
+    Event(thread_id, tag, true, &TypeInfo<T>::s_type, condition_ptr) {}
 
   ~ReadEvent() {}
 
@@ -237,30 +237,28 @@ private:
   DECL_CONSTANT_ENCODER_FN
 
 protected:
-  static MemoryAddr make_addr() { return MemoryAddr::alloc<Sync>(true); }
-
-  SyncEvent(unsigned thread_id, const MemoryAddr& addr, bool receive,
+  SyncEvent(unsigned thread_id, const Tag& tag, bool receive,
     const std::shared_ptr<ReadInstr<bool>>& condition_ptr = nullptr) :
-    Event(thread_id, addr, receive, &TypeInfo<Sync>::s_type, condition_ptr) {}
+    Event(thread_id, tag, receive, &TypeInfo<Sync>::s_type, condition_ptr) {}
 };
 
 /// \internal Write event for thread synchronization
 
-/// Synchronization occurs through a unique \ref Event::addr() "memory address".
+/// Synchronization occurs through a unique \ref Event::tag() "tag atom".
 class SendEvent : public SyncEvent {
 public:
   SendEvent(unsigned thread_id,
     const std::shared_ptr<ReadInstr<bool>>& condition_ptr = nullptr) :
-    SyncEvent(thread_id, make_addr(), false, condition_ptr) {}
+    SyncEvent(thread_id, Tag::unique_atom(), false, condition_ptr) {}
 };
 
 /// \internal Read event for thread synchronization
 class ReceiveEvent : public SyncEvent {
 public:
-  /// Event that reads from the given address, preferably SendEvent::addr().
-  ReceiveEvent(unsigned thread_id, const MemoryAddr& addr,
+  /// Event that reads from the given tag, preferably SendEvent::tag()
+  ReceiveEvent(unsigned thread_id, const Tag& tag,
     const std::shared_ptr<ReadInstr<bool>>& condition_ptr = nullptr) :
-    SyncEvent(thread_id, addr, true, condition_ptr) {}
+    SyncEvent(thread_id, tag, true, condition_ptr) {}
 };
 
 }

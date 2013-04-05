@@ -111,84 +111,80 @@ public:
   }
 };
 
-/// \internal SingletonMemoryAddr::ptrs().size() is always exactly one
-class SingletonMemoryAddr : public MemoryAddr {
-  friend class SingletonMemoryAddrHash;
-  template<typename T> friend class MemoryAddrRelation;
+/// \internal Atom in the Tag lattice
+class TagAtom : public Tag {
+  friend class TagAtomHash;
+  template<typename T> friend class TagRelation;
 
-  SingletonMemoryAddr(uintptr_t ptr, bool is_shared) :
-    MemoryAddr({ ptr }, is_shared) {}
+  TagAtom(uintptr_t atom) : Tag(atom) {}
 };
 
-/// \internal Hash a SingletonMemoryAddr
-struct SingletonMemoryAddrHash {
-  size_t operator()(const se::SingletonMemoryAddr& addr) const  {
-    return *(addr.ptrs().cbegin());
+/// \internal Hash value of a TagAtom
+struct TagAtomHash {
+  size_t operator()(const se::TagAtom& tag_atom) const  {
+    return *(tag_atom.atoms().cbegin());
   }
 };
 
-typedef std::unordered_set<SingletonMemoryAddr, SingletonMemoryAddrHash> MemoryAddrSet;
+typedef std::unordered_set<TagAtom, TagAtomHash> TagAtomSet;
 
 template<typename T = Event>
-class MemoryAddrRelation {
+class TagRelation {
 static_assert(std::is_base_of<Event, T>::value, "T must be a subclass of Event");
 
 private:
   std::unordered_set<std::shared_ptr<T>> m_event_ptrs;
   Relation<uintptr_t, std::shared_ptr<T>> m_relation;
-
-  // Each memory address is guaranteed to have only one pointer
-  MemoryAddrSet m_addrs;
+  TagAtomSet m_tag_atoms;
 
 public:
-  MemoryAddrRelation() : m_event_ptrs(), m_relation(), m_addrs() {}
+  TagRelation() : m_event_ptrs(), m_relation(), m_tag_atoms() {}
 
   /// Clears contents
   void clear() {
     m_event_ptrs.clear();
-    m_addrs.clear();
+    m_tag_atoms.clear();
     m_relation.clear();
   }
 
-  /// All those events which were passed to relate()
+  /// All those events that were passed to relate(const std::shared_ptr<T>&)
   const std::unordered_set<std::shared_ptr<T>>& event_ptrs() const {
     return m_event_ptrs;
   }
 
-  /// Set of related but opaque memory addresses
-  const MemoryAddrSet addrs() const { return m_addrs; }
+  const TagAtomSet tag_atoms() const { return m_tag_atoms; }
 
   void relate(const std::shared_ptr<T>& event_ptr) {
+    assert(!event_ptr->tag().is_bottom());
+
     m_event_ptrs.insert(event_ptr);
 
-    const bool is_shared = event_ptr->addr().is_shared();
-    for (uintptr_t ptr : event_ptr->addr().ptrs()) {
-      m_addrs.insert(SingletonMemoryAddr(ptr, is_shared));
-      m_relation.add(ptr, event_ptr);
+    for (uintptr_t atom : event_ptr->tag().atoms()) {
+      m_tag_atoms.insert(TagAtom(atom));
+      m_relation.add(atom, event_ptr);
     }
   }
 
-  std::unordered_set<std::shared_ptr<T>> find(const MemoryAddr& addr,
+  std::unordered_set<std::shared_ptr<T>> find(const Tag& tag,
     const Predicate<std::shared_ptr<T>>& predicate) const {
 
     std::unordered_set<std::shared_ptr<T>> result;
-    for (uintptr_t ptr : addr.ptrs()) {
-      m_relation.find(ptr, predicate, result);
+    for (uintptr_t atom : tag.atoms()) {
+      m_relation.find(atom, predicate, result);
     }
     return result;
   }
 
-  /// Finds all read/write events that are associated with the given address
+  /// Finds all read/write events that are associated with the given tag
   std::pair<std::unordered_set<std::shared_ptr<T>>,
-    std::unordered_set<std::shared_ptr<T>>>
-  partition(const MemoryAddr& addr) const {
+    std::unordered_set<std::shared_ptr<T>>> partition(const Tag& tag) const {
 
     typedef std::unordered_set<std::shared_ptr<T>> EventPtrSet;
     std::pair<EventPtrSet, EventPtrSet> result(std::make_pair(
       EventPtrSet(), EventPtrSet()));
 
-    for (uintptr_t ptr : addr.ptrs()) {
-      m_relation.partition(ptr, ReadEventPredicate::predicate(), result);
+    for (uintptr_t atom : tag.atoms()) {
+      m_relation.partition(atom, ReadEventPredicate::predicate(), result);
     }
 
     return result;

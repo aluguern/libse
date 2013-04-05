@@ -9,13 +9,13 @@ using namespace se;
 /// A read event on an integer in the main thread
 class TestEvent : public Event {
 public:
-  TestEvent(const MemoryAddr& addr,
+  TestEvent(const Tag& tag,
     const std::shared_ptr<ReadInstr<bool>>& condition_ptr = nullptr) :
-    Event(0, addr, true, &TypeInfo<int>::s_type, condition_ptr) {}
+    Event(0, tag, true, &TypeInfo<int>::s_type, condition_ptr) {}
 
-  TestEvent(unsigned thread_id, const MemoryAddr& addr,
+  TestEvent(unsigned thread_id, const Tag& tag,
     const std::shared_ptr<ReadInstr<bool>>& condition_ptr = nullptr) :
-        Event(thread_id, addr, true, &TypeInfo<int>::s_type, condition_ptr) {}
+        Event(thread_id, tag, true, &TypeInfo<int>::s_type, condition_ptr) {}
 
   z3::expr encode_eq(const Z3ValueEncoder& encoder, Z3& helper) const {
     return helper.constant(*this);
@@ -27,8 +27,8 @@ public:
 TEST(EventTest, EventId) {
   Event::reset_id(42);
 
-  const MemoryAddr addr = MemoryAddr::alloc<int>();
-  const TestEvent event(addr);
+  const Tag tag = Tag::unique_atom();
+  const TestEvent event(tag);
 
   EXPECT_EQ(2*42, event.event_id());
   Event::reset_id();
@@ -36,15 +36,15 @@ TEST(EventTest, EventId) {
 
 TEST(EventTest, ThreadId) {
   const unsigned thread_id = 3;
-  const MemoryAddr addr = MemoryAddr::alloc<int>();
-  const TestEvent event(thread_id, addr, nullptr);
+  const Tag tag = Tag::unique_atom();
+  const TestEvent event(thread_id, tag, nullptr);
   EXPECT_EQ(thread_id, event.thread_id());
 }
 
 TEST(EventTest, EventEquality) {
-  const MemoryAddr addr = MemoryAddr::alloc<int>();
-  const TestEvent event_a(addr);
-  const TestEvent event_b(addr);
+  const Tag tag = Tag::unique_atom();
+  const TestEvent event_a(tag);
+  const TestEvent event_b(tag);
 
   EXPECT_TRUE(event_a == event_a);
   EXPECT_FALSE(event_a == event_b);
@@ -52,8 +52,8 @@ TEST(EventTest, EventEquality) {
 }
 
 TEST(EventTest, UnconditionalEventConstructor) {
-  const MemoryAddr addr = MemoryAddr::alloc<int>();
-  const TestEvent event(addr);
+  const Tag tag = Tag::unique_atom();
+  const TestEvent event(tag);
   EXPECT_EQ(nullptr, event.condition_ptr());
 }
 
@@ -61,14 +61,14 @@ TEST(EventTest, ConditionalEventConstructor) {
   Event::reset_id();
 
   const unsigned thread_id = 3;
-  const MemoryAddr condition_addr = MemoryAddr::alloc<bool>();
+  const Tag condition_tag = Tag::unique_atom();
 
-  std::unique_ptr<ReadEvent<bool>> condition_event_ptr(new ReadEvent<bool>(thread_id, condition_addr));
+  std::unique_ptr<ReadEvent<bool>> condition_event_ptr(new ReadEvent<bool>(thread_id, condition_tag));
   const std::shared_ptr<ReadInstr<bool>> condition_ptr(
     new BasicReadInstr<bool>(std::move(condition_event_ptr)));
 
-  const MemoryAddr another_addr = MemoryAddr::alloc<int>();
-  const TestEvent another_event(another_addr, condition_ptr);
+  const Tag another_tag = Tag::unique_atom();
+  const TestEvent another_event(another_tag, condition_ptr);
 
   EXPECT_EQ(2*1, another_event.event_id());
   EXPECT_NE(nullptr, another_event.condition_ptr());
@@ -79,16 +79,16 @@ TEST(EventTest, WriteEventWithCondition) {
   Event::reset_id(5);
 
   const unsigned thread_id = 3;
-  const MemoryAddr condition_addr = MemoryAddr::alloc<bool>();
+  const Tag condition_tag = Tag::unique_atom();
 
-  std::unique_ptr<ReadEvent<bool>> condition_event_ptr(new ReadEvent<bool>(thread_id, condition_addr));
+  std::unique_ptr<ReadEvent<bool>> condition_event_ptr(new ReadEvent<bool>(thread_id, condition_tag));
   const std::shared_ptr<ReadInstr<bool>> condition_ptr(
     new BasicReadInstr<bool>(std::move(condition_event_ptr)));
 
   std::unique_ptr<ReadInstr<long>> read_instr_ptr(new LiteralReadInstr<long>(42L));
 
-  const MemoryAddr write_addr = MemoryAddr::alloc<long>();
-  const DirectWriteEvent<long> write_event(thread_id, write_addr, std::move(read_instr_ptr), condition_ptr);
+  const Tag write_tag = Tag::unique_atom();
+  const DirectWriteEvent<long> write_event(thread_id, write_tag, std::move(read_instr_ptr), condition_ptr);
   const LiteralReadInstr<long>& read_instr = dynamic_cast<const LiteralReadInstr<long>&>(write_event.instr_ref());
 
   EXPECT_TRUE(write_event.is_write());
@@ -106,8 +106,8 @@ TEST(EventTest, WriteEventWithoutCondition) {
   std::unique_ptr<ReadInstr<long>> read_instr_ptr(new LiteralReadInstr<long>(42L));
 
   const unsigned thread_id = 3;
-  const MemoryAddr write_addr = MemoryAddr::alloc<long>();
-  const DirectWriteEvent<long> write_event(thread_id, write_addr, std::move(read_instr_ptr));
+  const Tag write_tag = Tag::unique_atom();
+  const DirectWriteEvent<long> write_event(thread_id, write_tag, std::move(read_instr_ptr));
   const LiteralReadInstr<long>& read_instr = dynamic_cast<const LiteralReadInstr<long>&>(write_event.instr_ref());
 
   EXPECT_TRUE(write_event.is_write());
@@ -123,9 +123,9 @@ TEST(EventTest, WriteEventWithoutInstr) {
   ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
   const unsigned thread_id = 3;
-  const MemoryAddr write_addr = MemoryAddr::alloc<long>();
+  const Tag write_tag = Tag::unique_atom();
 
-  EXPECT_EXIT((DirectWriteEvent<long>(thread_id, write_addr, nullptr)),
+  EXPECT_EXIT((DirectWriteEvent<long>(thread_id, write_tag, nullptr)),
     ::testing::KilledBySignal(SIGABRT), "Assertion");
 }
 
@@ -133,14 +133,14 @@ TEST(EventTest, ReadEventWithCondition) {
   Event::reset_id(5);
 
   const unsigned thread_id = 3;
-  const MemoryAddr condition_addr = MemoryAddr::alloc<bool>();
+  const Tag condition_tag = Tag::unique_atom();
 
-  std::unique_ptr<ReadEvent<bool>> condition_event_ptr(new ReadEvent<bool>(thread_id, condition_addr));
+  std::unique_ptr<ReadEvent<bool>> condition_event_ptr(new ReadEvent<bool>(thread_id, condition_tag));
   const std::shared_ptr<ReadInstr<bool>> condition_ptr(
     new BasicReadInstr<bool>(std::move(condition_event_ptr)));
 
-  const MemoryAddr another_addr = MemoryAddr::alloc<int>();
-  const ReadEvent<int> another_event(thread_id, another_addr, condition_ptr);
+  const Tag another_tag = Tag::unique_atom();
+  const ReadEvent<int> another_event(thread_id, another_tag, condition_ptr);
 
   EXPECT_FALSE(another_event.is_write());
   EXPECT_TRUE(another_event.is_read());
@@ -154,8 +154,8 @@ TEST(EventTest, ReadEventWithoutCondition) {
   Event::reset_id(5);
 
   const unsigned thread_id = 3;
-  const MemoryAddr another_addr = MemoryAddr::alloc<int>();
-  const ReadEvent<int> another_event(thread_id, another_addr);
+  const Tag another_tag = Tag::unique_atom();
+  const ReadEvent<int> another_event(thread_id, another_tag);
 
   EXPECT_FALSE(another_event.is_write());
   EXPECT_TRUE(another_event.is_read());

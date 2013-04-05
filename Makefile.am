@@ -65,7 +65,7 @@ lib_LTLIBRARIES = lib/libse.la
 
 lib_libse_la_SOURCES = \
   src/core/op.cpp \
-  src/concurrent/memory.cpp \
+  src/concurrent/tag.cpp \
   src/concurrent/event.cpp \
   src/concurrent/encoder.cpp \
   src/concurrent/recorder.cpp \
@@ -77,7 +77,7 @@ pkginclude_HEADERS = \
   include/core/op.h \
   include/core/eval.h \
   include/core/type.h \
-  include/concurrent/memory.h \
+  include/concurrent/tag.h \
   include/concurrent/event.h \
   include/concurrent/instr.h \
   include/concurrent/block.h \
@@ -117,7 +117,7 @@ test_se_SOURCES = \
   test/core/op_test.cpp \
   test/core/eval_test.cpp \
   test/core/type_test.cpp \
-  test/concurrent/memory_test.cpp \
+  test/concurrent/tag_test.cpp \
   test/concurrent/event_test.cpp \
   test/concurrent/instr_test.cpp \
   test/concurrent/block_test.cpp \

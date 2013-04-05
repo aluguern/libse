@@ -29,12 +29,13 @@ TEST(ConcurrentFunctionalTest, LocalArray) {
 
   std::stringstream out;
   out << z3.solver;
-  EXPECT_EQ("(solver\n  (not (= (select k!3 #x0000000000000002) #x5a))\n"
-            "  (= k!1 ((as const (Array (_ BitVec 64) (_ BitVec 8))) #x00))\n"
-            "  (= k!3 (store k!1 #x0000000000000002 #x5a))\n"
-            "  true\n  (> k!5 0)\n  (< epoch_clock k!5))", out.str());
+  EXPECT_EQ("(solver\n  (= k!5 ((as const (Array (_ BitVec 64) (_ BitVec 8))) #x00))\n"
+            "  (= k!7 (store k!5 #x0000000000000002 #x5a))\n"
+            "  true\n  (> k!2 0)\n  (< epoch_clock k!2)\n"
+            "  (> k!9 0)\n  (< k!2 k!9))", out.str());
 
-  EXPECT_EQ(z3::unsat, z3.solver.check());
+  // error condition has not been added yet
+  EXPECT_EQ(z3::sat, z3.solver.check());
 
   Threads::end_main_thread(z3);
   EXPECT_EQ(z3::unsat, z3.solver.check());
@@ -681,6 +682,160 @@ TEST(ConcurrentFunctionalTest, LocalScalarAndSharedArray) {
   EXPECT_EQ(z3::unsat, z3.solver.check());
 
   z3.solver.pop();
+}
+
+TEST(ConcurrentFunctionalTest, SharedArrayWithSymbolicIndex) {
+  Z3 z3;
+
+  Threads::reset();
+  Threads::begin_main_thread();
+
+  SharedVar<char[3]> xs;
+  SharedVar<size_t> index = 1;
+  LocalVar<char> a;
+
+  xs[index] = 'Y';
+ 
+  index = index + static_cast<size_t>(1);
+  xs[index] = 'Z';
+
+  a = xs[0];
+  std::unique_ptr<ReadInstr<bool>> c0(a == 'Z');
+  std::unique_ptr<ReadInstr<bool>> c1(!(a == 'Z'));
+
+  a = xs[1];
+  std::unique_ptr<ReadInstr<bool>> c2(a == 'Z');
+  std::unique_ptr<ReadInstr<bool>> c3(!(a == 'Z'));
+
+  a = xs[2];
+  std::unique_ptr<ReadInstr<bool>> c4(a == 'Z');
+  std::unique_ptr<ReadInstr<bool>> c5(!(a == 'Z'));
+
+  a = xs[index];
+  std::unique_ptr<ReadInstr<bool>> c6(a == 'Z');
+  std::unique_ptr<ReadInstr<bool>> c7(!(a == 'Z'));
+
+  // no overflow yet
+  index = index + static_cast<size_t>(1);
+  a = xs[index];
+  std::unique_ptr<ReadInstr<bool>> c8(a == 'Z');
+  std::unique_ptr<ReadInstr<bool>> c9(!(a == 'Z'));
+
+  Threads::end_main_thread(z3);
+
+  EXPECT_EQ(z3::sat, z3.solver.check());
+
+  z3.solver.push();
+
+  Threads::internal_error(std::move(c0), z3);
+  EXPECT_EQ(z3::unsat, z3.solver.check());
+
+  z3.solver.pop();
+
+  z3.solver.push();
+
+  Threads::internal_error(std::move(c1), z3);
+  EXPECT_EQ(z3::sat, z3.solver.check());
+
+  z3.solver.pop();
+
+  z3.solver.push();
+
+  Threads::internal_error(std::move(c2), z3);
+  EXPECT_EQ(z3::unsat, z3.solver.check());
+
+  z3.solver.pop();
+
+  z3.solver.push();
+
+  Threads::internal_error(std::move(c3), z3);
+  EXPECT_EQ(z3::sat, z3.solver.check());
+
+  z3.solver.pop();
+
+  z3.solver.push();
+
+  Threads::internal_error(std::move(c4), z3);
+  EXPECT_EQ(z3::sat, z3.solver.check());
+
+  z3.solver.pop();
+
+  z3.solver.push();
+
+  Threads::internal_error(std::move(c5), z3);
+  EXPECT_EQ(z3::unsat, z3.solver.check());
+
+  z3.solver.pop();
+
+  z3.solver.push();
+
+  Threads::internal_error(std::move(c6), z3);
+  EXPECT_EQ(z3::sat, z3.solver.check());
+
+  z3.solver.pop();
+
+  z3.solver.push();
+
+  Threads::internal_error(std::move(c7), z3);
+  EXPECT_EQ(z3::unsat, z3.solver.check());
+
+  z3.solver.pop();
+
+  z3.solver.push();
+
+  Threads::internal_error(std::move(c8), z3);
+  EXPECT_EQ(z3::unsat, z3.solver.check());
+
+  z3.solver.pop();
+
+  z3.solver.push();
+
+  Threads::internal_error(std::move(c9), z3);
+  EXPECT_EQ(z3::sat, z3.solver.check());
+
+  z3.solver.pop();
+}
+
+TEST(ConcurrentFunctionalTest, MultipleWritesToSharedArrayLocationsInSingleThreadButLiteralIndex) {
+  Z3 z3;
+
+  Threads::reset();
+  Threads::begin_main_thread();
+
+  SharedVar<char[3]> xs;
+  LocalVar<char> v;
+
+  xs[0] = 'A';
+  xs[1] = 'B';
+
+  v = xs[1];
+
+  se::Threads::error(!('B' == v), z3);
+  Threads::end_main_thread(z3);
+  EXPECT_EQ(z3::unsat, z3.solver.check());
+}
+
+TEST(ConcurrentFunctionalTest, MultipleWritesToSharedArrayInSingleThreadAndVariableIndex) {
+  Z3 z3;
+
+  Threads::reset();
+  Threads::begin_main_thread();
+
+  SharedVar<char[3]> xs;
+  LocalVar<char> v;
+  SharedVar<size_t> index;
+
+  index = 0;
+  xs[index] = 'A';
+
+  index = index + static_cast<size_t>(1);
+  xs[index] = 'B';
+
+  v = xs[index];
+
+  se::Threads::error(!('B' == v), z3);
+  Threads::end_main_thread(z3);
+  EXPECT_EQ(z3::unsat, z3.solver.check());
 }
 
 TEST(ConcurrentFunctionalTest, SatJoinPathsInSingleThreadWithNondetermisticConditionAndArraySharedVar) {

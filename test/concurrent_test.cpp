@@ -1,7 +1,7 @@
 #include "gtest/gtest.h"
 
 #include "concurrent.h"
-#include "concurrent/memory.h"
+#include "concurrent/tag.h"
 
 using namespace se;
 
@@ -33,8 +33,8 @@ TEST(ConcurrencyTest, AllocLiteralReadInstrWithCondition) {
   Threads::begin_main_thread();
 
   const unsigned thread_id = ThisThread::thread_id();
-  const MemoryAddr addr = MemoryAddr::alloc<char>();
-  std::unique_ptr<ReadEvent<char>> event_ptr(new ReadEvent<char>(thread_id, addr));
+  const Tag tag = Tag::unique_atom();
+  std::unique_ptr<ReadEvent<char>> event_ptr(new ReadEvent<char>(thread_id, tag));
   std::unique_ptr<ReadInstr<char>> basic_read_instr_ptr(new BasicReadInstr<char>(std::move(event_ptr)));
 
   ThisThread::recorder().begin_then(3L < std::move(basic_read_instr_ptr));
@@ -60,14 +60,14 @@ TEST(ConcurrencyTest, UnaryOperatorNOTWithCondition) {
   Threads::begin_main_thread();
 
   const unsigned thread_id = ThisThread::thread_id();
-  const MemoryAddr condition_addr = MemoryAddr::alloc<bool>();
+  const Tag condition_tag = Tag::unique_atom();
 
-  std::unique_ptr<ReadEvent<bool>> condition_event_ptr(new ReadEvent<bool>(thread_id, condition_addr));
+  std::unique_ptr<ReadEvent<bool>> condition_event_ptr(new ReadEvent<bool>(thread_id, condition_tag));
   const std::shared_ptr<ReadInstr<bool>> condition(
     new BasicReadInstr<bool>(std::move(condition_event_ptr)));
 
-  const MemoryAddr addr = MemoryAddr::alloc<int>();
-  std::unique_ptr<ReadEvent<int>> event_ptr(new ReadEvent<int>(thread_id, addr, condition));
+  const Tag tag = Tag::unique_atom();
+  std::unique_ptr<ReadEvent<int>> event_ptr(new ReadEvent<int>(thread_id, tag, condition));
   std::unique_ptr<ReadInstr<int>> basic_read_instr(new BasicReadInstr<int>(std::move(event_ptr)));
   std::unique_ptr<ReadInstr<bool>> instr_ptr(! std::move(basic_read_instr));
 
@@ -82,12 +82,12 @@ TEST(ConcurrencyTest, BinaryOperatorLSSWithoutCondition) {
   Threads::begin_main_thread();
 
   const unsigned thread_id = ThisThread::thread_id();
-  const MemoryAddr addr = MemoryAddr::alloc<int>();
+  const Tag tag = Tag::unique_atom();
 
-  std::unique_ptr<ReadEvent<int>> event_ptr_a(new ReadEvent<int>(thread_id, addr));
+  std::unique_ptr<ReadEvent<int>> event_ptr_a(new ReadEvent<int>(thread_id, tag));
   std::unique_ptr<ReadInstr<int>> basic_read_instr_ptr_a(new BasicReadInstr<int>(std::move(event_ptr_a)));
 
-  std::unique_ptr<ReadEvent<int>> event_ptr_b(new ReadEvent<int>(thread_id, addr));
+  std::unique_ptr<ReadEvent<int>> event_ptr_b(new ReadEvent<int>(thread_id, tag));
   std::unique_ptr<ReadInstr<int>> basic_read_instr_ptr_b(new BasicReadInstr<int>(std::move(event_ptr_b)));
 
   std::unique_ptr<ReadInstr<bool>> instr_ptr(std::move(basic_read_instr_ptr_a) < std::move(basic_read_instr_ptr_b));
@@ -111,17 +111,17 @@ TEST(ConcurrencyTest, BinaryOperatorADDWithCondition) {
   Threads::begin_main_thread();
 
   const unsigned thread_id = ThisThread::thread_id();
-  const MemoryAddr condition_addr = MemoryAddr::alloc<bool>();
+  const Tag condition_tag = Tag::unique_atom();
 
-  std::unique_ptr<ReadEvent<bool>> condition_event_ptr(new ReadEvent<bool>(thread_id, condition_addr));
+  std::unique_ptr<ReadEvent<bool>> condition_event_ptr(new ReadEvent<bool>(thread_id, condition_tag));
   const std::shared_ptr<ReadInstr<bool>> condition(
     new BasicReadInstr<bool>(std::move(condition_event_ptr)));
 
-  const MemoryAddr addr_a = MemoryAddr::alloc<int>();
-  const MemoryAddr addr_b = MemoryAddr::alloc<long>();
+  const Tag tag_a = Tag::unique_atom();
+  const Tag tag_b = Tag::unique_atom();
 
-  std::unique_ptr<ReadEvent<int>> event_ptr_a(new ReadEvent<int>(thread_id, addr_a, condition));
-  std::unique_ptr<ReadEvent<long>> event_ptr_b(new ReadEvent<long>(thread_id, addr_b, condition));
+  std::unique_ptr<ReadEvent<int>> event_ptr_a(new ReadEvent<int>(thread_id, tag_a, condition));
+  std::unique_ptr<ReadEvent<long>> event_ptr_b(new ReadEvent<long>(thread_id, tag_b, condition));
 
   std::unique_ptr<ReadInstr<int>> basic_read_instr_a(new BasicReadInstr<int>(std::move(event_ptr_a)));
   std::unique_ptr<ReadInstr<long>> instr_ptr(std::move(basic_read_instr_a) /* explicit move */ +
@@ -145,8 +145,8 @@ TEST(ConcurrencyTest, BinaryOperatorLSSReadInstrPointerLiteralWithoutCondition) 
   Threads::begin_main_thread();
 
   const unsigned thread_id = ThisThread::thread_id();
-  const MemoryAddr addr = MemoryAddr::alloc<int>();
-  std::unique_ptr<ReadEvent<int>> event_ptr(new ReadEvent<int>(thread_id, addr));
+  const Tag tag = Tag::unique_atom();
+  std::unique_ptr<ReadEvent<int>> event_ptr(new ReadEvent<int>(thread_id, tag));
   std::unique_ptr<ReadInstr<int>> basic_read_instr_ptr(new BasicReadInstr<int>(std::move(event_ptr)));
 
   std::unique_ptr<ReadInstr<bool>> lss_instr_ptr(std::move(basic_read_instr_ptr) < 3);
@@ -169,8 +169,8 @@ TEST(ConcurrencyTest, BinaryOperatorLSSLiteralReadInstrPointerWithoutCondition) 
   Threads::begin_main_thread();
 
   const unsigned thread_id = ThisThread::thread_id();
-  const MemoryAddr addr = MemoryAddr::alloc<int>();
-  std::unique_ptr<ReadEvent<int>> event_ptr(new ReadEvent<int>(thread_id, addr));
+  const Tag tag = Tag::unique_atom();
+  std::unique_ptr<ReadEvent<int>> event_ptr(new ReadEvent<int>(thread_id, tag));
   std::unique_ptr<ReadInstr<int>> basic_read_instr_ptr(new BasicReadInstr<int>(std::move(event_ptr)));
 
   std::unique_ptr<ReadInstr<bool>> lss_instr_ptr(3 < std::move(basic_read_instr_ptr));
@@ -224,7 +224,7 @@ TEST(ConcurrencyTest, LocalVarScalarAssignmentWithoutCondition) {
   const size_t new_write_event_id = 2*8+1;
 
   EXPECT_EQ(5, read_instr.literal());
-  EXPECT_FALSE(var.addr().is_shared());
+  EXPECT_TRUE(var.tag().is_bottom());
   EXPECT_EQ(new_write_event_id, var.direct_write_event_ref().event_id());
   EXPECT_EQ(new_write_event_id, var.read_event_ptr()->event_id());
 }
@@ -392,7 +392,7 @@ TEST(ConcurrencyTest, SharedVarScalarAssignmentWithoutCondition) {
   const LiteralReadInstr<short>& read_instr = dynamic_cast<const LiteralReadInstr<short>&>(var.direct_write_event_ref().instr_ref());
 
   EXPECT_EQ(5, read_instr.literal());
-  EXPECT_TRUE(var.addr().is_shared());
+  EXPECT_FALSE(var.tag().is_bottom());
   EXPECT_EQ(2*8+1, var.direct_write_event_ref().event_id());
 }
 
@@ -516,23 +516,36 @@ TEST(ConcurrencyTest, OverwriteSharedVarArrayElementWithVar) {
   EXPECT_EQ(2*15, read_instr.event_ptr()->event_id());
 }
 
-
-TEST(ConcurrencyTest, LocalArrayMemoryAddr) {
+TEST(ConcurrencyTest, LocalArrayOffsetTag) {
   Threads::reset();
   Threads::begin_main_thread();
 
   LocalVar<long long[3]> a;
-  EXPECT_EQ(a[0].addr(), a.base_addr());
-  EXPECT_EQ(a[1].addr(), a.base_addr() + 1 * sizeof(long long));
-  EXPECT_EQ(a[2].addr(), a.base_addr() + 2 * sizeof(long long));
+  EXPECT_EQ(a[0].tag(), a.tag());
+  EXPECT_EQ(a[1].tag(), a.tag());
+  EXPECT_EQ(a[2].tag(), a.tag());
 }
 
-TEST(ConcurrencyTest, SharedArrayMemoryAddr) {
+TEST(ConcurrencyTest, SharedArrayOffsetTag) {
   Threads::reset();
   Threads::begin_main_thread();
 
   SharedVar<long[3]> a;
-  EXPECT_EQ(a[0].addr(), a.base_addr());
-  EXPECT_EQ(a[1].addr(), a.base_addr() + 1 * sizeof(long));
-  EXPECT_EQ(a[2].addr(), a.base_addr() + 2 * sizeof(long));
+  EXPECT_EQ(a[0].tag(), a.tag());
+  EXPECT_EQ(a[1].tag(), a.tag());
+  EXPECT_EQ(a[2].tag(), a.tag());
+}
+
+TEST(ConcurrencyTest, SharedArrayTag) {
+  Threads::reset();
+  Threads::begin_main_thread();
+
+  SharedVar<long[3]> a;
+
+  EXPECT_FALSE(a[0].tag().meet(a.tag()).is_bottom());
+  EXPECT_FALSE(a[1].tag().meet(a.tag()).is_bottom());
+  EXPECT_FALSE(a[2].tag().meet(a.tag()).is_bottom());
+
+  EXPECT_FALSE(a[0].tag().meet(a[1].tag()).is_bottom());
+  EXPECT_FALSE(a[1].tag().meet(a[2].tag()).is_bottom());
 }

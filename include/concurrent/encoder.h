@@ -310,22 +310,22 @@ private:
 public:
   Z3OrderEncoder() : m_read_encoder() {}
 
-  z3::expr rfe_encode(const MemoryAddrRelation<Event>& relation, Z3& z3) const {
+  z3::expr rfe_encode(const TagRelation<Event>& relation, Z3& z3) const {
     z3::expr rfe_expr(z3.context.bool_val(true));
     for (const EventPtr& x_ptr : /* read events */ relation.event_ptrs()) {
-      if (x_ptr->is_write() || !x_ptr->addr().is_shared()) { continue; }
-
+      if (x_ptr->is_write()) { continue; }
       const Event& read_event = *x_ptr;
+
+      assert(!read_event.tag().is_bottom());
       const z3::expr read_event_condition(event_condition(read_event, z3));
 
       z3::expr wr_schedules(z3.context.bool_val(false));
       for (const EventPtr& y_ptr : /* write events */ relation.event_ptrs()) {
         if (y_ptr->is_read()) { continue; }
-
         const Event& write_event = *y_ptr;
 
-        if (read_event.addr().meet(write_event.addr()).is_bottom()) { continue; }
-        assert(write_event.addr().is_shared());
+        assert(!write_event.tag().is_bottom());
+        if (read_event.tag().meet(write_event.tag()).is_bottom()) { continue; }
 
         const z3::expr wr_order(z3.clock(write_event) < z3.clock(read_event));
         const z3::expr wr_schedule(z3.constant(write_event, read_event));
@@ -343,23 +343,25 @@ public:
     return rfe_expr;
   }
 
-  z3::expr ws_encode(const MemoryAddrRelation<Event>& relation, Z3& z3) const {
-    const MemoryAddrSet& addrs = relation.addrs();
+  z3::expr ws_encode(const TagRelation<Event>& relation, Z3& z3) const {
+    const TagAtomSet& tag_atoms = relation.tag_atoms();
 
     z3::expr ws_expr(z3.context.bool_val(true));
-    for (const MemoryAddr& addr : addrs) {
-      const EventPtrSet write_event_ptrs = relation.find(addr,
+    for (const Tag& tag : tag_atoms) {
+      const EventPtrSet write_event_ptrs = relation.find(tag,
         WriteEventPredicate::predicate());
       for (const EventPtr& write_event_ptr_x : write_event_ptrs) {
-        if (!write_event_ptr_x->addr().is_shared()) { continue; }
-
         for (const EventPtr& write_event_ptr_y : write_event_ptrs) {
-          if (!write_event_ptr_y->addr().is_shared()) { continue; }
+          if (write_event_ptr_x == write_event_ptr_y) { continue; }
 
           const Event& x = *write_event_ptr_x;
           const Event& y = *write_event_ptr_y;
 
-          if (x == y || x.event_id() > y.event_id()) { continue; }
+          assert(!x.tag().is_bottom());
+          assert(!y.tag().is_bottom());
+
+          // Already built inequalities?
+          if (x.event_id() > y.event_id()) { continue; }
 
           const z3::expr xy_order(z3.clock(x) < z3.clock(y));
           const z3::expr yx_order(z3.clock(y) < z3.clock(x));
@@ -375,29 +377,30 @@ public:
     return ws_expr;
   }
 
-  z3::expr fr_encode(const MemoryAddrRelation<Event>& relation, Z3& z3) const {
-    const MemoryAddrSet& addrs = relation.addrs();
+  z3::expr fr_encode(const TagRelation<Event>& relation, Z3& z3) const {
+    const TagAtomSet& tag_atoms = relation.tag_atoms();
 
     z3::expr fr_expr(z3.context.bool_val(true));
-    for (const MemoryAddr& addr : addrs) {
+    for (const Tag& tag : tag_atoms) {
       const std::pair<EventPtrSet, EventPtrSet> result =
-        relation.partition(addr);
+        relation.partition(tag);
       const EventPtrSet& read_event_ptrs = result.first;
       const EventPtrSet& write_event_ptrs = result.second;
 
       for (const EventPtr& write_event_ptr_x : write_event_ptrs) {
-        if (!write_event_ptr_x->addr().is_shared()) { continue; }
-
         for (const EventPtr& write_event_ptr_y : write_event_ptrs) {
-          if (!write_event_ptr_y->addr().is_shared()) { continue; }
+          if (write_event_ptr_x == write_event_ptr_y) { continue; }
 
           const Event& write_event_x = *write_event_ptr_x;
           const Event& write_event_y = *write_event_ptr_y;
 
-          if (write_event_x == write_event_y) { continue; }
+          assert(!write_event_x.tag().is_bottom());
+          assert(!write_event_y.tag().is_bottom());
 
           for (const EventPtr& read_event_ptr : read_event_ptrs) {
             const Event& read_event = *read_event_ptr;
+
+            assert(!read_event.tag().is_bottom());
 
             const z3::expr xr_schedule(z3.constant(write_event_x, read_event));
             const z3::expr xy_order(z3.clock(write_event_x) < z3.clock(write_event_y));
@@ -428,7 +431,7 @@ public:
              body.cbegin()); iter != body.cend(); iter++) {
 
         const Event& body_event = **iter;
-        if (!body_event.addr().is_shared()) { continue; }
+        if (body_event.tag().is_bottom()) { continue; }
 
         z3::expr next_body_clock(z3.clock(body_event));
         z3.solver.add(body_clock < next_body_clock);
