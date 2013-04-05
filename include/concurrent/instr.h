@@ -210,6 +210,53 @@ public:
   DECL_READ_ENCODER_FN
 };
 
+/// Commutative monoid read instruction
+
+/// The operator `op` must have an identity element and be associative and
+/// commutative, i.e. `op` is a commutative monoid. For example, the logical
+/// operator \ref LAND satisfies these properties. These and other operators
+/// allow us to flatten the usual tree data structure to a set of operands.
+template<Operator op, typename T>
+class NaryReadInstr : public ReadInstr<T> {
+private:
+  // Never empty
+  const std::forward_list<std::shared_ptr<ReadInstr<T>>> m_operand_ptrs;
+  const size_t m_size;
+
+protected:
+  std::shared_ptr<ReadInstr<bool>> condition_ptr() const {
+    return m_operand_ptrs.front()->condition_ptr();
+  }
+
+public:
+  /// \pre: There are at least two operands
+  NaryReadInstr(std::forward_list<std::shared_ptr<ReadInstr<T>>>&& operand_ptrs,
+    size_t size) : m_operand_ptrs(std::move(operand_ptrs)), m_size(size) {
+
+    assert(!m_operand_ptrs.empty());
+    assert(1 < size);
+  }
+
+  NaryReadInstr(const NaryReadInstr& other) = delete;
+
+  ~NaryReadInstr() {}
+
+  /// Number of operands
+  size_t size() const { return m_size; }
+
+  const std::forward_list<std::shared_ptr<ReadInstr<T>>>& operand_ptrs() const {
+    return m_operand_ptrs;
+  }
+
+  void filter(std::forward_list<std::shared_ptr<Event>>& event_ptrs) const {
+    for (const std::shared_ptr<ReadInstr<T>>& instr_ptr : m_operand_ptrs) {
+      instr_ptr->filter(event_ptrs);
+    }
+  }
+
+  DECL_READ_ENCODER_FN
+};
+
 /// Load memory at an offset of type U through a memory address of type T
 template<typename T, typename U> class DerefReadInstr;
 
