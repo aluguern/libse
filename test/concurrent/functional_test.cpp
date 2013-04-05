@@ -17,6 +17,8 @@ TEST(ConcurrentFunctionalTest, LocalArray) {
   Threads::reset();
   Threads::begin_main_thread();
 
+  Threads::begin_thread();
+
   LocalVar<char[5]> a;
   a[2] = 'Z';
 
@@ -25,14 +27,17 @@ TEST(ConcurrentFunctionalTest, LocalArray) {
   // Do not encode global memory accesses for this test
   Threads::end_thread(z3);
 
-  EXPECT_EQ(z3::unsat, z3.solver.check());
-
   std::stringstream out;
   out << z3.solver;
   EXPECT_EQ("(solver\n  (not (= (select k!3 #x0000000000000002) #x5a))\n"
             "  (= k!1 ((as const (Array (_ BitVec 64) (_ BitVec 8))) #x00))\n"
             "  (= k!3 (store k!1 #x0000000000000002 #x5a))\n"
             "  true\n  (> k!5 0)\n  (< epoch_clock k!5))", out.str());
+
+  EXPECT_EQ(z3::unsat, z3.solver.check());
+
+  Threads::end_main_thread(z3);
+  EXPECT_EQ(z3::unsat, z3.solver.check());
 }
 
 class CharBlockPrinter {
@@ -90,6 +95,7 @@ public:
 };
 
 TEST(ConcurrentFunctionalTest, Else) {
+  Z3 z3;
   CharBlockPrinter printer;
 
   Threads::reset();
@@ -122,10 +128,13 @@ TEST(ConcurrentFunctionalTest, Else) {
             "    D\n"
             "  }\n"
             "}\n", printer.out.str());
+
+  Threads::end_main_thread(z3);
 }
 
 
 TEST(ConcurrentFunctionalTest, ElseIf) {
+  Z3 z3;
   CharBlockPrinter printer;
 
   Threads::reset();
@@ -172,13 +181,19 @@ TEST(ConcurrentFunctionalTest, ElseIf) {
             "  }\n"
             "  {\n  }\n"
             "}\n", printer.out.str());
+
+  Threads::end_main_thread(z3);
 }
 
 // Do not introduce any new read events as part of a conditional check
 #define TRUE_READ_INSTR \
   (std::unique_ptr<ReadInstr<bool>>(new LiteralReadInstr<bool>(true)))
 
+#define FALSE_READ_INSTR \
+  (std::unique_ptr<ReadInstr<bool>>(new LiteralReadInstr<bool>(false)))
+
 TEST(ConcurrentFunctionalTest, SeriesParallelGraph) {
+  Z3 z3;
   CharBlockPrinter printer;
 
   Threads::reset();
@@ -361,9 +376,12 @@ TEST(ConcurrentFunctionalTest, SeriesParallelGraph) {
             "  }\n"
             "  {\n  }\n"
             "}\n", printer.out.str());
+
+  Threads::end_main_thread(z3);
 }
 
 TEST(ConcurrentFunctionalTest, Loop) {
+  Z3 z3;
   CharBlockPrinter printer;
 
   Threads::reset();
@@ -393,6 +411,8 @@ TEST(ConcurrentFunctionalTest, Loop) {
             "  }\n"
             "  {\n  }\n"
             "}\n", printer.out.str());
+
+  Threads::end_main_thread(z3);
 }
 
 TEST(ConcurrentFunctionalTest, ThreeThreadsReadWriteScalarSharedVar) {
@@ -1030,11 +1050,9 @@ TEST(ConcurrentFunctionalTest, FalseConditionalError) {
   Threads::reset();
   Threads::begin_main_thread();
 
-  SharedVar<int> var = 0;
-
   Threads::begin_thread();
-  if (ThisThread::recorder().begin_then(1 == var)) {
-    Threads::error(any<int>() == 0, z3);
+  if (ThisThread::recorder().begin_then(FALSE_READ_INSTR)) {
+    Threads::error(TRUE_READ_INSTR, z3);
   }
   ThisThread::recorder().end_branch();
   Threads::end_thread(z3);
@@ -1042,4 +1060,25 @@ TEST(ConcurrentFunctionalTest, FalseConditionalError) {
   Threads::end_main_thread(z3);
 
   EXPECT_EQ(z3::unsat, z3.solver.check());
+}
+
+TEST(ConcurrentFunctionalTest, SatErrorAmongAnotherUnsatError) {
+  Z3 z3;
+
+  Threads::reset();
+  Threads::begin_main_thread();
+
+  if (ThisThread::recorder().begin_then(FALSE_READ_INSTR)) {
+    Threads::error(TRUE_READ_INSTR, z3);
+  }
+  ThisThread::recorder().end_branch();
+
+  if (ThisThread::recorder().begin_then(TRUE_READ_INSTR)) {
+    Threads::error(TRUE_READ_INSTR, z3);
+  }
+  ThisThread::recorder().end_branch();
+
+  Threads::end_main_thread(z3);
+
+  EXPECT_EQ(z3::sat, z3.solver.check());
 }

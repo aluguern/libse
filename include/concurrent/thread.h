@@ -35,9 +35,12 @@ private:
   unsigned m_next_thread_id;
   MemoryAddrRelation<Event> m_memory_addr_relation;
 
+  // Must only be accessed before Z3 solver is deallocated
+  std::forward_list<z3::expr> m_error_exprs;
+
 private:
   Threads() : m_value_encoder(), m_order_encoder(), m_next_thread_id(0),
-    m_recorder_stack(), m_memory_addr_relation() {
+    m_recorder_stack(), m_memory_addr_relation(), m_error_exprs() {
 
     internal_reset(0, 0);
   }
@@ -52,6 +55,7 @@ private:
     }
 
     m_memory_addr_relation.clear();
+    assert(m_error_exprs.empty());
   }
 
   // Encodes all write events reachable from the given block
@@ -160,6 +164,8 @@ public:
   }
 
   /// Calls end_thread(Z3&) and then encodes all memory accesses between threads
+
+  /// \warning Must always be called after begin_main_thread()
   static void end_main_thread(Z3& z3) {
     assert(s_singleton.m_recorder_stack.size() == 1);
     end_thread(z3);
@@ -170,6 +176,16 @@ public:
     z3.solver.add(order_encoder.rfe_encode(rel, z3));
     z3.solver.add(order_encoder.fr_encode(rel, z3));
     z3.solver.add(order_encoder.ws_encode(rel, z3));
+
+    if (!s_singleton.m_error_exprs.empty()) {
+      z3::expr some_error_expr(z3.context.bool_val(false));
+      for (const z3::expr& error_expr : s_singleton.m_error_exprs) {
+        some_error_expr = some_error_expr or error_expr;
+      }
+      z3.solver.add(some_error_expr);
+
+      s_singleton.m_error_exprs.clear();
+    }
   }
 
   static void join(const std::shared_ptr<SendEvent>& send_event_ptr) {
@@ -181,12 +197,13 @@ public:
     current_recorder.insert_event_ptr(std::move(receive_event_ptr));
   }
 
-  /// \internal Assert given condition in the SAT solver
+  /// \internal Assert given condition in the SAT solver outside of any thread
 
   /// \pre: All read events in the condition must only access thread-local
   ///       memory (cf. MemoryAddr::is_shared())
   ///
-  /// \remark Use Threads::error() when the above precondition is not satisfied
+  /// \warning Block conditions are ignored and an unsatisfiable error
+  ///          condition renders any others unsatisfiable as well
   static void internal_error(std::unique_ptr<ReadInstr<bool>> condition_ptr, Z3& z3) {
     const z3::expr condition_expr(s_singleton.m_value_encoder.encode_eq(
       std::move(condition_ptr), z3));
@@ -194,18 +211,42 @@ public:
     z3.solver.add(condition_expr);
   }
 
+  /// Assert condition with the current block condition as antecedent
+  static void expect(std::unique_ptr<ReadInstr<bool>> condition_ptr, Z3& z3) {
+    ThisThread::recorder().insert_all(*condition_ptr);
+
+    const z3::expr condition_expr(s_singleton.m_value_encoder.encode_eq(
+      std::move(condition_ptr), z3));
+
+    const std::shared_ptr<ReadInstr<bool>> block_condition_ptr(
+      ThisThread::recorder().block_condition_ptr());
+    if (block_condition_ptr) {
+      const Z3ReadEncoder read_encoder;
+      z3.solver.add(implies(block_condition_ptr->encode(read_encoder, z3),
+        condition_expr));
+    } else {
+      z3.solver.add(condition_expr);
+    }
+  }
+
   /// Assert condition in the SAT solver and record the condition's read events
+
+  /// \remark The logical disjunction of all given error conditions allows
+  ///         multiple of them to be checked simultaneously by the SAT solver
   static void error(std::unique_ptr<ReadInstr<bool>> condition_ptr, Z3& z3) {
     ThisThread::recorder().insert_all(*condition_ptr);
 
-    internal_error(std::move(condition_ptr), z3);
+    const z3::expr error_condition_expr(s_singleton.m_value_encoder.encode_eq(
+      std::move(condition_ptr), z3));
 
-    const std::shared_ptr<ReadInstr<bool>>& necessary_condition_ptr =
-      ThisThread::recorder().block_condition_ptr();
-
-    if (necessary_condition_ptr) {
+    const std::shared_ptr<ReadInstr<bool>> block_condition_ptr(
+      ThisThread::recorder().block_condition_ptr());
+    if (block_condition_ptr) {
       const Z3ReadEncoder read_encoder;
-      z3.solver.add(necessary_condition_ptr->encode(read_encoder, z3));
+      s_singleton.m_error_exprs.push_front(error_condition_expr and
+        block_condition_ptr->encode(read_encoder, z3));
+    } else {
+      s_singleton.m_error_exprs.push_front(error_condition_expr);
     }
   }
 };

@@ -21,7 +21,7 @@ private:
 protected:
   void unlock(Z3& z3) {
     assert(m_lock_thread_id == ThisThread::thread_id());
-    Threads::error(m_thread_id == m_lock_thread_id, z3);
+    Threads::expect(m_thread_id == m_lock_thread_id, z3);
   }
 
 public:
