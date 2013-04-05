@@ -11,8 +11,6 @@ se::SharedVar<int> flag = 0;
 se::Mutex mutex;
 
 void push(int x) {
-  se::Thread::error(top == N);
-
   top = top + 1;
 }
 
@@ -51,5 +49,5 @@ int main(void) {
 
   se::Thread::end_main_thread();
 
-  return z3::sat == se::Thread::z3().solver.check();
+  return z3::unsat == se::Thread::z3().solver.check();
 }

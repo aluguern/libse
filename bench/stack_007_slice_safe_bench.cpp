@@ -10,8 +10,6 @@ se::SharedVar<unsigned int> top = 0;
 se::Mutex mutex;
 
 void push(int x) {
-  se::Thread::error(top == N);
-
   top = top + 1;
 }
 
