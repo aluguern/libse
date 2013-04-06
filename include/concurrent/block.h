@@ -15,10 +15,10 @@ namespace se {
 
 /// Logical control flow unit in structured programs
 
-/// A block is a vertex in a series-parallel graph. A block is defined to have a
-/// list of \ref Event "events", an \ref Block::outer_block_ptr() "outer block",
-/// none or more \ref Block::inner_block_ptrs() "inner blocks", and an optional
-/// \ref Block::else_block_ptr() "else block".
+/// A block is a vertex in an acyclic directed series-parallel graph. Each block
+/// consists of a list of \ref Event "events", an \ref Block::outer_block_ptr()
+/// "outer block", none or more \ref Block::inner_block_ptrs() "inner blocks",
+/// and an optional \ref Block::else_block_ptr() "else block".
 ///
 /// The list of events is called the \ref Block::body() "body" of the block.
 /// A block is said to be "empty" if its body is empty; otherwise, the block is
@@ -30,8 +30,9 @@ namespace se {
 /// Each block has a necessary \ref Block::condition_ptr() "condition" for the
 /// block to execute. The block is said to be "conditional" if its condition is
 /// not null; otherwise, it is called "unconditional". The inner blocks can be
-/// conditional, unconditional, or any mixture thereof. If B has an else block
-/// C, then C has as condition the negation of B's condition.
+/// conditional, unconditional, or any mixture thereof. If block B is such that
+/// Block::else_block_ptr() is equal to C, then C has as condition the negation
+/// of B's condition.
 class Block {
 private:
   friend class Recorder;
