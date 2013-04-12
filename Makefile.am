@@ -66,7 +66,6 @@ dist_doc_DATA = README.md
 lib_LTLIBRARIES = lib/libse.la
 
 lib_libse_la_SOURCES = \
-  src/core/op.cpp \
   src/concurrent/tag.cpp \
   src/concurrent/event.cpp \
   src/concurrent/encoder.cpp \

@@ -4,93 +4,51 @@
 using namespace se;
 
 TEST(OpTest, OperatorsOrder) {
-  EXPECT_EQ(NOT + 1, ADD);
-  EXPECT_EQ(ADD + 1, SUB);
-  EXPECT_EQ(SUB + 1, LAND);
-  EXPECT_EQ(LOR + 1, EQL);
-  EXPECT_EQ(EQL + 1, LSS);
-}
-
-TEST(OpTest, AddAttr) {
-  OperatorAttr expected_attr = LASSOC_ATTR | RASSOC_ATTR | COMM_ATTR | HAS_ID_ELEMENT_ATTR;
-  OperatorAttr actual_attr = OperatorInfo<ADD>::attr;
-  EXPECT_EQ(expected_attr, actual_attr);
-}
-
-TEST(OpTest, LssAttr) {
-  OperatorAttr expected_attr = CLEAR_ATTR;
-  OperatorAttr actual_attr = OperatorInfo<LSS>::attr;
-  EXPECT_EQ(expected_attr, actual_attr);
+  static_assert(NOT + 1 == ADD, "");
+  static_assert(ADD + 1 == SUB, "");
+  static_assert(SUB + 1 == LAND, "");
+  static_assert(LOR + 1 == EQL, "");
+  static_assert(EQL + 1 == LSS, "");
 }
 
 TEST(OpTest, AttrFunctions) {
-  EXPECT_TRUE(OperatorInfo<NOT>::is_unary());
+  static_assert(OperatorInfo<NOT>::s_op.is_unary(), "");
 
-  EXPECT_TRUE(OperatorInfo<ADD>::is_commutative());
-  EXPECT_TRUE(OperatorInfo<ADD>::is_associative());
-  EXPECT_TRUE(OperatorInfo<ADD>::has_identity());
-  EXPECT_FALSE(OperatorInfo<ADD>::is_unary());
+  static_assert(OperatorInfo<ADD>::s_op.is_commutative(), "");
+  static_assert(OperatorInfo<ADD>::s_op.is_associative(), "");
+  static_assert(OperatorInfo<ADD>::s_op.has_identity(), "");
+  static_assert(!OperatorInfo<ADD>::s_op.is_unary(), "");
 
-  EXPECT_FALSE(OperatorInfo<SUB>::is_commutative());
-  EXPECT_FALSE(OperatorInfo<SUB>::is_associative());
-  EXPECT_TRUE(OperatorInfo<SUB>::has_identity());
-  EXPECT_FALSE(OperatorInfo<SUB>::is_unary());
+  static_assert(!OperatorInfo<SUB>::s_op.is_commutative(), "");
+  static_assert(!OperatorInfo<SUB>::s_op.is_associative(), "");
+  static_assert(OperatorInfo<SUB>::s_op.has_identity(), "");
+  static_assert(!OperatorInfo<SUB>::s_op.is_unary(), "");
 
-  EXPECT_TRUE(OperatorInfo<LAND>::is_commutative());
-  EXPECT_TRUE(OperatorInfo<LAND>::is_associative());
-  EXPECT_TRUE(OperatorInfo<LAND>::has_identity());
-  EXPECT_FALSE(OperatorInfo<LAND>::is_unary());
+  static_assert(OperatorInfo<LAND>::s_op.is_commutative(), "");
+  static_assert(OperatorInfo<LAND>::s_op.is_associative(), "");
+  static_assert(OperatorInfo<LAND>::s_op.has_identity(), "");
+  static_assert(!OperatorInfo<LAND>::s_op.is_unary(), "");
 
-  EXPECT_TRUE(OperatorInfo<LOR>::is_commutative());
-  EXPECT_TRUE(OperatorInfo<LOR>::is_associative());
-  EXPECT_TRUE(OperatorInfo<LOR>::has_identity());
-  EXPECT_FALSE(OperatorInfo<LOR>::is_unary());
+  static_assert(OperatorInfo<LOR>::s_op.is_commutative(), "");
+  static_assert(OperatorInfo<LOR>::s_op.is_associative(), "");
+  static_assert(OperatorInfo<LOR>::s_op.has_identity(), "");
+  static_assert(!OperatorInfo<LOR>::s_op.is_unary(), "");
 
-  EXPECT_TRUE(OperatorInfo<EQL>::is_commutative());
-  EXPECT_TRUE(OperatorInfo<EQL>::is_associative());
-  EXPECT_FALSE(OperatorInfo<EQL>::has_identity());
-  EXPECT_FALSE(OperatorInfo<EQL>::is_unary());
+  static_assert(OperatorInfo<EQL>::s_op.is_commutative(), "");
+  static_assert(OperatorInfo<EQL>::s_op.is_associative(), "");
+  static_assert(!OperatorInfo<EQL>::s_op.has_identity(), "");
+  static_assert(!OperatorInfo<EQL>::s_op.is_unary(), "");
 
-  EXPECT_FALSE(OperatorInfo<LSS>::is_commutative());
-  EXPECT_FALSE(OperatorInfo<LSS>::is_associative());
-  EXPECT_FALSE(OperatorInfo<LSS>::has_identity());
-  EXPECT_FALSE(OperatorInfo<LSS>::is_unary());
-
-  EXPECT_TRUE(get_commutative_attr(COMM_ATTR));
-  EXPECT_FALSE(get_associative_attr(COMM_ATTR));
-  EXPECT_FALSE(get_identity_attr(COMM_ATTR));
-  EXPECT_FALSE(get_unary_attr(COMM_ATTR));
-
-  EXPECT_FALSE(get_commutative_attr(LASSOC_ATTR));
-  EXPECT_FALSE(get_associative_attr(LASSOC_ATTR));
-  EXPECT_FALSE(get_identity_attr(LASSOC_ATTR));
-  EXPECT_FALSE(get_unary_attr(LASSOC_ATTR));
-
-  EXPECT_FALSE(get_commutative_attr(RASSOC_ATTR));
-  EXPECT_FALSE(get_associative_attr(RASSOC_ATTR));
-  EXPECT_FALSE(get_identity_attr(RASSOC_ATTR));
-  EXPECT_FALSE(get_unary_attr(RASSOC_ATTR));
-
-  EXPECT_FALSE(get_commutative_attr(LASSOC_ATTR | RASSOC_ATTR));
-  EXPECT_TRUE(get_associative_attr(LASSOC_ATTR | RASSOC_ATTR));
-  EXPECT_FALSE(get_identity_attr(LASSOC_ATTR | RASSOC_ATTR));
-  EXPECT_FALSE(get_unary_attr(LASSOC_ATTR | RASSOC_ATTR));
-
-  EXPECT_FALSE(get_commutative_attr(UNARY_ATTR));
-  EXPECT_FALSE(get_associative_attr(UNARY_ATTR));
-  EXPECT_FALSE(get_identity_attr(UNARY_ATTR));
-  EXPECT_TRUE(get_unary_attr(UNARY_ATTR));
-
-  EXPECT_FALSE(get_commutative_attr(CLEAR_ATTR));
-  EXPECT_FALSE(get_associative_attr(CLEAR_ATTR));
-  EXPECT_FALSE(get_identity_attr(CLEAR_ATTR));
-  EXPECT_FALSE(get_unary_attr(CLEAR_ATTR));
+  static_assert(!OperatorInfo<LSS>::s_op.is_commutative(), "");
+  static_assert(!OperatorInfo<LSS>::s_op.is_associative(), "");
+  static_assert(!OperatorInfo<LSS>::s_op.has_identity(), "");
+  static_assert(!OperatorInfo<LSS>::s_op.is_unary(), "");
 }
 
 // See diagram in include/op.h
 TEST(OpTest, OperatorEnumLayout) {
-  EXPECT_EQ(NOT, UNARY_BEGIN);
-  EXPECT_EQ(SUB, UNARY_END);
-  EXPECT_EQ(ADD, NARY_BEGIN);
-  EXPECT_EQ(LSS, NARY_END);
+  static_assert(NOT == UNARY_BEGIN, "");
+  static_assert(SUB == UNARY_END, "");
+  static_assert(ADD == NARY_BEGIN, "");
+  static_assert(LSS == NARY_END, "");
 }
