@@ -2,7 +2,7 @@
 
 #include "concurrent/event.h"
 #include "concurrent/instr.h"
-#include "concurrent/encoder.h"
+#include "concurrent/encoder_c0.h"
 
 using namespace se;
 
@@ -17,7 +17,7 @@ public:
     const std::shared_ptr<ReadInstr<bool>>& condition_ptr = nullptr) :
         Event(thread_id, tag, true, &TypeInfo<int>::s_type, condition_ptr) {}
 
-  z3::expr encode_eq(const Z3ValueEncoder& encoder, Z3& helper) const {
+  z3::expr encode_eq(const Z3ValueEncoderC0& encoder, Z3& helper) const {
     return helper.constant(*this);
   }
 

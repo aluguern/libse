@@ -3,7 +3,7 @@
 #include <list>
 
 #include "concurrent/recorder.h"
-#include "concurrent/encoder.h"
+#include "concurrent/encoder_c0.h"
 
 using namespace se;
 

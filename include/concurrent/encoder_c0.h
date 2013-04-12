@@ -21,8 +21,8 @@ public:
   z3::solver solver;
 
 private:
-  friend class Z3ValueEncoder;
-  friend class Z3ReadEncoder;
+  friend class Z3ValueEncoderC0;
+  friend class Z3ReadEncoderC0;
 
   template<typename T> friend z3::expr ReadEvent<T>::constant(Z3&) const;
   template<typename T> friend z3::expr DirectWriteEvent<T>::constant(Z3&) const;
@@ -135,12 +135,12 @@ struct Z3Identity<LAND, bool> {
   }
 };
 
-/// Encoder for read instructions 
-class Z3ReadEncoder {
+/// EncoderC0 for read instructions 
+class Z3ReadEncoderC0 {
 private:
 
 public:
-  Z3ReadEncoder() {}
+  Z3ReadEncoderC0() {}
 
   template<typename T>
   z3::expr encode(const LiteralReadInstr<T>& instr, Z3& helper) const {
@@ -180,7 +180,7 @@ public:
 };
 
 #define READ_ENCODER_FN \
-  encode(const Z3ReadEncoder& encoder, Z3& helper) const {\
+  encode(const Z3ReadEncoderC0& encoder, Z3& helper) const {\
     return encoder.encode(*this, helper);\
   }
 
@@ -200,14 +200,14 @@ z3::expr NaryReadInstr<opcode, T>::READ_ENCODER_FN
 template<typename T, typename U, size_t N>
 z3::expr DerefReadInstr<T[N], U>::READ_ENCODER_FN
 
-/// Encoder for a read instruction in the left-hand side of an assignment
-class Z3WriteEncoder {
+/// EncoderC0 for a read instruction in the left-hand side of an assignment
+class Z3WriteEncoderC0 {
 public:
-  Z3WriteEncoder() {}
+  Z3WriteEncoderC0() {}
   
   template<typename T, typename U, size_t N>
   z3::expr encode(const DerefReadInstr<T[N], U>& instr,
-    const Z3ReadEncoder& read_encoder,
+    const Z3ReadEncoderC0& read_encoder,
     const z3::expr& rhs_expr, Z3& helper) const {
 
     return z3::store(instr.memory_ref().encode(read_encoder, helper),
@@ -215,17 +215,17 @@ public:
   }
 };
 
-/// Encoder for the values of direct and indirect write events
+/// EncoderC0 for the values of direct and indirect write events
 
 /// Every `encode_eq(...)` member function returns a Z3 expression whose sort
 /// is Boolean.
-class Z3ValueEncoder {
+class Z3ValueEncoderC0 {
 private:
-  const Z3WriteEncoder m_write_encoder;
-  const Z3ReadEncoder m_read_encoder;
+  const Z3WriteEncoderC0 m_write_encoder;
+  const Z3ReadEncoderC0 m_read_encoder;
 
 public:
-  Z3ValueEncoder() : m_read_encoder(), m_write_encoder() {}
+  Z3ValueEncoderC0() : m_read_encoder(), m_write_encoder() {}
 
   template<typename T>
   z3::expr encode_eq(const ReadEvent<T>& event, Z3& helper) const {
@@ -267,7 +267,7 @@ public:
 };
 
 #define VALUE_ENCODER_FN \
-  encode_eq(const Z3ValueEncoder& encoder, Z3& helper) const {\
+  encode_eq(const Z3ValueEncoderC0& encoder, Z3& helper) const {\
     return encoder.encode_eq(*this, helper);\
   }
 
@@ -292,9 +292,9 @@ z3::expr IndirectWriteEvent<T, U, N>::VALUE_ENCODER_FN
 template<typename T, typename U, size_t N>
 z3::expr IndirectWriteEvent<T, U, N>::CONSTANT_ENCODER_FN
 
-class Z3OrderEncoder {
+class Z3OrderEncoderC0 {
 private:
-  const Z3ReadEncoder m_read_encoder;
+  const Z3ReadEncoderC0 m_read_encoder;
 
   z3::expr event_condition(const Event& event, Z3& z3) const {
     if (event.condition_ptr()) {
@@ -308,7 +308,7 @@ private:
   typedef std::unordered_set<EventPtr> EventPtrSet;
 
 public:
-  Z3OrderEncoder() : m_read_encoder() {}
+  Z3OrderEncoderC0() : m_read_encoder() {}
 
   z3::expr rfe_encode(const TagRelation<Event>& relation, Z3& z3) const {
     z3::expr rfe_expr(z3.context.bool_val(true));

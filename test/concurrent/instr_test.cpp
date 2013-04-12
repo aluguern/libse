@@ -3,7 +3,7 @@
 #include <sstream>
 
 #include "concurrent/instr.h"
-#include "concurrent/encoder.h"
+#include "concurrent/encoder_c0.h"
 
 using namespace se;
 

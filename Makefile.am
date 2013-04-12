@@ -68,7 +68,7 @@ lib_LTLIBRARIES = lib/libse.la
 lib_libse_la_SOURCES = \
   src/concurrent/tag.cpp \
   src/concurrent/event.cpp \
-  src/concurrent/encoder.cpp \
+  src/concurrent/encoder_c0.cpp \
   src/concurrent/recorder.cpp \
   src/concurrent/relation.cpp \
   src/concurrent/thread.cpp \
@@ -82,7 +82,7 @@ pkginclude_HEADERS = \
   include/concurrent/event.h \
   include/concurrent/instr.h \
   include/concurrent/block.h \
-  include/concurrent/encoder.h \
+  include/concurrent/encoder_c0.h \
   include/concurrent/recorder.h \
   include/concurrent/var.h \
   include/concurrent/relation.h \
@@ -122,7 +122,7 @@ test_se_SOURCES = \
   test/concurrent/event_test.cpp \
   test/concurrent/instr_test.cpp \
   test/concurrent/block_test.cpp \
-  test/concurrent/encoder_test.cpp \
+  test/concurrent/encoder_c0_test.cpp \
   test/concurrent/recorder_test.cpp \
   test/concurrent/var_test.cpp \
   test/concurrent/relation_test.cpp \

@@ -13,7 +13,7 @@
 
 #include "concurrent/event.h"
 #include "concurrent/instr.h"
-#include "concurrent/encoder.h"
+#include "concurrent/encoder_c0.h"
 #include "concurrent/recorder.h"
 #include "concurrent/thread.h"
 #include "concurrent/var.h"

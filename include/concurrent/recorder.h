@@ -9,7 +9,7 @@
 
 #include "concurrent/instr.h"
 #include "concurrent/block.h"
-#include "concurrent/encoder.h"
+#include "concurrent/encoder_c0.h"
 
 namespace se {
 

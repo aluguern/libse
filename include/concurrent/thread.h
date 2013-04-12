@@ -9,7 +9,7 @@
 
 #include "concurrent/tag.h"
 #include "concurrent/event.h"
-#include "concurrent/encoder.h"
+#include "concurrent/encoder_c0.h"
 #include "concurrent/recorder.h"
 
 namespace se {
@@ -29,8 +29,8 @@ private:
   friend unsigned ThisThread::thread_id();
   static Threads s_singleton;
 
-  const Z3ValueEncoder m_value_encoder;
-  const Z3OrderEncoder m_order_encoder;
+  const Z3ValueEncoderC0 m_value_encoder;
+  const Z3OrderEncoderC0 m_order_encoder;
   std::stack<Recorder> m_recorder_stack;
   unsigned m_next_thread_id;
   TagRelation<Event> m_tag_relation;
@@ -172,7 +172,7 @@ public:
     end_thread(z3);
 
     const TagRelation<Event>& rel = s_singleton.m_tag_relation;
-    const Z3OrderEncoder& order_encoder = s_singleton.m_order_encoder;
+    const Z3OrderEncoderC0& order_encoder = s_singleton.m_order_encoder;
 
     z3.solver.add(order_encoder.rfe_encode(rel, z3));
     z3.solver.add(order_encoder.fr_encode(rel, z3));
@@ -222,7 +222,7 @@ public:
     const std::shared_ptr<ReadInstr<bool>> block_condition_ptr(
       ThisThread::recorder().block_condition_ptr());
     if (block_condition_ptr) {
-      const Z3ReadEncoder read_encoder;
+      const Z3ReadEncoderC0 read_encoder;
       z3.solver.add(implies(block_condition_ptr->encode(read_encoder, z3),
         condition_expr));
     } else {
@@ -243,7 +243,7 @@ public:
     const std::shared_ptr<ReadInstr<bool>> block_condition_ptr(
       ThisThread::recorder().block_condition_ptr());
     if (block_condition_ptr) {
-      const Z3ReadEncoder read_encoder;
+      const Z3ReadEncoderC0 read_encoder;
       s_singleton.m_error_exprs.push_front(error_condition_expr and
         block_condition_ptr->encode(read_encoder, z3));
     } else {

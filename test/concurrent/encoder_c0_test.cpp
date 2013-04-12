@@ -2,11 +2,11 @@
 
 #include <limits>
 
-#include "concurrent/encoder.h"
+#include "concurrent/encoder_c0.h"
 
 using namespace se;
 
-TEST(EncoderTest, Z3JoinClocks) {
+TEST(EncoderC0Test, Z3JoinClocks) {
   Z3 z3;
 
   z3::expr x(z3.context.constant(z3.context.int_symbol(1),
@@ -34,7 +34,7 @@ TEST(EncoderTest, Z3JoinClocks) {
   z3.solver.pop();
 }
 
-TEST(EncoderTest, Z3BvLiteralBool) {
+TEST(EncoderC0Test, Z3BvLiteralBool) {
   Z3 z3;
 
   const bool literal = true;
@@ -48,7 +48,7 @@ TEST(EncoderTest, Z3BvLiteralBool) {
   EXPECT_EQ(z3::unsat, z3.solver.check());
 }
 
-TEST(EncoderTest, Z3BvLiteral) {
+TEST(EncoderC0Test, Z3BvLiteral) {
   Z3 z3;
 
   const short literal = 3;
@@ -70,7 +70,7 @@ TEST(EncoderTest, Z3BvLiteral) {
   EXPECT_EQ(z3::sat, z3.solver.check());
 }
 
-TEST(EncoderTest, Z3BvConstant) {
+TEST(EncoderC0Test, Z3BvConstant) {
   Z3 z3;
 
   const unsigned thread_id = 3;
@@ -87,7 +87,7 @@ TEST(EncoderTest, Z3BvConstant) {
   EXPECT_EQ(z3::unsat, z3.solver.check());
 }
 
-TEST(EncoderTest, Z3BoolConstant) {
+TEST(EncoderC0Test, Z3BoolConstant) {
   Z3 z3;
 
   const unsigned thread_id = 3;
@@ -102,7 +102,7 @@ TEST(EncoderTest, Z3BoolConstant) {
   EXPECT_EQ(z3::unsat, z3.solver.check());
 }
 
-TEST(EncoderTest, Z3ArrayConstant) {
+TEST(EncoderC0Test, Z3ArrayConstant) {
   Z3 z3;
 
   const unsigned thread_id = 3;
@@ -180,7 +180,7 @@ TEST(EncoderTest, Z3ArrayConstant) {
   z3.solver.pop();
 }
 
-TEST(EncoderTest, ReadFromSymbol) {
+TEST(EncoderC0Test, ReadFromSymbol) {
   const unsigned write_thread_id = 7;
   const unsigned read_thread_id = 8;
 
@@ -194,7 +194,7 @@ TEST(EncoderTest, ReadFromSymbol) {
   EXPECT_TRUE(z3.constant(write_event, read_event).is_bool());
 }
 
-TEST(EncoderTest, Z3IndirectWriteEventConstant) {
+TEST(EncoderC0Test, Z3IndirectWriteEventConstant) {
   const unsigned thread_id = 3;
   const size_t array_size = 5;
 
@@ -228,7 +228,7 @@ TEST(EncoderTest, Z3IndirectWriteEventConstant) {
     event_expr.get_sort().array_range().bv_size());
 }
 
-TEST(EncoderTest, Z3Clock) {
+TEST(EncoderC0Test, Z3Clock) {
   Z3 z3;
 
   const unsigned thread_id = 3;
@@ -247,8 +247,8 @@ TEST(EncoderTest, Z3Clock) {
   EXPECT_EQ(z3::sat, z3.solver.check());
 }
 
-TEST(EncoderTest, Z3ReadEncoderForLiteralReadInstr) {
-  const Z3ReadEncoder encoder;
+TEST(EncoderC0Test, Z3ReadEncoderC0ForLiteralReadInstr) {
+  const Z3ReadEncoderC0 encoder;
   Z3 z3;
 
   const short literal = 3;
@@ -273,8 +273,8 @@ TEST(EncoderTest, Z3ReadEncoderForLiteralReadInstr) {
   EXPECT_EQ(z3::sat, z3.solver.check());
 }
 
-TEST(EncoderTest, Z3ReadEncoderForBasicReadInstrAsBv) {
-  const Z3ReadEncoder encoder;
+TEST(EncoderC0Test, Z3ReadEncoderC0ForBasicReadInstrAsBv) {
+  const Z3ReadEncoderC0 encoder;
   Z3 z3;
 
   const unsigned thread_id = 3;
@@ -287,8 +287,8 @@ TEST(EncoderTest, Z3ReadEncoderForBasicReadInstrAsBv) {
   EXPECT_EQ(z3::unsat, z3.solver.check());
 }
 
-TEST(EncoderTest, Z3ReadEncoderForBasicReadInstrAsArray) {
-  const Z3ReadEncoder encoder;
+TEST(EncoderC0Test, Z3ReadEncoderC0ForBasicReadInstrAsArray) {
+  const Z3ReadEncoderC0 encoder;
   Z3 z3;
 
   const unsigned thread_id = 3;
@@ -313,8 +313,8 @@ TEST(EncoderTest, Z3ReadEncoderForBasicReadInstrAsArray) {
     expr.get_sort().array_range().bv_size());
 }
 
-TEST(EncoderTest, Z3ReadEncoderForUnaryReadInstrAsLiteralBool) {
-  const Z3ReadEncoder encoder;
+TEST(EncoderC0Test, Z3ReadEncoderC0ForUnaryReadInstrAsLiteralBool) {
+  const Z3ReadEncoderC0 encoder;
   Z3 z3;
 
   const unsigned thread_id = 3;
@@ -329,8 +329,8 @@ TEST(EncoderTest, Z3ReadEncoderForUnaryReadInstrAsLiteralBool) {
   EXPECT_EQ(z3::unsat, z3.solver.check());
 }
 
-TEST(EncoderTest, Z3ReadEncoderForUnaryReadInstrAsLiteralInteger) {
-  const Z3ReadEncoder encoder;
+TEST(EncoderC0Test, Z3ReadEncoderC0ForUnaryReadInstrAsLiteralInteger) {
+  const Z3ReadEncoderC0 encoder;
   Z3 z3;
 
   std::unique_ptr<ReadInstr<short>> instr_ptr(new LiteralReadInstr<short>(7));
@@ -342,8 +342,8 @@ TEST(EncoderTest, Z3ReadEncoderForUnaryReadInstrAsLiteralInteger) {
   EXPECT_EQ(z3::unsat, z3.solver.check());
 }
 
-TEST(EncoderTest, Z3ReadEncoderForUnaryReadInstrAsInteger) {
-  const Z3ReadEncoder encoder;
+TEST(EncoderC0Test, Z3ReadEncoderC0ForUnaryReadInstrAsInteger) {
+  const Z3ReadEncoderC0 encoder;
   Z3 z3;
 
   const unsigned thread_id = 3;
@@ -372,8 +372,8 @@ TEST(EncoderTest, Z3ReadEncoderForUnaryReadInstrAsInteger) {
   EXPECT_EQ(z3::unsat, z3.solver.check());
 }
 
-TEST(EncoderTest, Z3ReadEncoderForBinaryReadInstrAsBool) {
-  const Z3ReadEncoder encoder;
+TEST(EncoderC0Test, Z3ReadEncoderC0ForBinaryReadInstrAsBool) {
+  const Z3ReadEncoderC0 encoder;
   Z3 z3;
 
   const unsigned thread_id = 3;
@@ -395,8 +395,8 @@ TEST(EncoderTest, Z3ReadEncoderForBinaryReadInstrAsBool) {
   EXPECT_EQ(z3::unsat, z3.solver.check());
 }
 
-TEST(EncoderTest, Z3ReadEncoderForBinaryReadInstrAsInteger) {
-  const Z3ReadEncoder encoder;
+TEST(EncoderC0Test, Z3ReadEncoderC0ForBinaryReadInstrAsInteger) {
+  const Z3ReadEncoderC0 encoder;
   Z3 z3;
 
   const unsigned thread_id = 3;
@@ -421,8 +421,8 @@ TEST(EncoderTest, Z3ReadEncoderForBinaryReadInstrAsInteger) {
   EXPECT_EQ(z3::unsat, z3.solver.check());
 }
 
-TEST(EncoderTest, Z3ReadEncoderForDerefReadInstrAsInteger) {
-  const Z3ReadEncoder encoder;
+TEST(EncoderC0Test, Z3ReadEncoderC0ForDerefReadInstrAsInteger) {
+  const Z3ReadEncoderC0 encoder;
   Z3 z3;
 
   const unsigned thread_id = 3;
@@ -435,16 +435,16 @@ TEST(EncoderTest, Z3ReadEncoderForDerefReadInstrAsInteger) {
 
   const DerefReadInstr<short[5], size_t> instr(std::move(memory_ptr), std::move(offset_ptr));
 
-  // See also Z3ReadEncoderForBasicReadInstrAsArray test
+  // See also Z3ReadEncoderC0ForBasicReadInstrAsArray test
   const BasicReadInstr<short[5]>& array_read_instr =
     static_cast<const BasicReadInstr<short[5]>&>(instr.memory_ref());
   EXPECT_TRUE(array_read_instr.encode(encoder, z3).is_array());
 }
 
-TEST(EncoderTest, Z3ValueEncoderDirectWriteEvent) {
+TEST(EncoderC0Test, Z3ValueEncoderC0DirectWriteEvent) {
   const unsigned thread_id = 3;
 
-  const Z3ValueEncoder encoder;
+  const Z3ValueEncoderC0 encoder;
   Z3 z3;
 
   std::unique_ptr<ReadInstr<long>> read_instr_ptr(new LiteralReadInstr<long>(42L));
@@ -462,10 +462,10 @@ TEST(EncoderTest, Z3ValueEncoderDirectWriteEvent) {
   EXPECT_EQ(z3::unsat, z3.solver.check());
 }
 
-TEST(EncoderTest, Z3ValueEncoderDirectWriteEventThroughDispatch) {
+TEST(EncoderC0Test, Z3ValueEncoderC0DirectWriteEventThroughDispatch) {
   const unsigned thread_id = 3;
 
-  const Z3ValueEncoder encoder;
+  const Z3ValueEncoderC0 encoder;
   Z3 z3;
 
   std::unique_ptr<ReadInstr<long>> read_instr_ptr(new LiteralReadInstr<long>(42L));
@@ -484,11 +484,11 @@ TEST(EncoderTest, Z3ValueEncoderDirectWriteEventThroughDispatch) {
   EXPECT_EQ(z3::unsat, z3.solver.check());
 }
 
-TEST(EncoderTest, Z3ValueEncoderIndirectWriteEvent) {
+TEST(EncoderC0Test, Z3ValueEncoderC0IndirectWriteEvent) {
   const unsigned thread_id = 3;
   const size_t array_size = 5;
 
-  const Z3ValueEncoder encoder;
+  const Z3ValueEncoderC0 encoder;
   Z3 z3;
 
   const Tag pointer_tag = Tag::unique_atom();
@@ -525,11 +525,11 @@ TEST(EncoderTest, Z3ValueEncoderIndirectWriteEvent) {
   z3.solver.pop();
 }
 
-TEST(EncoderTest, Z3ValueEncoderIndirectWriteEventThroughDispatch) {
+TEST(EncoderC0Test, Z3ValueEncoderC0IndirectWriteEventThroughDispatch) {
   const unsigned thread_id = 3;
   const size_t array_size = 5;
 
-  const Z3ValueEncoder encoder;
+  const Z3ValueEncoderC0 encoder;
   Z3 z3;
 
   const Tag pointer_tag = Tag::unique_atom();
@@ -568,10 +568,10 @@ TEST(EncoderTest, Z3ValueEncoderIndirectWriteEventThroughDispatch) {
   z3.solver.pop();
 }
 
-TEST(EncoderTest, Z3ValueEncoderReadEvent) {
+TEST(EncoderC0Test, Z3ValueEncoderC0ReadEvent) {
   const unsigned thread_id = 3;
 
-  const Z3ValueEncoder encoder;
+  const Z3ValueEncoderC0 encoder;
   Z3 z3;
 
   const Tag tag = Tag::unique_atom();
@@ -583,10 +583,10 @@ TEST(EncoderTest, Z3ValueEncoderReadEvent) {
   EXPECT_EQ(z3::unsat, z3.solver.check());
 }
 
-TEST(EncoderTest, Z3ValueEncoderReadEventThroughDispatch) {
+TEST(EncoderC0Test, Z3ValueEncoderC0ReadEventThroughDispatch) {
   const unsigned thread_id = 3;
 
-  const Z3ValueEncoder encoder;
+  const Z3ValueEncoderC0 encoder;
   Z3 z3;
 
   const Tag tag = Tag::unique_atom();
@@ -599,11 +599,11 @@ TEST(EncoderTest, Z3ValueEncoderReadEventThroughDispatch) {
   EXPECT_EQ(z3::unsat, z3.solver.check());
 }
 
-TEST(EncoderTest, Z3OrderEncoderForRfWithoutCondition) {
+TEST(EncoderC0Test, Z3OrderEncoderC0ForRfWithoutCondition) {
   const unsigned write_thread_id = 7;
   const unsigned read_thread_id = 8;
 
-  const Z3OrderEncoder encoder;
+  const Z3OrderEncoderC0 encoder;
   Z3 z3;
 
   TagRelation<Event> relation;
@@ -628,11 +628,11 @@ TEST(EncoderTest, Z3OrderEncoderForRfWithoutCondition) {
   EXPECT_EQ(z3::unsat, z3.solver.check());
 }
 
-TEST(EncoderTest, Z3OrderEncoderForWsWithoutCondition) {
+TEST(EncoderC0Test, Z3OrderEncoderC0ForWsWithoutCondition) {
   const unsigned write_thread_major_id = 7;
   const unsigned write_thread_minor_id = 8;
 
-  const Z3OrderEncoder encoder;
+  const Z3OrderEncoderC0 encoder;
   Z3 z3;
 
   TagRelation<Event> relation;
@@ -656,12 +656,12 @@ TEST(EncoderTest, Z3OrderEncoderForWsWithoutCondition) {
   EXPECT_EQ(z3::unsat, z3.solver.check());
 }
 
-TEST(EncoderTest, Z3OrderEncoderForFrWithoutCondition) {
+TEST(EncoderC0Test, Z3OrderEncoderC0ForFrWithoutCondition) {
   const unsigned write_thread_id = 7;
   const unsigned read_thread_id = 8;
 
-  const Z3ValueEncoder value_encoder;
-  const Z3OrderEncoder order_encoder;
+  const Z3ValueEncoderC0 value_encoder;
+  const Z3OrderEncoderC0 order_encoder;
   Z3 z3;
 
   TagRelation<Event> relation;
@@ -720,7 +720,3 @@ TEST(EncoderTest, Z3OrderEncoderForFrWithoutCondition) {
 
   z3.solver.pop();
 }
-
-/*TEST(EncoderTest, Z3OrderEncoderForSpoWithoutCondition) {
-
-}*/

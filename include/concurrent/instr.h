@@ -19,7 +19,7 @@ namespace z3 { class expr; }
 namespace se {
 
 class Z3;
-class Z3ReadEncoder;
+class Z3ReadEncoderC0;
 
 /// Non-copyable class that identifies a built-in memory read instruction
 
@@ -43,13 +43,13 @@ public:
   virtual ~ReadInstr() {}
 
   virtual void filter(std::forward_list<std::shared_ptr<Event>>&) const = 0;
-  virtual z3::expr encode(const Z3ReadEncoder& encoder, Z3& helper) const = 0;
+  virtual z3::expr encode(const Z3ReadEncoderC0& encoder, Z3& helper) const = 0;
 
   virtual std::shared_ptr<ReadInstr<bool>> condition_ptr() const = 0;
 };
 
 #define DECL_READ_ENCODER_FN \
-  z3::expr encode(const Z3ReadEncoder& encoder, Z3& helper) const;
+  z3::expr encode(const Z3ReadEncoderC0& encoder, Z3& helper) const;
 
 template<typename T>
 class LiteralReadInstr : public ReadInstr<T> {

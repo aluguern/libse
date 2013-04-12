@@ -21,7 +21,7 @@ template<typename T>
 class ReadInstr;
 
 class Z3;
-class Z3ValueEncoder;
+class Z3ValueEncoderC0;
 
 /// Untyped read or write event
 
@@ -124,12 +124,12 @@ public:
     return m_event_id == other.m_event_id;
   }
 
-  virtual z3::expr encode_eq(const Z3ValueEncoder& encoder, Z3& helper) const = 0;
+  virtual z3::expr encode_eq(const Z3ValueEncoderC0& encoder, Z3& helper) const = 0;
   virtual z3::expr constant(Z3& helper) const = 0;
 };
 
 #define DECL_VALUE_ENCODER_FN \
-  z3::expr encode_eq(const Z3ValueEncoder& encoder, Z3& helper) const;
+  z3::expr encode_eq(const Z3ValueEncoderC0& encoder, Z3& helper) const;
 
 #define DECL_CONSTANT_ENCODER_FN \
   z3::expr constant(Z3& helper) const;
