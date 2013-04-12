@@ -15,16 +15,16 @@
 
 namespace se {
 
-template<Operator op, typename ...T> struct ReturnType;
+template<Opcode opcode, typename ...T> struct ReturnType;
 
-template<Operator op, typename T>
-struct ReturnType<op, T> {
-  typedef decltype(Eval<op>::template const_eval<T>(std::declval<T>())) result_type;
+template<Opcode opcode, typename T>
+struct ReturnType<opcode, T> {
+  typedef decltype(Eval<opcode>::template const_eval<T>(std::declval<T>())) result_type;
 };
 
-template<Operator op, typename T, typename U>
-struct ReturnType<op, T, U> {
-  typedef decltype(Eval<op>::template const_eval<T, U>(std::declval<T>(), std::declval<U>())) result_type;
+template<Opcode opcode, typename T, typename U>
+struct ReturnType<opcode, T, U> {
+  typedef decltype(Eval<opcode>::template const_eval<T, U>(std::declval<T>(), std::declval<U>())) result_type;
 };
 
 struct __EmptyUnwrapType {};

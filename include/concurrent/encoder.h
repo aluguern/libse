@@ -123,7 +123,7 @@ public:
   }
 };
 
-template<Operator op, typename T>
+template<Opcode opcode, typename T>
 struct Z3Identity {
   static z3::expr constant(z3::context&);
 };
@@ -152,22 +152,22 @@ public:
     return helper.constant(*instr.event_ptr());
   }
 
-  template<Operator op, typename T>
-  z3::expr encode(const UnaryReadInstr<op, T>& instr, Z3& helper) const {
-    return Eval<op>::eval(instr.operand_ref().encode(*this, helper));
+  template<Opcode opcode, typename T>
+  z3::expr encode(const UnaryReadInstr<opcode, T>& instr, Z3& helper) const {
+    return Eval<opcode>::eval(instr.operand_ref().encode(*this, helper));
   }
 
-  template<Operator op, typename T, typename U>
-  z3::expr encode(const BinaryReadInstr<op, T, U>& instr, Z3& helper) const {
-    return Eval<op>::eval(instr.loperand_ref().encode(*this, helper),
+  template<Opcode opcode, typename T, typename U>
+  z3::expr encode(const BinaryReadInstr<opcode, T, U>& instr, Z3& helper) const {
+    return Eval<opcode>::eval(instr.loperand_ref().encode(*this, helper),
       instr.roperand_ref().encode(*this, helper));
   }
 
-  template<Operator op, typename T>
-  z3::expr encode(const NaryReadInstr<op, T>& instr, Z3& helper) const {
-    z3::expr nary_expr = Z3Identity<op, T>::constant(helper.context);
+  template<Opcode opcode, typename T>
+  z3::expr encode(const NaryReadInstr<opcode, T>& instr, Z3& helper) const {
+    z3::expr nary_expr = Z3Identity<opcode, T>::constant(helper.context);
     for (const std::shared_ptr<ReadInstr<T>>& operand_ptr : instr.operand_ptrs()) {
-      nary_expr = Eval<op>::eval(nary_expr, operand_ptr->encode(*this, helper));
+      nary_expr = Eval<opcode>::eval(nary_expr, operand_ptr->encode(*this, helper));
     }
     return nary_expr;
   }
@@ -188,14 +188,14 @@ template<typename T> z3::expr LiteralReadInstr<T>::READ_ENCODER_FN
 template<typename T, size_t N> z3::expr LiteralReadInstr<T[N]>::READ_ENCODER_FN
 template<typename T> z3::expr BasicReadInstr<T>::READ_ENCODER_FN
 
-template<Operator op, typename T>
-z3::expr UnaryReadInstr<op, T>::READ_ENCODER_FN
+template<Opcode opcode, typename T>
+z3::expr UnaryReadInstr<opcode, T>::READ_ENCODER_FN
 
-template<Operator op, typename T, typename U>
-z3::expr BinaryReadInstr<op, T, U>::READ_ENCODER_FN
+template<Opcode opcode, typename T, typename U>
+z3::expr BinaryReadInstr<opcode, T, U>::READ_ENCODER_FN
 
-template<Operator op, typename T>
-z3::expr NaryReadInstr<op, T>::READ_ENCODER_FN
+template<Opcode opcode, typename T>
+z3::expr NaryReadInstr<opcode, T>::READ_ENCODER_FN
 
 template<typename T, typename U, size_t N>
 z3::expr DerefReadInstr<T[N], U>::READ_ENCODER_FN

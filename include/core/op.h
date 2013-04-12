@@ -100,7 +100,7 @@ inline bool get_unary_attr(const OperatorAttr attr) {
 // the elements in the internal operators string array.
 //
 // TODO: Account for signed LSS etc.
-enum Operator : unsigned short {
+enum Opcode : unsigned short {
   /// \verbatim !\endverbatim
   NOT,
 
@@ -123,27 +123,27 @@ enum Operator : unsigned short {
 /// First unary operator
 
 /// \ref UNARY_BEGIN is always less than or equal to \ref UNARY_END.
-/// \see Operator
-extern const Operator UNARY_BEGIN;
+/// \see Opcode
+extern const Opcode UNARY_BEGIN;
 
 /// Last unary operator
 
 /// \ref UNARY_END is always less than or equal \ref NARY_END.
-/// \see Operator
-extern const Operator UNARY_END;
+/// \see Opcode
+extern const Opcode UNARY_END;
 
 /// First nary operator
 
 /// \ref NARY_BEGIN is always less than or equal to \ref NARY_END.
-/// \see Operator
-extern const Operator NARY_BEGIN;
+/// \see Opcode 
+extern const Opcode NARY_BEGIN;
 
 /// Last binary operator
 
 /// The range \ref UNARY_END ... \ref NARY_END gives all the operators which
 /// require at least two operands.
-/// \see Operator
-extern const Operator NARY_END;
+/// \see Opcode
+extern const Opcode NARY_END;
 
 /// Static lookup function to find an operator's mathematical properties
 
@@ -151,13 +151,13 @@ extern const Operator NARY_END;
 ///
 ///      OperatorInfo<ADD>::is_associative()
 ///
-/// \see Operator
-template<Operator op> class OperatorInfo {};
+/// \see Opcode 
+template<Opcode opcode> class OperatorInfo {};
 
 /// Define an operator's mathematical properties with a bit vector
-#define OPERATOR_INFO_DEF(op, attribute_bv)\
+#define OPERATOR_INFO_DEF(opcode, attribute_bv)\
   template<>\
-  class OperatorInfo<op> {\
+  class OperatorInfo<opcode> {\
   public:\
     static constexpr OperatorAttr attr = (attribute_bv);\
     static constexpr bool is_commutative() {\

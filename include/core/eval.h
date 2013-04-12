@@ -10,7 +10,7 @@
 namespace se {
 
 /// Evaluate built-in arithmetic and boolean expressions
-template<Operator op> class Eval;
+template<Opcode opcode> class Eval;
 
 #define EVAL_UNARY_ONLY(op, opcode) \
   template<>\

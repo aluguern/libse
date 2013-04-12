@@ -2,9 +2,9 @@
 
 namespace se {
 
-const Operator UNARY_BEGIN = NOT;
-const Operator UNARY_END = SUB;
-const Operator NARY_BEGIN = ADD;
-const Operator NARY_END = LSS;
+const Opcode UNARY_BEGIN = NOT;
+const Opcode UNARY_END = SUB;
+const Opcode NARY_BEGIN = ADD;
+const Opcode NARY_END = LSS;
 
 }

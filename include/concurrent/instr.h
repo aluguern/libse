@@ -142,8 +142,8 @@ public:
   DECL_READ_ENCODER_FN
 };
 
-template<Operator op, typename U>
-class UnaryReadInstr : public ReadInstr<typename ReturnType<op, U>::result_type> {
+template<Opcode opcode, typename U>
+class UnaryReadInstr : public ReadInstr<typename ReturnType<opcode, U>::result_type> {
 private:
   const std::shared_ptr<ReadInstr<U>> m_operand_ptr;
 
@@ -173,9 +173,9 @@ public:
   DECL_READ_ENCODER_FN
 };
 
-template<Operator op, typename U, typename V>
+template<Opcode opcode, typename U, typename V>
 class BinaryReadInstr :
-  public ReadInstr<typename ReturnType<op, U, V>::result_type> {
+  public ReadInstr<typename ReturnType<opcode, U, V>::result_type> {
 
 private:
   const std::unique_ptr<ReadInstr<U>> m_loperand_ptr;
@@ -216,7 +216,7 @@ public:
 /// commutative, i.e. `op` is a commutative monoid. For example, the logical
 /// operator \ref LAND satisfies these properties. These and other operators
 /// allow us to flatten the usual tree data structure to a set of operands.
-template<Operator op, typename T>
+template<Opcode opcode, typename T>
 class NaryReadInstr : public ReadInstr<T> {
 private:
   // Never empty
@@ -296,14 +296,14 @@ struct ReadInstrResult<LiteralReadInstr<T>> { typedef T Type; };
 template<typename T>
 struct ReadInstrResult<BasicReadInstr<T>> { typedef T Type; };
 
-template<Operator op, typename T>
-struct ReadInstrResult<UnaryReadInstr<op, T>> {
-  typedef typename ReturnType<op, T>::result_type Type;
+template<Opcode opcode, typename T>
+struct ReadInstrResult<UnaryReadInstr<opcode, T>> {
+  typedef typename ReturnType<opcode, T>::result_type Type;
 };
 
-template<Operator op, typename T, typename U>
-struct ReadInstrResult<BinaryReadInstr<op, T, U>> {
-  typedef typename ReturnType<op, T, U>::result_type Type;
+template<Opcode opcode, typename T, typename U>
+struct ReadInstrResult<BinaryReadInstr<opcode, T, U>> {
+  typedef typename ReturnType<opcode, T, U>::result_type Type;
 };
 
 template<typename T, typename U, size_t N>
