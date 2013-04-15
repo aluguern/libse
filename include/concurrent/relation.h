@@ -117,13 +117,16 @@ class TagAtom : public Tag {
   friend class TagAtomSets;
   template<typename T> friend class TagRelation;
 
-  TagAtom(uintptr_t atom) : Tag(atom) {}
+  TagAtom(unsigned atom) : Tag(atom) {}
+
+public:
+  operator unsigned() const { return *atoms().cbegin(); }
 };
 
 /// \internal Hash value of a TagAtom
 struct TagAtomHash {
   size_t operator()(const se::TagAtom& tag_atom) const  {
-    return *(tag_atom.atoms().cbegin());
+    return static_cast<unsigned>(tag_atom);
   }
 };
 
@@ -133,7 +136,7 @@ typedef std::unordered_set<TagAtom, TagAtomHash> TagAtomSet;
 struct TagAtomSets {
   static TagAtomSet tag_atom_set(const Tag& tag) {
     TagAtomSet tag_atoms;
-    for (uintptr_t atom : tag.atoms()) {
+    for (unsigned atom : tag.atoms()) {
       tag_atoms.insert(TagAtom(atom));
     }
 
@@ -147,7 +150,7 @@ static_assert(std::is_base_of<Event, T>::value, "T must be a subclass of Event")
 
 private:
   std::unordered_set<std::shared_ptr<T>> m_event_ptrs;
-  Relation<uintptr_t, std::shared_ptr<T>> m_relation;
+  Relation<unsigned, std::shared_ptr<T>> m_relation;
   TagAtomSet m_tag_atoms;
 
 public:
@@ -172,7 +175,7 @@ public:
 
     m_event_ptrs.insert(event_ptr);
 
-    for (uintptr_t atom : event_ptr->tag().atoms()) {
+    for (unsigned atom : event_ptr->tag().atoms()) {
       m_tag_atoms.insert(TagAtom(atom));
       m_relation.add(atom, event_ptr);
     }
@@ -182,7 +185,7 @@ public:
     const Predicate<std::shared_ptr<T>>& predicate) const {
 
     std::unordered_set<std::shared_ptr<T>> result;
-    for (uintptr_t atom : tag.atoms()) {
+    for (unsigned atom : tag.atoms()) {
       m_relation.find(atom, predicate, result);
     }
     return result;
@@ -196,7 +199,7 @@ public:
     std::pair<EventPtrSet, EventPtrSet> result(std::make_pair(
       EventPtrSet(), EventPtrSet()));
 
-    for (uintptr_t atom : tag.atoms()) {
+    for (unsigned atom : tag.atoms()) {
       m_relation.partition(atom, ReadEventPredicate::predicate(), result);
     }
 

@@ -7,6 +7,6 @@
 namespace se {
 
 Tag Tag::s_bottom_element;
-uintptr_t Tag::s_next_atom = 0;
+unsigned Tag::s_next_atom = 0;
 
 }

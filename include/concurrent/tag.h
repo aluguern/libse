@@ -16,26 +16,26 @@ namespace se {
 /// An element in an atomistic lattice
 class Tag {
 private:
-  static uintptr_t s_next_atom;
+  static unsigned s_next_atom;
   static Tag s_bottom_element;
 
-  const std::set<uintptr_t> m_atoms;
+  const std::set<unsigned> m_atoms;
 
   // Bottom element
   Tag() : m_atoms() {}
-  Tag(std::set<uintptr_t>&& atoms) : m_atoms(std::move(atoms)) {}
+  Tag(std::set<unsigned>&& atoms) : m_atoms(std::move(atoms)) {}
 
 protected:
   /// Atom in the lattice
-  Tag(uintptr_t atom) : m_atoms({atom}) {}
+  Tag(unsigned atom) : m_atoms({atom}) {}
 
   template<typename T> friend class TagRelation;
   friend struct TagAtomSets;
-  const std::set<uintptr_t>& atoms() const { return m_atoms; }
+  const std::set<unsigned>& atoms() const { return m_atoms; }
 
 public:
   /// \internal Reset the counter that make() uses
-  static void reset(uintptr_t atom = 0) { s_next_atom = atom; }
+  static void reset(unsigned atom = 0) { s_next_atom = atom; }
 
   static Tag unique_atom() { return Tag(s_next_atom++); }
   static Tag bottom() { return s_bottom_element; }
@@ -46,7 +46,7 @@ public:
 
   /// Greatest lower bound
   Tag meet(const Tag& other) const {
-    std::set<uintptr_t> intersection;
+    std::set<unsigned> intersection;
     std::set_intersection(m_atoms.cbegin(), m_atoms.cend(), other.m_atoms.cbegin(),
       other.m_atoms.cend(), std::inserter(intersection, intersection.begin()));
     return Tag(std::move(intersection));
@@ -54,7 +54,7 @@ public:
 
   /// Least upper bound
   Tag join(const Tag& other) const {
-    std::set<uintptr_t> join_atoms(m_atoms);
+    std::set<unsigned> join_atoms(m_atoms);
     join_atoms.insert(other.m_atoms.cbegin(), other.m_atoms.cend());
     return Tag(std::move(join_atoms));
   }
