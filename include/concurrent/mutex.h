@@ -15,8 +15,8 @@ namespace se {
 /// from being simultaneously accessed by multiple threads.
 class Mutex {
 private:
-  size_t m_lock_thread_id;
-  SharedVar<size_t> m_thread_id;
+  unsigned m_lock_thread_id;
+  SharedVar<unsigned> m_thread_id;
 
 protected:
   void unlock(Z3& z3) {
