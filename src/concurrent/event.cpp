@@ -6,6 +6,6 @@
 
 namespace se {
 
-size_t Event::s_next_id = 0;
+unsigned Event::s_next_id = 0;
 
 }

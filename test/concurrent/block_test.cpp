@@ -7,7 +7,7 @@ using namespace se;
 
 class TestEvent : public Event {
 public:
-  TestEvent(size_t event_id) :
+  TestEvent(unsigned event_id) :
     Event(event_id, 0, Tag::unique_atom(), true, &TypeInfo<int>::s_type) {}
 
   z3::expr encode_eq(const Z3ValueEncoderC0& encoder, Z3& helper) const {

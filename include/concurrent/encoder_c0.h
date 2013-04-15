@@ -93,8 +93,8 @@ public:
     assert(write_event.is_write());
     assert(read_event.is_read());
 
-    const z3::expr read_event_id(context.int_val(static_cast<unsigned>(read_event.event_id())));
-    const z3::expr write_event_id(context.int_val(static_cast<unsigned>(write_event.event_id())));
+    const z3::expr read_event_id(context.int_val(read_event.event_id()));
+    const z3::expr write_event_id(context.int_val(write_event.event_id()));
     return write_event_id == m_rf_func_decl(read_event_id);
   }
 

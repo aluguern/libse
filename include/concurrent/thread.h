@@ -46,7 +46,7 @@ private:
   }
 
   // Clears the entire recorder stack and restarts recording the main thread
-  void internal_reset(size_t next_event_id, unsigned next_tag) {
+  void internal_reset(unsigned next_event_id, unsigned next_tag) {
     Event::reset_id(next_event_id);
     Tag::reset(next_tag);
 
@@ -109,7 +109,7 @@ protected:
 
 public:
   /// Erase any previous thread recordings
-  static void reset(size_t next_event_id = 0, unsigned next_tag = 0) {
+  static void reset(unsigned next_event_id = 0, unsigned next_tag = 0) {
     return s_singleton.internal_reset(next_event_id, next_tag);
   }
 

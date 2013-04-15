@@ -99,8 +99,8 @@ TEST(ConcurrencyTest, BinaryOperatorLSSWithoutCondition) {
   const BasicReadInstr<int>& roperand = dynamic_cast<const BasicReadInstr<int>&>(instr.roperand_ref());
 
   // Make no assumption about the order in which operands are evaluated
-  const size_t left_id = loperand.event_ptr()->event_id();
-  const size_t right_id = roperand.event_ptr()->event_id();
+  const unsigned left_id = loperand.event_ptr()->event_id();
+  const unsigned right_id = roperand.event_ptr()->event_id();
   EXPECT_TRUE(2*14 == left_id || 2*15 == left_id);
   EXPECT_TRUE(2*14 == right_id || 2*15 == right_id);
   EXPECT_NE(left_id, right_id);
@@ -133,8 +133,8 @@ TEST(ConcurrencyTest, BinaryOperatorADDWithCondition) {
   const BasicReadInstr<long>& roperand = dynamic_cast<const BasicReadInstr<long>&>(instr.roperand_ref());
 
   // Make no assumption about the order in which operands are evaluated
-  const size_t left_id = loperand.event_ptr()->event_id();
-  const size_t right_id = roperand.event_ptr()->event_id();
+  const unsigned left_id = loperand.event_ptr()->event_id();
+  const unsigned right_id = roperand.event_ptr()->event_id();
   EXPECT_TRUE(2*15 == left_id || 2*16 == left_id);
   EXPECT_TRUE(2*15 == right_id || 2*16 == right_id);
   EXPECT_NE(left_id, right_id);
@@ -158,7 +158,7 @@ TEST(ConcurrencyTest, BinaryOperatorLSSReadInstrPointerLiteralWithoutCondition) 
   const LiteralReadInstr<int>& roperand = dynamic_cast<const LiteralReadInstr<int>&>(lss_instr.roperand_ref());
 
   // Make no assumption about the order in which operands are evaluated
-  const size_t left_id = loperand.event_ptr()->event_id();
+  const unsigned left_id = loperand.event_ptr()->event_id();
   EXPECT_EQ(2*14, left_id);
 
   EXPECT_EQ(3, roperand.literal());
@@ -184,7 +184,7 @@ TEST(ConcurrencyTest, BinaryOperatorLSSLiteralReadInstrPointerWithoutCondition) 
   EXPECT_EQ(3, loperand.literal());
 
   // Make no assumption about the order in which operands are evaluated
-  const size_t right_id = roperand.event_ptr()->event_id();
+  const unsigned right_id = roperand.event_ptr()->event_id();
   EXPECT_EQ(2*14, right_id);
 }
 
@@ -194,7 +194,7 @@ TEST(ConcurrencyTest, AllocLocalVar) {
 
   const LocalVar<int> var;
 
-  const size_t write_event_id = 2*42+1;
+  const unsigned write_event_id = 2*42+1;
   const DirectWriteEvent<int>& write_event = var.direct_write_event_ref();
   EXPECT_EQ(write_event_id, write_event.event_id());
 
@@ -213,7 +213,7 @@ TEST(ConcurrencyTest, LocalVarScalarAssignmentWithoutCondition) {
   Threads::begin_main_thread();
 
   LocalVar<short> var;
-  const size_t write_event_id = 2*7+1;
+  const unsigned write_event_id = 2*7+1;
   EXPECT_EQ(write_event_id, var.direct_write_event_ref().event_id());
   EXPECT_EQ(write_event_id, var.read_event_ptr()->event_id());
 
@@ -221,7 +221,7 @@ TEST(ConcurrencyTest, LocalVarScalarAssignmentWithoutCondition) {
 
   const LiteralReadInstr<short>& read_instr = dynamic_cast<const LiteralReadInstr<short>&>(var.direct_write_event_ref().instr_ref());
 
-  const size_t new_write_event_id = 2*8+1;
+  const unsigned new_write_event_id = 2*8+1;
 
   EXPECT_EQ(5, read_instr.literal());
   EXPECT_TRUE(var.tag().is_bottom());
@@ -236,7 +236,7 @@ TEST(ConcurrencyTest, LocalVarAssignmentWithoutCondition) {
   LocalVar<char> char_integer;
   LocalVar<long> long_integer;
 
-  const size_t char_read_event_id = 2*7+1;
+  const unsigned char_read_event_id = 2*7+1;
   EXPECT_EQ(char_read_event_id, char_integer.read_event_ptr()->event_id());
 
   long_integer = 3L + char_integer;
@@ -258,9 +258,9 @@ TEST(ConcurrencyTest, LocalVarOtherAssignmentWithoutCondition) {
   LocalVar<long> long_integer;
   LocalVar<long> another_long_integer;
 
-  const size_t char_integer_event_id = 2*12+1;
-  const size_t long_integer_event_id = 2*13+1;
-  const size_t another_long_integer_event_id = 2*14+1;
+  const unsigned char_integer_event_id = 2*12+1;
+  const unsigned long_integer_event_id = 2*13+1;
+  const unsigned another_long_integer_event_id = 2*14+1;
 
   EXPECT_EQ(char_integer_event_id, char_integer.direct_write_event_ref().event_id());
   EXPECT_EQ(char_integer_event_id, char_integer.read_event_ptr()->event_id());

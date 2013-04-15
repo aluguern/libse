@@ -40,9 +40,9 @@ class Z3ValueEncoderC0;
 class Event {
 private:
   // On 32-bit architectures, the legal range of identifiers is 0 to 2^15-1.
-  static size_t s_next_id;
+  static unsigned s_next_id;
 
-  const size_t m_event_id;
+  const unsigned m_event_id;
   const unsigned m_thread_id;
   const bool m_is_read;
   const Type* const m_type_ptr;
@@ -55,8 +55,8 @@ private:
   // and the maximal write event identifier is 2^30-1. These upper limits
   // stem from Z3 which aligns char pointers for symbol names by 4 bytes on
   // 32-bit architectures.
-  static size_t next_id(bool is_read) {
-    const size_t even = 2 * s_next_id++;
+  static unsigned next_id(bool is_read) {
+    const unsigned even = 2 * s_next_id++;
     return is_read ? even : even + 1;
   }
 
@@ -92,7 +92,7 @@ protected:
   ///
   /// The type_ptr describes the event in terms of its memory characteristics
   /// such as how many bytes are read or written.
-  Event(size_t event_id, unsigned thread_id, const Tag& tag,
+  Event(unsigned event_id, unsigned thread_id, const Tag& tag,
     bool is_read, const Type* const type_ptr,
     const std::shared_ptr<ReadInstr<bool>>& condition_ptr = nullptr) :
     m_event_id(event_id), m_tag(tag), m_thread_id(thread_id),
@@ -102,11 +102,11 @@ protected:
   }
 
 public:
-  static void reset_id(size_t id = 0) { s_next_id = id; }
+  static void reset_id(unsigned id = 0) { s_next_id = id; }
 
   virtual ~Event() {}
 
-  size_t event_id() const { return m_event_id; }
+  unsigned event_id() const { return m_event_id; }
   unsigned thread_id() const { return m_thread_id; }
   const Tag& tag() const { return m_tag; }
   bool is_read() const { return m_is_read; }
@@ -211,9 +211,9 @@ class ReadEvent : public Event {
 private:
   template<typename U>
   friend std::unique_ptr<ReadEvent<U>> internal_make_read_event(
-    const Tag& tag, size_t event_id);
+    const Tag& tag, unsigned event_id);
 
-  ReadEvent(size_t event_id, unsigned thread_id, const Tag& tag,
+  ReadEvent(unsigned event_id, unsigned thread_id, const Tag& tag,
     const std::shared_ptr<ReadInstr<bool>>& condition_ptr = nullptr) :
     Event(event_id, thread_id, tag, true, &TypeInfo<T>::s_type, condition_ptr) {}
 

@@ -35,7 +35,7 @@ std::unique_ptr<ReadEvent<T>> make_read_event(const Tag& tag) {
 
 template<typename T>
 std::unique_ptr<ReadEvent<T>> internal_make_read_event(const Tag& tag,
-  size_t event_id) {
+  unsigned event_id) {
 
   const unsigned thread_id = ThisThread::thread_id();
   return std::unique_ptr<ReadEvent<T>>(new ReadEvent<T>(event_id, thread_id,
