@@ -443,10 +443,10 @@ public:
       const std::forward_list<std::shared_ptr<Event>>& body = block_ptr->body();
 
       z3::expr body_clock(inner_clock);
-      for (std::forward_list<std::shared_ptr<Event>>::const_iterator iter(
-             body.cbegin()); iter != body.cend(); iter++) {
+      for (const std::shared_ptr<Event>& body_event_ptr : body) {
+        const Event& body_event = *body_event_ptr;
 
-        const Event& body_event = **iter;
+        /* skip local events */
         if (body_event.tag().is_bottom()) { continue; }
 
         z3::expr next_body_clock(z3.clock(body_event));
