@@ -21,6 +21,8 @@ public:
   z3::solver solver;
 
 private:
+  const z3::func_decl m_rf_func_decl;
+
   friend class Z3ValueEncoderC0;
   friend class Z3ReadEncoderC0;
 
@@ -65,7 +67,9 @@ private:
   }
 
 public:
-  Z3() : context(), solver(context), join_id(0) {}
+  Z3() : context(), solver(context), m_rf_func_decl(context.function("rf",
+    /* domain */ context.int_sort(), /* range */ context.int_sort())),
+    join_id(0) {}
 
   /// Creates a Z3 constant according to the event's \ref Event::type() "type"
   z3::expr constant(const Event& event) {
@@ -80,6 +84,18 @@ public:
 
     z3::symbol symbol(context.str_symbol(name.c_str()));
     return context.constant(symbol, context.bool_sort());
+  }
+
+  /// Equality between write event and read event applied to function `rf`
+
+  /// \returns `w == rf(r)`, i.e. `r` reads from `w`
+  z3::expr rf(const Event& write_event, const Event& read_event) {
+    assert(write_event.is_write());
+    assert(read_event.is_read());
+
+    const z3::expr read_event_id(context.int_val(static_cast<unsigned>(read_event.event_id())));
+    const z3::expr write_event_id(context.int_val(static_cast<unsigned>(write_event.event_id())));
+    return write_event_id == m_rf_func_decl(read_event_id);
   }
 
   /// Individual array element literal
@@ -328,7 +344,7 @@ public:
         if (read_event.tag().meet(write_event.tag()).is_bottom()) { continue; }
 
         const z3::expr wr_order(z3.clock(write_event) < z3.clock(read_event));
-        const z3::expr wr_schedule(z3.constant(write_event, read_event));
+        const z3::expr wr_schedule(z3.rf(write_event, read_event));
         const z3::expr wr_equality(write_event.constant(z3) ==
           read_event.constant(z3));
         const z3::expr write_event_condition(event_condition(write_event, z3));
@@ -402,7 +418,7 @@ public:
 
             assert(!read_event.tag().is_bottom());
 
-            const z3::expr xr_schedule(z3.constant(write_event_x, read_event));
+            const z3::expr xr_schedule(z3.rf(write_event_x, read_event));
             const z3::expr xy_order(z3.clock(write_event_x) < z3.clock(write_event_y));
             const z3::expr ry_order(z3.clock(read_event) < z3.clock(write_event_y));
             const z3::expr y_condition(event_condition(write_event_y, z3));

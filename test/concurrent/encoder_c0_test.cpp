@@ -690,7 +690,7 @@ TEST(EncoderC0Test, Z3OrderEncoderC0ForFrWithoutCondition) {
 
   z3.solver.push();
 
-  z3.solver.add(z3.constant(*major_write_event_ptr, *read_event_ptr));
+  z3.solver.add(z3.rf(*major_write_event_ptr, *read_event_ptr));
   z3.solver.add(read_event_ptr->constant(z3) == 5);
   EXPECT_EQ(z3::sat, z3.solver.check());
 
@@ -698,7 +698,7 @@ TEST(EncoderC0Test, Z3OrderEncoderC0ForFrWithoutCondition) {
 
   z3.solver.push();
 
-  z3.solver.add(z3.constant(*major_write_event_ptr, *read_event_ptr));
+  z3.solver.add(z3.rf(*major_write_event_ptr, *read_event_ptr));
   z3.solver.add(read_event_ptr->constant(z3) == 7);
   EXPECT_EQ(z3::unsat, z3.solver.check());
 
@@ -706,7 +706,7 @@ TEST(EncoderC0Test, Z3OrderEncoderC0ForFrWithoutCondition) {
 
   z3.solver.push();
 
-  z3.solver.add(z3.constant(*minor_write_event_ptr, *read_event_ptr));
+  z3.solver.add(z3.rf(*minor_write_event_ptr, *read_event_ptr));
   z3.solver.add(read_event_ptr->constant(z3) == 7);
   EXPECT_EQ(z3::sat, z3.solver.check());
 
@@ -714,7 +714,7 @@ TEST(EncoderC0Test, Z3OrderEncoderC0ForFrWithoutCondition) {
 
   z3.solver.push();
 
-  z3.solver.add(z3.constant(*minor_write_event_ptr, *read_event_ptr));
+  z3.solver.add(z3.rf(*minor_write_event_ptr, *read_event_ptr));
   z3.solver.add(read_event_ptr->constant(z3) == 5);
   EXPECT_EQ(z3::unsat, z3.solver.check());
 
