@@ -30,6 +30,7 @@ protected:
   Tag(uintptr_t atom) : m_atoms({atom}) {}
 
   template<typename T> friend class TagRelation;
+  friend struct TagAtomSets;
   const std::set<uintptr_t>& atoms() const { return m_atoms; }
 
 public:

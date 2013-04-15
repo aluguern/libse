@@ -114,6 +114,7 @@ public:
 /// \internal Atom in the Tag lattice
 class TagAtom : public Tag {
   friend class TagAtomHash;
+  friend class TagAtomSets;
   template<typename T> friend class TagRelation;
 
   TagAtom(uintptr_t atom) : Tag(atom) {}
@@ -127,6 +128,18 @@ struct TagAtomHash {
 };
 
 typedef std::unordered_set<TagAtom, TagAtomHash> TagAtomSet;
+
+/// Helper for sets of \ref TagAtom atoms
+struct TagAtomSets {
+  static TagAtomSet tag_atom_set(const Tag& tag) {
+    TagAtomSet tag_atoms;
+    for (uintptr_t atom : tag.atoms()) {
+      tag_atoms.insert(TagAtom(atom));
+    }
+
+    return std::move(tag_atoms);
+  }
+};
 
 template<typename T = Event>
 class TagRelation {
