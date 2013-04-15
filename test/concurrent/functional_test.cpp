@@ -659,7 +659,38 @@ TEST(ConcurrentFunctionalTest, LocalScalarAndLocalArray) {
   EXPECT_EQ(z3::unsat, z3.solver.check());
 }
 
-TEST(ConcurrentFunctionalTest, LocalScalarAndSharedArray) {
+TEST(ConcurrentFunctionalTest, SharedScalarVariableInSingleThread) {
+  Z3 z3;
+
+  Threads::reset();
+  Threads::begin_main_thread();
+
+  SharedVar<char> a;
+  LocalVar<char> b;
+  a = 'Z';
+  b = a;
+
+  std::unique_ptr<ReadInstr<bool>> c0((b == 'Z'));
+  std::unique_ptr<ReadInstr<bool>> c1(!(b == 'Z'));
+
+  Threads::end_main_thread(z3);
+
+  z3.solver.push();
+
+  Threads::internal_error(std::move(c0), z3);
+  EXPECT_EQ(z3::sat, z3.solver.check());
+
+  z3.solver.pop();
+
+  z3.solver.push();
+
+  Threads::internal_error(std::move(c1), z3);
+  EXPECT_EQ(z3::unsat, z3.solver.check());
+
+  z3.solver.pop();
+}
+
+TEST(ConcurrentFunctionalTest, SharedArrayInSingleThread) {
   Z3 z3;
 
   Threads::reset();
