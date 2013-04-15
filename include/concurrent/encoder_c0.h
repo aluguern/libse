@@ -323,6 +323,48 @@ private:
   typedef std::shared_ptr<Event> EventPtr;
   typedef std::unordered_set<EventPtr> EventPtrSet;
 
+  z3::expr internal_encode_spo(const std::shared_ptr<Block>& block_ptr,
+    const z3::expr& earlier_clock, Z3& z3) const {
+
+    z3::expr inner_clock(earlier_clock);
+    if (!block_ptr->body().empty()) {
+      // Consider changing Block::body() to return an ordered set if it would
+      // simplify the treatment of local events (below, currently excluded).
+      const std::forward_list<std::shared_ptr<Event>>& body = block_ptr->body();
+
+      z3::expr body_clock(inner_clock);
+      for (const std::shared_ptr<Event>& body_event_ptr : body) {
+        const Event& body_event = *body_event_ptr;
+
+        /* skip local events */
+        if (body_event.tag().is_bottom()) { continue; }
+
+        z3::expr next_body_clock(z3.clock(body_event));
+        z3.solver.add(body_clock < next_body_clock);
+        body_clock = next_body_clock;
+      }
+
+      inner_clock = body_clock;
+    }
+
+    for (const std::shared_ptr<Block>& inner_block_ptr :
+      block_ptr->inner_block_ptrs()) {
+
+      z3::expr then_clock(internal_encode_spo(inner_block_ptr, inner_clock, z3));
+      const std::shared_ptr<Block>& inner_else_block_ptr(
+        inner_block_ptr->else_block_ptr());
+      if (inner_else_block_ptr) {
+        z3::expr else_clock(internal_encode_spo(inner_else_block_ptr,
+          inner_clock, z3));
+        inner_clock = z3.join_clocks(then_clock, else_clock);
+      } else {
+        inner_clock = then_clock;
+      }
+    }
+
+    return inner_clock;
+  }
+
 public:
   Z3OrderEncoderC0() : m_read_encoder() {}
 
@@ -436,48 +478,7 @@ public:
     return fr_expr;
   }
 
-  z3::expr internal_encode_spo(const std::shared_ptr<Block>& block_ptr,
-    const z3::expr& earlier_clock, Z3& z3) const {
-
-    z3::expr inner_clock(earlier_clock);
-    if (!block_ptr->body().empty()) {
-      // Consider changing Block::body() to return an ordered set if it would
-      // simplify the treatment of local events (below, currently excluded).
-      const std::forward_list<std::shared_ptr<Event>>& body = block_ptr->body();
-
-      z3::expr body_clock(inner_clock);
-      for (const std::shared_ptr<Event>& body_event_ptr : body) {
-        const Event& body_event = *body_event_ptr;
-
-        /* skip local events */
-        if (body_event.tag().is_bottom()) { continue; }
-
-        z3::expr next_body_clock(z3.clock(body_event));
-        z3.solver.add(body_clock < next_body_clock);
-        body_clock = next_body_clock;
-      }
-
-      inner_clock = body_clock;
-    }
-
-    for (const std::shared_ptr<Block>& inner_block_ptr :
-      block_ptr->inner_block_ptrs()) {
-
-      z3::expr then_clock(internal_encode_spo(inner_block_ptr, inner_clock, z3));
-      const std::shared_ptr<Block>& inner_else_block_ptr(
-        inner_block_ptr->else_block_ptr());
-      if (inner_else_block_ptr) {
-        z3::expr else_clock(internal_encode_spo(inner_else_block_ptr,
-          inner_clock, z3));
-        inner_clock = z3.join_clocks(then_clock, else_clock);
-      } else {
-        inner_clock = then_clock;
-      }
-    }
-
-    return inner_clock;
-  }
-
+  /// Encode a single thread as a series-parallel directed acyclic graph
   void encode_spo(const std::shared_ptr<Block>& most_outer_block_ptr,
     Z3& z3) const {
 
