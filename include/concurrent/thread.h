@@ -174,9 +174,9 @@ public:
     const TagRelation<Event>& rel = s_singleton.m_tag_relation;
     const Z3OrderEncoderC0& order_encoder = s_singleton.m_order_encoder;
 
-    z3.solver.add(order_encoder.rfe_encode(rel, z3));
-    z3.solver.add(order_encoder.fr_encode(rel, z3));
-    z3.solver.add(order_encoder.ws_encode(rel, z3));
+    z3.solver.add(order_encoder.rf_enc(rel, z3));
+    z3.solver.add(order_encoder.fr_enc(rel, z3));
+    z3.solver.add(order_encoder.ws_enc(rel, z3));
 
     if (!s_singleton.m_error_exprs.empty()) {
       z3::expr some_error_expr(z3.context.bool_val(false));

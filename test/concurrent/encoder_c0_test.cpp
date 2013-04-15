@@ -618,7 +618,7 @@ TEST(EncoderC0Test, Z3OrderEncoderC0ForRfWithoutCondition) {
   relation.relate(write_event_ptr);
   relation.relate(read_event_ptr);
 
-  z3.solver.add(encoder.rfe_encode(relation, z3));
+  z3.solver.add(encoder.rf_enc(relation, z3));
   EXPECT_EQ(z3::sat, z3.solver.check());
 
   z3.solver.add(read_event_ptr->constant(z3) == 3);
@@ -649,7 +649,7 @@ TEST(EncoderC0Test, Z3OrderEncoderC0ForWsWithoutCondition) {
   relation.relate(major_write_event_ptr);
   relation.relate(minor_write_event_ptr);
 
-  z3.solver.add(encoder.ws_encode(relation, z3));
+  z3.solver.add(encoder.ws_enc(relation, z3));
   EXPECT_EQ(z3::sat, z3.solver.check());
 
   z3.solver.add(z3.clock(*major_write_event_ptr) == z3.clock(*minor_write_event_ptr));
@@ -684,8 +684,8 @@ TEST(EncoderC0Test, Z3OrderEncoderC0ForFrWithoutCondition) {
 
   z3.solver.add(major_write_event_ptr->encode_eq(value_encoder, z3));
   z3.solver.add(minor_write_event_ptr->encode_eq(value_encoder, z3));
-  z3.solver.add(order_encoder.rfe_encode(relation, z3));
-  z3.solver.add(order_encoder.fr_encode(relation, z3));
+  z3.solver.add(order_encoder.rf_enc(relation, z3));
+  z3.solver.add(order_encoder.fr_enc(relation, z3));
   EXPECT_EQ(z3::sat, z3.solver.check());
 
   z3.solver.push();

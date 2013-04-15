@@ -326,8 +326,9 @@ private:
 public:
   Z3OrderEncoderC0() : m_read_encoder() {}
 
-  z3::expr rfe_encode(const TagRelation<Event>& relation, Z3& z3) const {
-    z3::expr rfe_expr(z3.context.bool_val(true));
+  /// \internal \return RF axiom encoding
+  z3::expr rf_enc(const TagRelation<Event>& relation, Z3& z3) const {
+    z3::expr rf_expr(z3.context.bool_val(true));
     for (const EventPtr& x_ptr : /* read events */ relation.event_ptrs()) {
       if (x_ptr->is_write()) { continue; }
       const Event& read_event = *x_ptr;
@@ -350,16 +351,17 @@ public:
         const z3::expr write_event_condition(event_condition(write_event, z3));
 
         wr_schedules = wr_schedules or wr_schedule;
-        rfe_expr = rfe_expr and implies(wr_schedule, wr_order and
+        rf_expr = rf_expr and implies(wr_schedule, wr_order and
           write_event_condition and read_event_condition and wr_equality);
       }
 
-      rfe_expr = rfe_expr and implies(read_event_condition, wr_schedules);
+      rf_expr = rf_expr and implies(read_event_condition, wr_schedules);
     }
-    return rfe_expr;
+    return rf_expr;
   }
 
-  z3::expr ws_encode(const TagRelation<Event>& relation, Z3& z3) const {
+  /// \internal \return WS axiom encoding
+  z3::expr ws_enc(const TagRelation<Event>& relation, Z3& z3) const {
     const TagAtomSet& tag_atoms = relation.tag_atoms();
 
     z3::expr ws_expr(z3.context.bool_val(true));
@@ -393,7 +395,8 @@ public:
     return ws_expr;
   }
 
-  z3::expr fr_encode(const TagRelation<Event>& relation, Z3& z3) const {
+  /// \internal \return FR axiom encoding
+  z3::expr fr_enc(const TagRelation<Event>& relation, Z3& z3) const {
     const TagAtomSet& tag_atoms = relation.tag_atoms();
 
     z3::expr fr_expr(z3.context.bool_val(true));
