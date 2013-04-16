@@ -11,9 +11,9 @@ TEST(InstrTest, LiteralReadInstrWithCondition) {
   Event::reset_id(7);
 
   const unsigned thread_id = 3;
-  const Tag condition_tag = Tag::unique_atom();
+  const Zone condition_zone = Zone::unique_atom();
 
-  std::unique_ptr<ReadEvent<bool>> condition_event_ptr(new ReadEvent<bool>(thread_id, condition_tag));
+  std::unique_ptr<ReadEvent<bool>> condition_event_ptr(new ReadEvent<bool>(thread_id, condition_zone));
   const std::shared_ptr<ReadInstr<bool>> condition_ptr(
     new BasicReadInstr<bool>(std::move(condition_event_ptr)));
 
@@ -36,9 +36,9 @@ TEST(InstrTest, BasicReadInstrWithoutCondition) {
   Event::reset_id(4);
 
   const unsigned thread_id = 3;
-  const Tag tag = Tag::unique_atom();
+  const Zone zone = Zone::unique_atom();
 
-  std::unique_ptr<ReadEvent<int>> event_ptr(new ReadEvent<int>(thread_id, tag));
+  std::unique_ptr<ReadEvent<int>> event_ptr(new ReadEvent<int>(thread_id, zone));
 
   const BasicReadInstr<int> instr(std::move(event_ptr));
   EXPECT_EQ(2*4, instr.event_ptr()->event_id());
@@ -48,14 +48,14 @@ TEST(InstrTest, BasicReadInstrWithCondition) {
   Event::reset_id(7);
 
   const unsigned thread_id = 3;
-  const Tag condition_tag = Tag::unique_atom();
+  const Zone condition_zone = Zone::unique_atom();
 
-  std::unique_ptr<ReadEvent<bool>> condition_event_ptr(new ReadEvent<bool>(thread_id, condition_tag));
+  std::unique_ptr<ReadEvent<bool>> condition_event_ptr(new ReadEvent<bool>(thread_id, condition_zone));
   const std::shared_ptr<ReadInstr<bool>> condition_ptr(
     new BasicReadInstr<bool>(std::move(condition_event_ptr)));
 
-  const Tag tag = Tag::unique_atom();
-  std::unique_ptr<ReadEvent<int>> event_ptr(new ReadEvent<int>(thread_id, tag, condition_ptr));
+  const Zone zone = Zone::unique_atom();
+  std::unique_ptr<ReadEvent<int>> event_ptr(new ReadEvent<int>(thread_id, zone, condition_ptr));
 
   const BasicReadInstr<int> instr(std::move(event_ptr));
   EXPECT_EQ(2*8, instr.event_ptr()->event_id());
@@ -65,8 +65,8 @@ TEST(InstrTest, UnaryReadInstrWithoutCondition) {
   Event::reset_id(7);
 
   const unsigned thread_id = 3;
-  const Tag tag = Tag::unique_atom();
-  std::unique_ptr<ReadEvent<int>> event_ptr(new ReadEvent<int>(thread_id, tag));
+  const Zone zone = Zone::unique_atom();
+  std::unique_ptr<ReadEvent<int>> event_ptr(new ReadEvent<int>(thread_id, zone));
   std::unique_ptr<ReadInstr<int>> basic_read_instr(new BasicReadInstr<int>(std::move(event_ptr)));
   const UnaryReadInstr<NOT, int> instr(std::move(basic_read_instr));
 
@@ -78,14 +78,14 @@ TEST(InstrTest, UnaryReadInstrWithCondition) {
   Event::reset_id(7);
 
   const unsigned thread_id = 3;
-  const Tag condition_tag = Tag::unique_atom();
+  const Zone condition_zone = Zone::unique_atom();
 
-  std::unique_ptr<ReadEvent<bool>> condition_event_ptr(new ReadEvent<bool>(thread_id, condition_tag));
+  std::unique_ptr<ReadEvent<bool>> condition_event_ptr(new ReadEvent<bool>(thread_id, condition_zone));
   const std::shared_ptr<ReadInstr<bool>> condition_ptr(
     new BasicReadInstr<bool>(std::move(condition_event_ptr)));
 
-  const Tag tag = Tag::unique_atom();
-  std::unique_ptr<ReadEvent<int>> event_ptr(new ReadEvent<int>(thread_id, tag, condition_ptr));
+  const Zone zone = Zone::unique_atom();
+  std::unique_ptr<ReadEvent<int>> event_ptr(new ReadEvent<int>(thread_id, zone, condition_ptr));
   std::unique_ptr<ReadInstr<int>> basic_read_instr(new BasicReadInstr<int>(std::move(event_ptr)));
   const UnaryReadInstr<NOT, int> instr(std::move(basic_read_instr));
 
@@ -97,11 +97,11 @@ TEST(InstrTest, BinaryReadInstrWithoutCondition) {
   Event::reset_id(7);
 
   const unsigned thread_id = thread_id;
-  const Tag tag_a = Tag::unique_atom();
-  const Tag tag_b = Tag::unique_atom();
+  const Zone zone_a = Zone::unique_atom();
+  const Zone zone_b = Zone::unique_atom();
 
-  std::unique_ptr<ReadEvent<int>> event_ptr_a(new ReadEvent<int>(thread_id, tag_a));
-  std::unique_ptr<ReadEvent<long>> event_ptr_b(new ReadEvent<long>(thread_id, tag_b));
+  std::unique_ptr<ReadEvent<int>> event_ptr_a(new ReadEvent<int>(thread_id, zone_a));
+  std::unique_ptr<ReadEvent<long>> event_ptr_b(new ReadEvent<long>(thread_id, zone_b));
   std::unique_ptr<ReadInstr<int>> basic_read_instr_a(new BasicReadInstr<int>(std::move(event_ptr_a)));
   const BinaryReadInstr<ADD, int, long> instr(std::move(basic_read_instr_a) /* explicit move */,
     std::unique_ptr<ReadInstr<long>>(new BasicReadInstr<long>(std::move(event_ptr_b))) /* implicit move */ );
@@ -117,16 +117,16 @@ TEST(InstrTest, BinaryReadInstrWithCondition) {
   Event::reset_id(7);
 
   const unsigned thread_id = 3;
-  const Tag condition_tag = Tag::unique_atom();
+  const Zone condition_zone = Zone::unique_atom();
 
-  std::unique_ptr<ReadEvent<bool>> condition_event_ptr(new ReadEvent<bool>(thread_id, condition_tag));
+  std::unique_ptr<ReadEvent<bool>> condition_event_ptr(new ReadEvent<bool>(thread_id, condition_zone));
   const std::shared_ptr<ReadInstr<bool>> condition_ptr(
     new BasicReadInstr<bool>(std::move(condition_event_ptr)));
 
-  const Tag tag_a = Tag::unique_atom();
-  const Tag tag_b = Tag::unique_atom();
-  std::unique_ptr<ReadEvent<int>> event_ptr_a(new ReadEvent<int>(thread_id, tag_a, condition_ptr));
-  std::unique_ptr<ReadEvent<long>> event_ptr_b(new ReadEvent<long>(thread_id, tag_b, condition_ptr));
+  const Zone zone_a = Zone::unique_atom();
+  const Zone zone_b = Zone::unique_atom();
+  std::unique_ptr<ReadEvent<int>> event_ptr_a(new ReadEvent<int>(thread_id, zone_a, condition_ptr));
+  std::unique_ptr<ReadEvent<long>> event_ptr_b(new ReadEvent<long>(thread_id, zone_b, condition_ptr));
   std::unique_ptr<ReadInstr<int>> basic_read_instr_a(new BasicReadInstr<int>(std::move(event_ptr_a)));
   const BinaryReadInstr<ADD, int, long> instr(std::move(basic_read_instr_a) /* explicit move */,
     std::unique_ptr<ReadInstr<long>>(new BasicReadInstr<long>(std::move(event_ptr_b))) /* implicit move */ );
@@ -143,20 +143,20 @@ TEST(InstrTest, BinaryReadInstrWithDifferentPathConditions) {
   ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
   const unsigned thread_id = 3;
-  const Tag condition_tag = Tag::unique_atom();
+  const Zone condition_zone = Zone::unique_atom();
 
-  std::unique_ptr<ReadEvent<bool>> condition_event_ptr_a(new ReadEvent<bool>(thread_id, condition_tag));
+  std::unique_ptr<ReadEvent<bool>> condition_event_ptr_a(new ReadEvent<bool>(thread_id, condition_zone));
   const std::shared_ptr<ReadInstr<bool>> condition_ptr_a(
     new BasicReadInstr<bool>(std::move(condition_event_ptr_a)));
 
-  std::unique_ptr<ReadEvent<bool>> condition_event_ptr_b(new ReadEvent<bool>(thread_id, condition_tag));
+  std::unique_ptr<ReadEvent<bool>> condition_event_ptr_b(new ReadEvent<bool>(thread_id, condition_zone));
   const std::shared_ptr<ReadInstr<bool>> condition_ptr_b(
     new BasicReadInstr<bool>(std::move(condition_event_ptr_b)));
 
-  const Tag tag_a = Tag::unique_atom();
-  const Tag tag_b = Tag::unique_atom();
-  std::unique_ptr<ReadEvent<int>> event_ptr_a(new ReadEvent<int>(thread_id, tag_a, condition_ptr_a));
-  std::unique_ptr<ReadEvent<long>> event_ptr_b(new ReadEvent<long>(thread_id, tag_b, condition_ptr_b));
+  const Zone zone_a = Zone::unique_atom();
+  const Zone zone_b = Zone::unique_atom();
+  std::unique_ptr<ReadEvent<int>> event_ptr_a(new ReadEvent<int>(thread_id, zone_a, condition_ptr_a));
+  std::unique_ptr<ReadEvent<long>> event_ptr_b(new ReadEvent<long>(thread_id, zone_b, condition_ptr_b));
   std::unique_ptr<ReadInstr<int>> basic_read_instr_a(new BasicReadInstr<int>(std::move(event_ptr_a)));
   std::unique_ptr<ReadInstr<long>> basic_read_instr_b(new BasicReadInstr<long>(std::move(event_ptr_b)));
   EXPECT_EXIT((BinaryReadInstr<ADD, int, long>(std::move(basic_read_instr_a),
@@ -169,12 +169,12 @@ TEST(InstrTest, DereferenceFixedSizeArrayReadInstrWithoutCondition) {
   const unsigned thread_id = 3;
   const size_t array_size = 5;
 
-  const Tag offset_tag = Tag::unique_atom();
-  std::unique_ptr<ReadEvent<size_t>> offset_event_ptr(new ReadEvent<size_t>(thread_id, offset_tag));
+  const Zone offset_zone = Zone::unique_atom();
+  std::unique_ptr<ReadEvent<size_t>> offset_event_ptr(new ReadEvent<size_t>(thread_id, offset_zone));
   std::unique_ptr<ReadInstr<size_t>> offset_read_instr(new BasicReadInstr<size_t>(std::move(offset_event_ptr)));
 
-  const Tag pointer_tag = Tag::unique_atom();
-  std::unique_ptr<ReadEvent<char[array_size]>> pointer_event_ptr(new ReadEvent<char[array_size]>(thread_id, pointer_tag));
+  const Zone pointer_zone = Zone::unique_atom();
+  std::unique_ptr<ReadEvent<char[array_size]>> pointer_event_ptr(new ReadEvent<char[array_size]>(thread_id, pointer_zone));
   std::unique_ptr<ReadInstr<char[array_size]>> pointer_read_instr(new BasicReadInstr<char[array_size]>(std::move(pointer_event_ptr)));
 
   const DerefReadInstr<char[array_size], size_t> dereference_instr(std::move(pointer_read_instr), std::move(offset_read_instr));
@@ -190,17 +190,17 @@ TEST(InstrTest, DereferenceFixedSizeArrayReadInstrWithCondition) {
 
   const unsigned thread_id = 3;
   const size_t array_size = 5;
-  const Tag condition_tag = Tag::unique_atom();
+  const Zone condition_zone = Zone::unique_atom();
 
-  std::unique_ptr<ReadEvent<bool>> condition_event_ptr(new ReadEvent<bool>(thread_id, condition_tag));
+  std::unique_ptr<ReadEvent<bool>> condition_event_ptr(new ReadEvent<bool>(thread_id, condition_zone));
   const std::shared_ptr<ReadInstr<bool>> condition_ptr(new BasicReadInstr<bool>(std::move(condition_event_ptr)));
 
-  const Tag offset_tag = Tag::unique_atom();
-  std::unique_ptr<ReadEvent<size_t>> offset_event_ptr(new ReadEvent<size_t>(thread_id, offset_tag, condition_ptr));
+  const Zone offset_zone = Zone::unique_atom();
+  std::unique_ptr<ReadEvent<size_t>> offset_event_ptr(new ReadEvent<size_t>(thread_id, offset_zone, condition_ptr));
   std::unique_ptr<ReadInstr<size_t>> offset_read_instr(new BasicReadInstr<size_t>(std::move(offset_event_ptr)));
 
-  const Tag pointer_tag = Tag::unique_atom();
-  std::unique_ptr<ReadEvent<char[array_size]>> pointer_event_ptr(new ReadEvent<char[array_size]>(thread_id, pointer_tag, condition_ptr));
+  const Zone pointer_zone = Zone::unique_atom();
+  std::unique_ptr<ReadEvent<char[array_size]>> pointer_event_ptr(new ReadEvent<char[array_size]>(thread_id, pointer_zone, condition_ptr));
   std::unique_ptr<ReadInstr<char[array_size]>> pointer_read_instr(new BasicReadInstr<char[array_size]>(std::move(pointer_event_ptr)));
 
   const DerefReadInstr<char[array_size], size_t> dereference_instr(std::move(pointer_read_instr), std::move(offset_read_instr));
@@ -223,10 +223,10 @@ TEST(InstrTest, Filter) {
   Event::reset_id(7);
 
   const unsigned thread_id = 3;
-  const Tag tag_a = Tag::unique_atom();
-  const Tag tag_b = Tag::unique_atom();
-  std::unique_ptr<ReadEvent<int>> event_ptr_a(new ReadEvent<int>(thread_id, tag_a));
-  std::unique_ptr<ReadEvent<long>> event_ptr_b(new ReadEvent<long>(thread_id, tag_b));
+  const Zone zone_a = Zone::unique_atom();
+  const Zone zone_b = Zone::unique_atom();
+  std::unique_ptr<ReadEvent<int>> event_ptr_a(new ReadEvent<int>(thread_id, zone_a));
+  std::unique_ptr<ReadEvent<long>> event_ptr_b(new ReadEvent<long>(thread_id, zone_b));
   std::unique_ptr<ReadInstr<int>> basic_read_instr_a(new BasicReadInstr<int>(std::move(event_ptr_a)));
   const BinaryReadInstr<ADD, int, long> instr(std::move(basic_read_instr_a) /* explicit move */,
     std::unique_ptr<ReadInstr<long>>(new BasicReadInstr<long>(std::move(event_ptr_b))) /* implicit move */ );
@@ -267,8 +267,8 @@ TEST(InstrTest, ReadInstrSwitch) {
   const LiteralReadInstr<long> long_literal_read_instr(7L);
 
   unsigned thread_id = 3;
-  const Tag tag = Tag::unique_atom();
-  std::unique_ptr<ReadEvent<long>> event_ptr(new ReadEvent<long>(thread_id, tag));
+  const Zone zone = Zone::unique_atom();
+  std::unique_ptr<ReadEvent<long>> event_ptr(new ReadEvent<long>(thread_id, zone));
   const BasicReadInstr<long> basic_read_instr(std::move(event_ptr));
   
   const ReadInstrPrinter printer;

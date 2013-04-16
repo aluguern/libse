@@ -13,7 +13,7 @@ TEST(VarTest, SharedDeclVarInitScalar) {
 
   const LiteralReadInstr<char>& instr = dynamic_cast<const LiteralReadInstr<char>&>(var.direct_write_event_ref().instr_ref());
   EXPECT_EQ(0, instr.literal());
-  EXPECT_FALSE(var.tag().is_bottom());
+  EXPECT_FALSE(var.zone().is_bottom());
   EXPECT_EQ(2*7+1, var.direct_write_event_ref().event_id());
 }
 
@@ -25,7 +25,7 @@ TEST(VarTest, LocalDeclVarInitScalar) {
 
   const LiteralReadInstr<char>& instr = dynamic_cast<const LiteralReadInstr<char>&>(var.direct_write_event_ref().instr_ref());
   EXPECT_EQ(0, instr.literal());
-  EXPECT_TRUE(var.tag().is_bottom());
+  EXPECT_TRUE(var.zone().is_bottom());
   EXPECT_EQ(2*7+1, var.direct_write_event_ref().event_id());
 }
 
@@ -37,7 +37,7 @@ TEST(VarTest, LocalVarInitScalar) {
 
   const LiteralReadInstr<char>& instr = dynamic_cast<const LiteralReadInstr<char>&>(var.direct_write_event_ref().instr_ref());
   EXPECT_EQ('Z', instr.literal());
-  EXPECT_TRUE(var.tag().is_bottom());
+  EXPECT_TRUE(var.zone().is_bottom());
 }
 
 TEST(VarTest, LocalVarInitArray) {
@@ -46,11 +46,11 @@ TEST(VarTest, LocalVarInitArray) {
 
   LocalVar<char[5]> var;
 
-  EXPECT_TRUE(var[0].tag().is_bottom());
-  EXPECT_TRUE(var[1].tag().is_bottom());
-  EXPECT_TRUE(var[2].tag().is_bottom());
-  EXPECT_TRUE(var[3].tag().is_bottom());
-  EXPECT_TRUE(var[4].tag().is_bottom());
+  EXPECT_TRUE(var[0].zone().is_bottom());
+  EXPECT_TRUE(var[1].zone().is_bottom());
+  EXPECT_TRUE(var[2].zone().is_bottom());
+  EXPECT_TRUE(var[3].zone().is_bottom());
+  EXPECT_TRUE(var[4].zone().is_bottom());
 }
 
 TEST(VarTest, SharedVarInitScalar) {
@@ -61,7 +61,7 @@ TEST(VarTest, SharedVarInitScalar) {
 
   const LiteralReadInstr<char>& instr = dynamic_cast<const LiteralReadInstr<char>&>(var.direct_write_event_ref().instr_ref());
   EXPECT_EQ('Z', instr.literal());
-  EXPECT_FALSE(var.tag().is_bottom());
+  EXPECT_FALSE(var.zone().is_bottom());
 }
 
 TEST(VarTest, SharedVarInitArray) {
@@ -70,11 +70,11 @@ TEST(VarTest, SharedVarInitArray) {
 
   SharedVar<char[5]> var;
 
-  EXPECT_FALSE(var[0].tag().is_bottom());
-  EXPECT_FALSE(var[1].tag().is_bottom());
-  EXPECT_FALSE(var[2].tag().is_bottom());
-  EXPECT_FALSE(var[3].tag().is_bottom());
-  EXPECT_FALSE(var[4].tag().is_bottom());
+  EXPECT_FALSE(var[0].zone().is_bottom());
+  EXPECT_FALSE(var[1].zone().is_bottom());
+  EXPECT_FALSE(var[2].zone().is_bottom());
+  EXPECT_FALSE(var[3].zone().is_bottom());
+  EXPECT_FALSE(var[4].zone().is_bottom());
 }
 
 TEST(VarTest, CopyLocalVar) {
@@ -88,9 +88,9 @@ TEST(VarTest, CopyLocalVar) {
   EXPECT_EQ(2*8+1, other.direct_write_event_ref().event_id());
 
   // local variables can never be linked through RF, FR etc.
-  EXPECT_TRUE(var.tag().is_bottom());
-  EXPECT_TRUE(other.tag().is_bottom());
-  EXPECT_EQ(var.tag(), other.tag());
+  EXPECT_TRUE(var.zone().is_bottom());
+  EXPECT_TRUE(other.zone().is_bottom());
+  EXPECT_EQ(var.zone(), other.zone());
 }
 
 TEST(VarTest, CopySharedVarToLocalVar) {
@@ -99,10 +99,10 @@ TEST(VarTest, CopySharedVarToLocalVar) {
 
   SharedVar<char> var;
   EXPECT_EQ(2*7+1, var.direct_write_event_ref().event_id());
-  EXPECT_FALSE(var.tag().is_bottom());
+  EXPECT_FALSE(var.zone().is_bottom());
 
   LocalVar<char> other = var;
   EXPECT_EQ(2*9+1, other.direct_write_event_ref().event_id());
-  EXPECT_NE(var.tag(), other.tag());
-  EXPECT_TRUE(other.tag().is_bottom());
+  EXPECT_NE(var.zone(), other.zone());
+  EXPECT_TRUE(other.zone().is_bottom());
 }

@@ -363,13 +363,13 @@ public:
 
   /// Inserts direct write event and the read events that determine its value.
   template<typename T>
-  std::shared_ptr<DirectWriteEvent<T>> instr(const Tag& tag,
+  std::shared_ptr<DirectWriteEvent<T>> instr(const Zone& zone,
     std::unique_ptr<ReadInstr<T>> instr_ptr) {
 
     insert_all<T>(*instr_ptr);
 
     std::shared_ptr<DirectWriteEvent<T>> write_event_ptr(new DirectWriteEvent<T>(
-      m_thread_id, tag, std::move(instr_ptr), block_condition_ptr()));
+      m_thread_id, zone, std::move(instr_ptr), block_condition_ptr()));
 
     insert_event_ptr(write_event_ptr);
     return write_event_ptr;
@@ -379,7 +379,7 @@ public:
 
   /// Inserts indirect write event and the read events that determine its value.
   template<typename T, typename U, size_t N>
-  std::shared_ptr<IndirectWriteEvent<T, U, N>> instr(const Tag& tag,
+  std::shared_ptr<IndirectWriteEvent<T, U, N>> instr(const Zone& zone,
     std::unique_ptr<DerefReadInstr<T[N], U>> deref_instr_ptr,
     std::unique_ptr<ReadInstr<T>> instr_ptr) {
 
@@ -387,7 +387,7 @@ public:
     insert_all<T>(*deref_instr_ptr);
 
     std::shared_ptr<IndirectWriteEvent<T, U, N>> write_event_ptr(
-      new IndirectWriteEvent<T, U, N>(m_thread_id, tag,
+      new IndirectWriteEvent<T, U, N>(m_thread_id, zone,
         std::move(deref_instr_ptr), std::move(instr_ptr),
           block_condition_ptr()));
 

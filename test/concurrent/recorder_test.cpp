@@ -78,7 +78,7 @@ TEST(RecorderTest, ThenBlockWithEmptyBlock) {
   const unsigned thread_id = 3;
   Recorder recorder(thread_id);
 
-  const Tag tag = Tag::unique_atom();
+  const Zone zone = Zone::unique_atom();
   std::unique_ptr<ReadInstr<long>> linstr_ptr(new LiteralReadInstr<long>(42L));
   std::unique_ptr<ReadInstr<char>> rinstr_ptr(new LiteralReadInstr<char>('Z'));
 
@@ -126,8 +126,8 @@ TEST(RecorderTest, ThenBlockWithNonemptyBlock) {
   const unsigned thread_id = 3;
   Recorder recorder(thread_id);
 
-  const Tag tag = Tag::unique_atom();
-  std::unique_ptr<ReadEvent<long>> event_ptr(new ReadEvent<long>(thread_id, tag));
+  const Zone zone = Zone::unique_atom();
+  std::unique_ptr<ReadEvent<long>> event_ptr(new ReadEvent<long>(thread_id, zone));
   std::unique_ptr<ReadInstr<long>> linstr_ptr(new BasicReadInstr<long>(std::move(event_ptr)));
 
   std::unique_ptr<ReadInstr<char>> rinstr_ptr(new LiteralReadInstr<char>('Z'));
@@ -135,7 +135,7 @@ TEST(RecorderTest, ThenBlockWithNonemptyBlock) {
   std::unique_ptr<ReadInstr<bool>> condition_ptr(new BinaryReadInstr<LSS, long, char>(
     std::move(linstr_ptr), std::move(rinstr_ptr)));
 
-  recorder.insert_event_ptr(std::unique_ptr<Event>(new ReadEvent<bool>(thread_id, tag)));
+  recorder.insert_event_ptr(std::unique_ptr<Event>(new ReadEvent<bool>(thread_id, zone)));
 
   const std::shared_ptr<Block> most_outer_block_ptr(recorder.current_block_ptr()->outer_block_ptr());
   const std::shared_ptr<Block> initial_block_ptr(recorder.current_block_ptr());
@@ -178,8 +178,8 @@ TEST(RecorderTest, NestedThenWithEmptyBlock) {
   const unsigned thread_id = 3;
   Recorder recorder(thread_id);
 
-  const Tag tag = Tag::unique_atom();
-  std::unique_ptr<ReadEvent<long>> event_ptr(new ReadEvent<long>(thread_id, tag));
+  const Zone zone = Zone::unique_atom();
+  std::unique_ptr<ReadEvent<long>> event_ptr(new ReadEvent<long>(thread_id, zone));
   std::unique_ptr<ReadInstr<long>> linstr_ptr(new BasicReadInstr<long>(std::move(event_ptr)));
 
   std::unique_ptr<ReadInstr<char>> rinstr_ptr(new LiteralReadInstr<char>('Z'));
@@ -187,7 +187,7 @@ TEST(RecorderTest, NestedThenWithEmptyBlock) {
   std::unique_ptr<ReadInstr<bool>> condition_ptr(new BinaryReadInstr<LSS, long, char>(
     std::move(linstr_ptr), std::move(rinstr_ptr)));
 
-  recorder.insert_event_ptr(std::unique_ptr<Event>(new ReadEvent<bool>(thread_id, tag)));
+  recorder.insert_event_ptr(std::unique_ptr<Event>(new ReadEvent<bool>(thread_id, zone)));
 
   const std::shared_ptr<Block> most_outer_block_ptr(recorder.current_block_ptr()->outer_block_ptr());
   EXPECT_EQ(recorder.most_outer_block_ptr(), most_outer_block_ptr);
@@ -229,8 +229,8 @@ TEST(RecorderTest, NestedThenWithNonemptyBlock) {
   const unsigned thread_id = 3;
   Recorder recorder(thread_id);
 
-  const Tag tag = Tag::unique_atom();
-  std::unique_ptr<ReadEvent<long>> event_ptr(new ReadEvent<long>(thread_id, tag));
+  const Zone zone = Zone::unique_atom();
+  std::unique_ptr<ReadEvent<long>> event_ptr(new ReadEvent<long>(thread_id, zone));
   std::unique_ptr<ReadInstr<long>> linstr_ptr(new BasicReadInstr<long>(std::move(event_ptr)));
 
   std::unique_ptr<ReadInstr<char>> rinstr_ptr(new LiteralReadInstr<char>('Z'));
@@ -238,14 +238,14 @@ TEST(RecorderTest, NestedThenWithNonemptyBlock) {
   std::unique_ptr<ReadInstr<bool>> condition_ptr(new BinaryReadInstr<LSS, long, char>(
     std::move(linstr_ptr), std::move(rinstr_ptr)));
 
-  recorder.insert_event_ptr(std::unique_ptr<Event>(new ReadEvent<bool>(thread_id, tag)));
+  recorder.insert_event_ptr(std::unique_ptr<Event>(new ReadEvent<bool>(thread_id, zone)));
 
   const std::shared_ptr<Block> most_outer_block_ptr(recorder.current_block_ptr()->outer_block_ptr());
   EXPECT_EQ(recorder.most_outer_block_ptr(), most_outer_block_ptr);
 
   recorder.begin_then(std::move(condition_ptr));
   
-  recorder.insert_event_ptr(std::unique_ptr<Event>(new ReadEvent<bool>(thread_id, tag)));
+  recorder.insert_event_ptr(std::unique_ptr<Event>(new ReadEvent<bool>(thread_id, zone)));
 
   const std::shared_ptr<Block> outer_then_block_ptr(recorder.current_block_ptr());
   recorder.begin_then(std::unique_ptr<ReadInstr<bool>>(new LiteralReadInstr<bool>(true)));
@@ -254,7 +254,7 @@ TEST(RecorderTest, NestedThenWithNonemptyBlock) {
 
   recorder.end_branch();
 
-  recorder.insert_event_ptr(std::unique_ptr<Event>(new ReadEvent<bool>(thread_id, tag)));
+  recorder.insert_event_ptr(std::unique_ptr<Event>(new ReadEvent<bool>(thread_id, zone)));
 
   EXPECT_EQ(nullptr, recorder.current_block_ref().condition_ptr());
   EXPECT_FALSE(recorder.current_block_ref().body().empty());
@@ -284,7 +284,7 @@ TEST(RecorderTest, ElseBlockWithEmptyBlock) {
   const unsigned thread_id = 3;
   Recorder recorder(thread_id);
 
-  const Tag tag = Tag::unique_atom();
+  const Zone zone = Zone::unique_atom();
   std::unique_ptr<ReadInstr<long>> linstr_ptr(new LiteralReadInstr<long>(42L));
   std::unique_ptr<ReadInstr<char>> rinstr_ptr(new LiteralReadInstr<char>('Z'));
 
@@ -338,8 +338,8 @@ TEST(RecorderTest, ElseBlockWithNonemptyBlock) {
   const unsigned thread_id = 3;
   Recorder recorder(thread_id);
 
-  const Tag tag = Tag::unique_atom();
-  std::unique_ptr<ReadEvent<long>> event_ptr(new ReadEvent<long>(thread_id, tag));
+  const Zone zone = Zone::unique_atom();
+  std::unique_ptr<ReadEvent<long>> event_ptr(new ReadEvent<long>(thread_id, zone));
   std::unique_ptr<ReadInstr<long>> linstr_ptr(new BasicReadInstr<long>(std::move(event_ptr)));
 
   std::unique_ptr<ReadInstr<char>> rinstr_ptr(new LiteralReadInstr<char>('Z'));
@@ -347,7 +347,7 @@ TEST(RecorderTest, ElseBlockWithNonemptyBlock) {
   std::unique_ptr<ReadInstr<bool>> condition_ptr(new BinaryReadInstr<LSS, long, char>(
     std::move(linstr_ptr), std::move(rinstr_ptr)));
 
-  recorder.insert_event_ptr(std::unique_ptr<Event>(new ReadEvent<bool>(thread_id, tag)));
+  recorder.insert_event_ptr(std::unique_ptr<Event>(new ReadEvent<bool>(thread_id, zone)));
 
   const std::shared_ptr<Block> most_outer_block_ptr(recorder.current_block_ptr()->outer_block_ptr());
   const std::shared_ptr<Block> initial_block_ptr(recorder.current_block_ptr());
@@ -398,7 +398,7 @@ TEST(RecorderTest, ElseWithNestedEmptyBlock) {
   const unsigned thread_id = 3;
   Recorder recorder(thread_id);
 
-  const Tag tag = Tag::unique_atom();
+  const Zone zone = Zone::unique_atom();
   std::unique_ptr<ReadInstr<long>> linstr_ptr(new LiteralReadInstr<long>(42L));
   std::unique_ptr<ReadInstr<char>> rinstr_ptr(new LiteralReadInstr<char>('Z'));
 
@@ -459,7 +459,7 @@ TEST(RecorderTest, ElseWithNestedNonemptyBlock) {
   const unsigned thread_id = 3;
   Recorder recorder(thread_id);
 
-  const Tag tag = Tag::unique_atom();
+  const Zone zone = Zone::unique_atom();
   std::unique_ptr<ReadInstr<long>> linstr_ptr(new LiteralReadInstr<long>(42L));
   std::unique_ptr<ReadInstr<char>> rinstr_ptr(new LiteralReadInstr<char>('Z'));
 
@@ -479,7 +479,7 @@ TEST(RecorderTest, ElseWithNestedNonemptyBlock) {
   recorder.end_branch();
 
   EXPECT_EQ(2, outer_then_block_ptr->inner_block_ptrs().size());
-  recorder.insert_event_ptr(std::unique_ptr<Event>(new ReadEvent<bool>(thread_id, tag)));
+  recorder.insert_event_ptr(std::unique_ptr<Event>(new ReadEvent<bool>(thread_id, zone)));
 
   recorder.begin_else();
 
@@ -519,7 +519,7 @@ TEST(RecorderTest, NestedElseWithEmptyBlock) {
   const unsigned thread_id = 3;
   Recorder recorder(thread_id);
 
-  const Tag tag = Tag::unique_atom();
+  const Zone zone = Zone::unique_atom();
   std::unique_ptr<ReadInstr<long>> linstr_ptr(new LiteralReadInstr<long>(42L));
   std::unique_ptr<ReadInstr<char>> rinstr_ptr(new LiteralReadInstr<char>('Z'));
 
@@ -575,7 +575,7 @@ TEST(RecorderTest, NestedElseWithNonemptyBlock) {
   const unsigned thread_id = 3;
   Recorder recorder(thread_id);
 
-  const Tag tag = Tag::unique_atom();
+  const Zone zone = Zone::unique_atom();
   std::unique_ptr<ReadInstr<long>> linstr_ptr(new LiteralReadInstr<long>(42L));
   std::unique_ptr<ReadInstr<char>> rinstr_ptr(new LiteralReadInstr<char>('Z'));
 
@@ -608,7 +608,7 @@ TEST(RecorderTest, NestedElseWithNonemptyBlock) {
 
   recorder.end_branch();
 
-  recorder.insert_event_ptr(std::unique_ptr<Event>(new ReadEvent<bool>(thread_id, tag)));
+  recorder.insert_event_ptr(std::unique_ptr<Event>(new ReadEvent<bool>(thread_id, zone)));
 
   EXPECT_EQ(2, outer_then_block_ptr->inner_block_ptrs().size());
 
@@ -686,7 +686,7 @@ TEST(RecorderTest, SimpleLoopWithoutReuse) {
   EXPECT_EQ(1, most_outer_block_ptr->inner_block_ptrs().size());
   EXPECT_EQ(most_outer_block_ptr, recorder.most_outer_block_ptr());
 
-  recorder.insert_event_ptr(std::unique_ptr<Event>(new ReadEvent<char>(thread_id,  Tag::unique_atom())));
+  recorder.insert_event_ptr(std::unique_ptr<Event>(new ReadEvent<char>(thread_id,  Zone::unique_atom())));
 
   const std::shared_ptr<Block> initial_block_ptr(recorder.current_block_ptr());
   EXPECT_FALSE(initial_block_ptr->body().empty());
@@ -737,7 +737,7 @@ TEST(RecorderTest, NestedLoop) {
   constexpr LoopPolicy inner_policy(make_loop_policy<8, 1>());
   bool continue_unwinding = true;
 
-  recorder.insert_event_ptr(std::unique_ptr<Event>(new ReadEvent<char>(thread_id,  Tag::unique_atom())));
+  recorder.insert_event_ptr(std::unique_ptr<Event>(new ReadEvent<char>(thread_id,  Zone::unique_atom())));
 
   const std::shared_ptr<Block> most_outer_block_ptr(recorder.current_block_ptr()->outer_block_ptr());
   EXPECT_EQ(1, most_outer_block_ptr->inner_block_ptrs().size());
@@ -800,21 +800,21 @@ TEST(RecorderTest, Body) {
 
   const unsigned thread_id = 3;
 
-  const Tag char_tag = Tag::unique_atom();
-  std::unique_ptr<ReadEvent<char>> char_event_ptr(new ReadEvent<char>(thread_id, char_tag));
+  const Zone char_zone = Zone::unique_atom();
+  std::unique_ptr<ReadEvent<char>> char_event_ptr(new ReadEvent<char>(thread_id, char_zone));
   std::unique_ptr<ReadInstr<char>> char_instr_ptr(new BasicReadInstr<char>(std::move(char_event_ptr)));
 
-  const Tag long_tag = Tag::unique_atom();
-  std::unique_ptr<ReadEvent<long>> long_event_ptr(new ReadEvent<long>(thread_id, long_tag));
+  const Zone long_zone = Zone::unique_atom();
+  std::unique_ptr<ReadEvent<long>> long_event_ptr(new ReadEvent<long>(thread_id, long_zone));
   std::unique_ptr<ReadInstr<long>> long_instr_ptr(new BasicReadInstr<long>(std::move(long_event_ptr)));
 
   std::unique_ptr<ReadInstr<long>> instr_ptr(
     new BinaryReadInstr<ADD, char, long>(std::move(char_instr_ptr), std::move(long_instr_ptr)));
 
-  const Tag write_tag = Tag::unique_atom();
+  const Zone write_zone = Zone::unique_atom();
 
   Recorder recorder(thread_id);
-  recorder.instr(write_tag, std::move(instr_ptr));
+  recorder.instr(write_zone, std::move(instr_ptr));
 
   std::forward_list<std::shared_ptr<Event>>& event_ptrs = recorder.current_block_body();
 
@@ -839,8 +839,8 @@ TEST(RecorderTest, BlockConditionOfNestedThen) {
   const unsigned thread_id = 3;
   Recorder recorder(thread_id);
 
-  const Tag tag = Tag::unique_atom();
-  std::unique_ptr<ReadEvent<long>> event_ptr(new ReadEvent<long>(thread_id, tag));
+  const Zone zone = Zone::unique_atom();
+  std::unique_ptr<ReadEvent<long>> event_ptr(new ReadEvent<long>(thread_id, zone));
   std::unique_ptr<ReadInstr<long>> linstr_ptr(new BasicReadInstr<long>(std::move(event_ptr)));
 
   std::unique_ptr<ReadInstr<char>> rinstr_ptr(new LiteralReadInstr<char>('Z'));
@@ -848,7 +848,7 @@ TEST(RecorderTest, BlockConditionOfNestedThen) {
   std::unique_ptr<ReadInstr<bool>> condition_ptr(new BinaryReadInstr<LSS, long, char>(
     std::move(linstr_ptr), std::move(rinstr_ptr)));
 
-  recorder.insert_event_ptr(std::unique_ptr<Event>(new ReadEvent<bool>(thread_id, tag)));
+  recorder.insert_event_ptr(std::unique_ptr<Event>(new ReadEvent<bool>(thread_id, zone)));
 
   const std::shared_ptr<Block> most_outer_block_ptr(recorder.current_block_ptr()->outer_block_ptr());
   EXPECT_EQ(recorder.most_outer_block_ptr(), most_outer_block_ptr);

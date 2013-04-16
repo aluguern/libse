@@ -28,31 +28,31 @@ std::unique_ptr<ReadInstr<typename std::enable_if<
   std::is_arithmetic<T>::value, T>::type>> alloc_read_instr(const T& literal);
 
 template<typename T>
-std::unique_ptr<ReadEvent<T>> make_read_event(const Tag& tag) {
+std::unique_ptr<ReadEvent<T>> make_read_event(const Zone& zone) {
   return std::unique_ptr<ReadEvent<T>>(new ReadEvent<T>(ThisThread::thread_id(),
-    tag, ThisThread::recorder().block_condition_ptr()));
+    zone, ThisThread::recorder().block_condition_ptr()));
 }
 
 template<typename T>
-std::unique_ptr<ReadEvent<T>> internal_make_read_event(const Tag& tag,
+std::unique_ptr<ReadEvent<T>> internal_make_read_event(const Zone& zone,
   unsigned event_id) {
 
   const unsigned thread_id = ThisThread::thread_id();
   return std::unique_ptr<ReadEvent<T>>(new ReadEvent<T>(event_id, thread_id,
-    tag, ThisThread::recorder().block_condition_ptr()));
+    zone, ThisThread::recorder().block_condition_ptr()));
 }
 
 /// Variable declaration allowing only direct memory writes
 
-/// Every object has a \ref DeclVar<T>::tag() "tag" that allows events to be
+/// Every object has a \ref DeclVar<T>::zone() "zone" that allows events to be
 /// linked up according to the partial order encoding axioms. In the case of
-/// pointers and arrays, the variable's tag is the same as any dereferenced
+/// pointers and arrays, the variable's zone is the same as any dereferenced
 /// memory reachable through it, e.g. `p[3].addr() == p.addr()` for a pointer.
 ///
-/// If a DeclVar<T>'s tag is not \ref Tag::is_bottom() "bottom", the variable
+/// If a DeclVar<T>'s zone is not \ref Zone::is_bottom() "bottom", the variable
 /// is said to be "shared". Otherwise, the variable is called "thread-local".
 /// The lifetime of a shared variable must span across all threads that can
-/// access it. Also the tag of each shared variable is guaranteed to be unique.
+/// access it. Also the zone of each shared variable is guaranteed to be unique.
 ///
 /// Typically, sharing is achieved by allocating an object statically. Therefore,
 /// shared variables are always initialized to zero by the thread in which they
@@ -64,17 +64,17 @@ std::unique_ptr<ReadEvent<T>> internal_make_read_event(const Tag& tag,
 template<typename T>
 class DeclVar {
 private:
-  const Tag m_tag;
+  const Zone m_zone;
 
   // Most recent direct write event, never null
   std::shared_ptr<DirectWriteEvent<T>> m_direct_write_event_ptr;
 
   template<typename U>
   static std::shared_ptr<DirectWriteEvent<U>> make_direct_write_event(
-    const Tag& tag, std::unique_ptr<ReadInstr<U>> instr_ptr) {
+    const Zone& zone, std::unique_ptr<ReadInstr<U>> instr_ptr) {
 
     const std::shared_ptr<DirectWriteEvent<U>> direct_write_event_ptr(
-      new DirectWriteEvent<U>(ThisThread::thread_id(), tag,
+      new DirectWriteEvent<U>(ThisThread::thread_id(), zone,
         std::move(instr_ptr)));
 
     return direct_write_event_ptr;
@@ -82,7 +82,7 @@ private:
 
 public:
   /// Label to link up events
-  const Tag& tag() const { return m_tag; }
+  const Zone& zone() const { return m_zone; }
 
   /// Declare a variable of type `T` that only allows direct memory writes
 
@@ -92,8 +92,8 @@ public:
   /// The newly declared variable is initialized according to the given
   /// instruction that is defined to execute within the current thread.
   DeclVar(bool is_shared, std::unique_ptr<ReadInstr<T>> instr_ptr) :
-    m_tag(is_shared ? Tag::unique_atom() : Tag::bottom()),
-    m_direct_write_event_ptr(make_direct_write_event<T>(m_tag,
+    m_zone(is_shared ? Zone::unique_atom() : Zone::bottom()),
+    m_direct_write_event_ptr(make_direct_write_event<T>(m_zone,
       std::move(instr_ptr))) {
 
     ThisThread::recorder().insert_event_ptr(m_direct_write_event_ptr);
@@ -107,8 +107,8 @@ public:
   /// The newly declared variable is initialized to `v`. This is accomplished
   /// through a direct write event from within the current thread.
   DeclVar(bool is_shared, const T v = 0) :
-    m_tag(is_shared ? Tag::unique_atom() : Tag::bottom()),
-    m_direct_write_event_ptr(make_direct_write_event<T>(m_tag,
+    m_zone(is_shared ? Zone::unique_atom() : Zone::bottom()),
+    m_direct_write_event_ptr(make_direct_write_event<T>(m_zone,
       std::unique_ptr<ReadInstr<T>>(new LiteralReadInstr<T>(v)))) {
 
     ThisThread::recorder().insert_event_ptr(m_direct_write_event_ptr);
@@ -137,31 +137,31 @@ class DeclVar<T[N]> {
 static_assert(0 < N, "N must be greater than zero");
 
 private:
-  const Tag m_tag;
+  const Zone m_zone;
   const std::shared_ptr<DirectWriteEvent<T[N]>> m_direct_write_event_ptr;
   std::shared_ptr<IndirectWriteEvent<T, size_t, N>> m_indirect_write_event_ptr;
 
   template<typename U>
   static std::shared_ptr<DirectWriteEvent<U>> make_direct_write_event(
-    const Tag& tag) {
+    const Zone& zone) {
 
     std::unique_ptr<ReadInstr<U>> instr_ptr(new LiteralReadInstr<U>());
     const std::shared_ptr<DirectWriteEvent<U>> direct_write_event_ptr(
-      new DirectWriteEvent<U>(ThisThread::thread_id(), tag,
+      new DirectWriteEvent<U>(ThisThread::thread_id(), zone,
         std::move(instr_ptr)));
 
     return direct_write_event_ptr;
   }
 
 public:
-  const Tag& tag() const { return m_tag; }
+  const Zone& zone() const { return m_zone; }
 
   /// Declare a fixed-sized array
 
   /// \param is_shared - can other threads modify any array elements?
   DeclVar(bool is_shared) :
-    m_tag(is_shared ? Tag::unique_atom() : Tag::bottom()),
-    m_direct_write_event_ptr(make_direct_write_event<T[N]>(m_tag)),
+    m_zone(is_shared ? Zone::unique_atom() : Zone::bottom()),
+    m_direct_write_event_ptr(make_direct_write_event<T[N]>(m_zone)),
     m_indirect_write_event_ptr() {
 
     ThisThread::recorder().insert_event_ptr(m_direct_write_event_ptr);
@@ -213,13 +213,13 @@ private:
   Memory(Memory&& other) : m_var_ptr(other.m_var_ptr),
     m_deref_instr_ptr(std::move(other.m_deref_instr_ptr)) {}
 
-  const Tag& tag() const { return m_var_ptr->tag(); }
+  const Zone& zone() const { return m_var_ptr->zone(); }
 
   void store(std::unique_ptr<ReadInstr<Range>> instr_ptr) {
     assert(nullptr != instr_ptr);
 
     const std::shared_ptr<IndirectWriteEvent<Range, Domain, N>> write_event_ptr(
-      ThisThread::recorder().instr(tag(), std::move(m_deref_instr_ptr),
+      ThisThread::recorder().instr(zone(), std::move(m_deref_instr_ptr),
         std::move(instr_ptr)));
 
     m_var_ptr->set_indirect_write_event_ptr(write_event_ptr);
@@ -241,7 +241,7 @@ private:
   SharedMemory(SharedMemory&& other) : m_memory(std::move(other.m_memory)) {}
 
 public:
-  const Tag& tag() const { return m_memory.tag(); }
+  const Zone& zone() const { return m_memory.zone(); }
 
   std::unique_ptr<DerefReadInstr<Range[N], Domain>> deref_instr_ptr() {
     return std::move(m_memory.m_deref_instr_ptr);
@@ -298,7 +298,7 @@ private:
     m_local_read_ptr(other.m_local_read_ptr) {}
 
 public:
-  const Tag& tag() const { return m_memory.tag(); }
+  const Zone& zone() const { return m_memory.zone(); }
 
   std::unique_ptr<DerefReadInstr<Range[N], Domain>> deref_instr_ptr() {
     return std::move(m_memory.m_deref_instr_ptr);
@@ -308,7 +308,7 @@ public:
     m_memory.store(std::move(instr_ptr));
 
     m_local_read_ptr->set_read_event_ptr(internal_make_read_event<Range[N]>(
-      tag(), m_memory.m_var_ptr->indirect_write_event_ref().event_id()));
+      zone(), m_memory.m_var_ptr->indirect_write_event_ref().event_id()));
   }
 
   template<typename U>
@@ -324,25 +324,25 @@ private:
 
 public:
   LocalVar() : m_var(false), m_local_read(internal_make_read_event<T>(
-    m_var.tag(), m_var.direct_write_event_ref().event_id())) {}
+    m_var.zone(), m_var.direct_write_event_ref().event_id())) {}
 
   LocalVar(const T v) : m_var(false, v),
-    m_local_read(internal_make_read_event<T>(m_var.tag(),
+    m_local_read(internal_make_read_event<T>(m_var.zone(),
       m_var.direct_write_event_ref().event_id())) {}
 
   LocalVar(const LocalVar& other) : m_var(false, alloc_read_instr(other)),
-    m_local_read(internal_make_read_event<T>(m_var.tag(),
+    m_local_read(internal_make_read_event<T>(m_var.zone(),
       m_var.direct_write_event_ref().event_id())) {}
 
   LocalVar(const SharedVar<T>& other) : m_var(false, alloc_read_instr(other)),
-    m_local_read(internal_make_read_event<T>(m_var.tag(),
+    m_local_read(internal_make_read_event<T>(m_var.zone(),
       m_var.direct_write_event_ref().event_id())) {
 
     ThisThread::recorder().insert_all(m_var.direct_write_event_ref().instr_ref());
     ThisThread::recorder().insert_event_ptr(m_var.direct_write_event_ptr());
   }
 
-  const Tag& tag() const { return m_var.tag(); }
+  const Zone& zone() const { return m_var.zone(); }
 
   std::shared_ptr<ReadEvent<T>> read_event_ptr() const {
     return m_local_read.read_event_ptr();
@@ -374,10 +374,10 @@ public:
 
   LocalVar<T>& operator=(std::unique_ptr<ReadInstr<T>> instr_ptr) {
     const std::shared_ptr<DirectWriteEvent<T>> write_event_ptr(
-      ThisThread::recorder().instr(tag(), std::move(instr_ptr)));
+      ThisThread::recorder().instr(zone(), std::move(instr_ptr)));
 
     m_var.set_direct_write_event_ptr(write_event_ptr);
-    m_local_read.set_read_event_ptr(internal_make_read_event<T>(tag(),
+    m_local_read.set_read_event_ptr(internal_make_read_event<T>(zone(),
       write_event_ptr->event_id()));
 
     return *this;
@@ -421,7 +421,7 @@ public:
   SharedVar() : m_var(true) {}
   SharedVar(const T v) : m_var(true, v) {}
 
-  const Tag& tag() const { return m_var.tag(); }
+  const Zone& zone() const { return m_var.zone(); }
 
   const DirectWriteEvent<T>& direct_write_event_ref() const {
     return m_var.direct_write_event_ref();
@@ -444,7 +444,7 @@ public:
 
   SharedVar<T>& operator=(std::unique_ptr<ReadInstr<T>> instr_ptr) {
     const std::shared_ptr<DirectWriteEvent<T>> write_event_ptr(
-      ThisThread::recorder().instr(tag(), std::move(instr_ptr)));
+      ThisThread::recorder().instr(zone(), std::move(instr_ptr)));
 
     m_var.set_direct_write_event_ptr(write_event_ptr);
 
@@ -498,7 +498,7 @@ public:
 template<typename T>
 std::unique_ptr<ReadInstr<T>> any() {
   return std::unique_ptr<ReadInstr<T>>(new BasicReadInstr<T>(
-    make_read_event<T>(/* thread-local */ Tag::bottom())));
+    make_read_event<T>(/* thread-local */ Zone::bottom())));
 }
 
 }

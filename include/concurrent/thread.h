@@ -7,7 +7,7 @@
 
 #include <stack>
 
-#include "concurrent/tag.h"
+#include "concurrent/zone.h"
 #include "concurrent/event.h"
 #include "concurrent/encoder_c0.h"
 #include "concurrent/recorder.h"
@@ -33,28 +33,28 @@ private:
   const Z3OrderEncoderC0 m_order_encoder;
   std::stack<Recorder> m_recorder_stack;
   unsigned m_next_thread_id;
-  TagRelation<Event> m_tag_relation;
+  ZoneRelation<Event> m_zone_relation;
 
   // Must only be accessed before Z3 solver is deallocated
   std::forward_list<z3::expr> m_error_exprs;
 
 private:
   Threads() : m_value_encoder(), m_order_encoder(), m_next_thread_id(0),
-    m_recorder_stack(), m_tag_relation(), m_error_exprs() {
+    m_recorder_stack(), m_zone_relation(), m_error_exprs() {
 
     internal_reset(0, 0);
   }
 
   // Clears the entire recorder stack and restarts recording the main thread
-  void internal_reset(unsigned next_event_id, unsigned next_tag) {
+  void internal_reset(unsigned next_event_id, unsigned next_zone) {
     Event::reset_id(next_event_id);
-    Tag::reset(next_tag);
+    Zone::reset(next_zone);
 
     while (!m_recorder_stack.empty()) { 
       m_recorder_stack.pop();
     }
 
-    m_tag_relation.clear();
+    m_zone_relation.clear();
     assert(m_error_exprs.empty());
   }
 
@@ -81,8 +81,8 @@ private:
   // Relates all events reachable from the given block
   void internal_relate_events(const std::shared_ptr<Block>& block_ptr) {
     for (const std::shared_ptr<Event>& event_ptr : block_ptr->body()) {
-      if (event_ptr->tag().is_bottom()) { continue; }
-      m_tag_relation.relate(event_ptr);
+      if (event_ptr->zone().is_bottom()) { continue; }
+      m_zone_relation.relate(event_ptr);
     }
 
     for (const std::shared_ptr<Block>& inner_block_ptr :
@@ -109,8 +109,8 @@ protected:
 
 public:
   /// Erase any previous thread recordings
-  static void reset(unsigned next_event_id = 0, unsigned next_tag = 0) {
-    return s_singleton.internal_reset(next_event_id, next_tag);
+  static void reset(unsigned next_event_id = 0, unsigned next_zone = 0) {
+    return s_singleton.internal_reset(next_event_id, next_zone);
   }
 
   /// Start recording a new thread of execution
@@ -124,7 +124,7 @@ public:
       parent_recorder.insert_event_ptr(send_event_ptr);
 
       std::unique_ptr<ReceiveEvent> receive_event_ptr(new ReceiveEvent(
-        child_recorder.thread_id(), send_event_ptr->tag(),
+        child_recorder.thread_id(), send_event_ptr->zone(),
         child_recorder.block_condition_ptr()));
 
       child_recorder.insert_event_ptr(std::move(receive_event_ptr));
@@ -171,7 +171,7 @@ public:
     assert(s_singleton.m_recorder_stack.size() == 1);
     end_thread(z3);
 
-    const TagRelation<Event>& rel = s_singleton.m_tag_relation;
+    const ZoneRelation<Event>& rel = s_singleton.m_zone_relation;
     const Z3OrderEncoderC0& order_encoder = s_singleton.m_order_encoder;
 
     z3.solver.add(order_encoder.rf_enc(rel, z3));
@@ -192,7 +192,7 @@ public:
   static void join(const std::shared_ptr<SendEvent>& send_event_ptr) {
     Recorder& current_recorder = s_singleton.current_recorder();
     std::unique_ptr<ReceiveEvent> receive_event_ptr(new ReceiveEvent(
-      current_recorder.thread_id(), send_event_ptr->tag(),
+      current_recorder.thread_id(), send_event_ptr->zone(),
       current_recorder.block_condition_ptr()));
 
     current_recorder.insert_event_ptr(std::move(receive_event_ptr));
@@ -201,7 +201,7 @@ public:
   /// \internal Assert given condition in the SAT solver outside of any thread
 
   /// \pre: All read events in the condition must only access thread-local
-  ///       memory (i.e. Tag::is_bottom() must be true)
+  ///       memory (i.e. Zone::is_bottom() must be true)
   ///
   /// \warning Block conditions are ignored and an unsatisfiable error
   ///          condition renders any others unsatisfiable as well

@@ -337,7 +337,7 @@ private:
         const Event& body_event = *body_event_ptr;
 
         /* skip local events */
-        if (body_event.tag().is_bottom()) { continue; }
+        if (body_event.zone().is_bottom()) { continue; }
 
         z3::expr next_body_clock(z3.clock(body_event));
         z3.solver.add(body_clock < next_body_clock);
@@ -369,13 +369,13 @@ public:
   Z3OrderEncoderC0() : m_read_encoder() {}
 
   /// \internal \return RF axiom encoding
-  z3::expr rf_enc(const TagRelation<Event>& relation, Z3& z3) const {
+  z3::expr rf_enc(const ZoneRelation<Event>& relation, Z3& z3) const {
     z3::expr rf_expr(z3.context.bool_val(true));
     for (const EventPtr& x_ptr : /* read events */ relation.event_ptrs()) {
       if (x_ptr->is_write()) { continue; }
       const Event& read_event = *x_ptr;
 
-      assert(!read_event.tag().is_bottom());
+      assert(!read_event.zone().is_bottom());
       const z3::expr read_event_condition(event_condition(read_event, z3));
 
       z3::expr wr_schedules(z3.context.bool_val(false));
@@ -383,8 +383,8 @@ public:
         if (y_ptr->is_read()) { continue; }
         const Event& write_event = *y_ptr;
 
-        assert(!write_event.tag().is_bottom());
-        if (read_event.tag().meet(write_event.tag()).is_bottom()) { continue; }
+        assert(!write_event.zone().is_bottom());
+        if (read_event.zone().meet(write_event.zone()).is_bottom()) { continue; }
 
         const z3::expr wr_order(z3.clock(write_event) < z3.clock(read_event));
         const z3::expr wr_schedule(z3.rf(write_event, read_event));
@@ -403,12 +403,12 @@ public:
   }
 
   /// \internal \return WS axiom encoding
-  z3::expr ws_enc(const TagRelation<Event>& relation, Z3& z3) const {
-    const TagAtomSet& tag_atoms = relation.tag_atoms();
+  z3::expr ws_enc(const ZoneRelation<Event>& relation, Z3& z3) const {
+    const ZoneAtomSet& zone_atoms = relation.zone_atoms();
 
     z3::expr ws_expr(z3.context.bool_val(true));
-    for (const Tag& tag : tag_atoms) {
-      const EventPtrSet write_event_ptrs = relation.find(tag,
+    for (const Zone& zone : zone_atoms) {
+      const EventPtrSet write_event_ptrs = relation.find(zone,
         WriteEventPredicate::predicate());
       for (const EventPtr& write_event_ptr_x : write_event_ptrs) {
         for (const EventPtr& write_event_ptr_y : write_event_ptrs) {
@@ -417,8 +417,8 @@ public:
           const Event& x = *write_event_ptr_x;
           const Event& y = *write_event_ptr_y;
 
-          assert(!x.tag().is_bottom());
-          assert(!y.tag().is_bottom());
+          assert(!x.zone().is_bottom());
+          assert(!y.zone().is_bottom());
 
           // Already built inequalities?
           if (x.event_id() > y.event_id()) { continue; }
@@ -438,13 +438,13 @@ public:
   }
 
   /// \internal \return FR axiom encoding
-  z3::expr fr_enc(const TagRelation<Event>& relation, Z3& z3) const {
-    const TagAtomSet& tag_atoms = relation.tag_atoms();
+  z3::expr fr_enc(const ZoneRelation<Event>& relation, Z3& z3) const {
+    const ZoneAtomSet& zone_atoms = relation.zone_atoms();
 
     z3::expr fr_expr(z3.context.bool_val(true));
-    for (const Tag& tag : tag_atoms) {
+    for (const Zone& zone : zone_atoms) {
       const std::pair<EventPtrSet, EventPtrSet> result =
-        relation.partition(tag);
+        relation.partition(zone);
       const EventPtrSet& read_event_ptrs = result.first;
       const EventPtrSet& write_event_ptrs = result.second;
 
@@ -455,13 +455,13 @@ public:
           const Event& write_event_x = *write_event_ptr_x;
           const Event& write_event_y = *write_event_ptr_y;
 
-          assert(!write_event_x.tag().is_bottom());
-          assert(!write_event_y.tag().is_bottom());
+          assert(!write_event_x.zone().is_bottom());
+          assert(!write_event_y.zone().is_bottom());
 
           for (const EventPtr& read_event_ptr : read_event_ptrs) {
             const Event& read_event = *read_event_ptr;
 
-            assert(!read_event.tag().is_bottom());
+            assert(!read_event.zone().is_bottom());
 
             const z3::expr xr_schedule(z3.rf(write_event_x, read_event));
             const z3::expr xy_order(z3.clock(write_event_x) < z3.clock(write_event_y));

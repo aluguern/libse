@@ -29,7 +29,7 @@ inline std::unique_ptr<ReadInstr<T>> alloc_read_instr(const LocalVar<T>& local_v
 template<typename T>
 inline std::unique_ptr<ReadInstr<T>> alloc_read_instr(const SharedVar<T>& shared_var) {
   return std::unique_ptr<ReadInstr<T>>(new BasicReadInstr<T>(
-    make_read_event<T>(shared_var.tag())));
+    make_read_event<T>(shared_var.zone())));
 }
 
 template<typename Range, typename Domain, size_t N>

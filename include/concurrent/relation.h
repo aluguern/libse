@@ -111,55 +111,55 @@ public:
   }
 };
 
-/// \internal Atom in the Tag lattice
-class TagAtom : public Tag {
-  friend class TagAtomHash;
-  friend class TagAtomSets;
-  template<typename T> friend class TagRelation;
+/// \internal Atom in the Zone lattice
+class ZoneAtom : public Zone {
+  friend class ZoneAtomHash;
+  friend class ZoneAtomSets;
+  template<typename T> friend class ZoneRelation;
 
-  TagAtom(unsigned atom) : Tag(atom) {}
+  ZoneAtom(unsigned atom) : Zone(atom) {}
 
 public:
   operator unsigned() const { return *atoms().cbegin(); }
 };
 
-/// \internal Hash value of a TagAtom
-struct TagAtomHash {
-  size_t operator()(const se::TagAtom& tag_atom) const  {
-    return static_cast<unsigned>(tag_atom);
+/// \internal Hash value of a ZoneAtom
+struct ZoneAtomHash {
+  size_t operator()(const se::ZoneAtom& zone_atom) const  {
+    return static_cast<unsigned>(zone_atom);
   }
 };
 
-typedef std::unordered_set<TagAtom, TagAtomHash> TagAtomSet;
+typedef std::unordered_set<ZoneAtom, ZoneAtomHash> ZoneAtomSet;
 
-/// Helper for sets of \ref TagAtom atoms
-struct TagAtomSets {
-  static TagAtomSet tag_atom_set(const Tag& tag) {
-    TagAtomSet tag_atoms;
-    for (unsigned atom : tag.atoms()) {
-      tag_atoms.insert(TagAtom(atom));
+/// Helper for sets of \ref ZoneAtom atoms
+struct ZoneAtomSets {
+  static ZoneAtomSet zone_atom_set(const Zone& zone) {
+    ZoneAtomSet zone_atoms;
+    for (unsigned atom : zone.atoms()) {
+      zone_atoms.insert(ZoneAtom(atom));
     }
 
-    return std::move(tag_atoms);
+    return std::move(zone_atoms);
   }
 };
 
 template<typename T = Event>
-class TagRelation {
+class ZoneRelation {
 static_assert(std::is_base_of<Event, T>::value, "T must be a subclass of Event");
 
 private:
   std::unordered_set<std::shared_ptr<T>> m_event_ptrs;
   Relation<unsigned, std::shared_ptr<T>> m_relation;
-  TagAtomSet m_tag_atoms;
+  ZoneAtomSet m_zone_atoms;
 
 public:
-  TagRelation() : m_event_ptrs(), m_relation(), m_tag_atoms() {}
+  ZoneRelation() : m_event_ptrs(), m_relation(), m_zone_atoms() {}
 
   /// Clears contents
   void clear() {
     m_event_ptrs.clear();
-    m_tag_atoms.clear();
+    m_zone_atoms.clear();
     m_relation.clear();
   }
 
@@ -168,38 +168,38 @@ public:
     return m_event_ptrs;
   }
 
-  const TagAtomSet tag_atoms() const { return m_tag_atoms; }
+  const ZoneAtomSet zone_atoms() const { return m_zone_atoms; }
 
   void relate(const std::shared_ptr<T>& event_ptr) {
-    assert(!event_ptr->tag().is_bottom());
+    assert(!event_ptr->zone().is_bottom());
 
     m_event_ptrs.insert(event_ptr);
 
-    for (unsigned atom : event_ptr->tag().atoms()) {
-      m_tag_atoms.insert(TagAtom(atom));
+    for (unsigned atom : event_ptr->zone().atoms()) {
+      m_zone_atoms.insert(ZoneAtom(atom));
       m_relation.add(atom, event_ptr);
     }
   }
 
-  std::unordered_set<std::shared_ptr<T>> find(const Tag& tag,
+  std::unordered_set<std::shared_ptr<T>> find(const Zone& zone,
     const Predicate<std::shared_ptr<T>>& predicate) const {
 
     std::unordered_set<std::shared_ptr<T>> result;
-    for (unsigned atom : tag.atoms()) {
+    for (unsigned atom : zone.atoms()) {
       m_relation.find(atom, predicate, result);
     }
     return result;
   }
 
-  /// Finds all read/write events that are associated with the given tag
+  /// Finds all read/write events that are associated with the given zone
   std::pair<std::unordered_set<std::shared_ptr<T>>,
-    std::unordered_set<std::shared_ptr<T>>> partition(const Tag& tag) const {
+    std::unordered_set<std::shared_ptr<T>>> partition(const Zone& zone) const {
 
     typedef std::unordered_set<std::shared_ptr<T>> EventPtrSet;
     std::pair<EventPtrSet, EventPtrSet> result(std::make_pair(
       EventPtrSet(), EventPtrSet()));
 
-    for (unsigned atom : tag.atoms()) {
+    for (unsigned atom : zone.atoms()) {
       m_relation.partition(atom, ReadEventPredicate::predicate(), result);
     }
 

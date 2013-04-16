@@ -14,49 +14,49 @@
 namespace se {
 
 /// An element in an atomistic lattice
-class Tag {
+class Zone {
 private:
   static unsigned s_next_atom;
-  static Tag s_bottom_element;
+  static Zone s_bottom_element;
 
   const std::set<unsigned> m_atoms;
 
   // Bottom element
-  Tag() : m_atoms() {}
-  Tag(std::set<unsigned>&& atoms) : m_atoms(std::move(atoms)) {}
+  Zone() : m_atoms() {}
+  Zone(std::set<unsigned>&& atoms) : m_atoms(std::move(atoms)) {}
 
 protected:
   /// Atom in the lattice
-  Tag(unsigned atom) : m_atoms({atom}) {}
+  Zone(unsigned atom) : m_atoms({atom}) {}
 
-  template<typename T> friend class TagRelation;
-  friend struct TagAtomSets;
+  template<typename T> friend class ZoneRelation;
+  friend struct ZoneAtomSets;
   const std::set<unsigned>& atoms() const { return m_atoms; }
 
 public:
   /// \internal Reset the counter that make() uses
   static void reset(unsigned atom = 0) { s_next_atom = atom; }
 
-  static Tag unique_atom() { return Tag(s_next_atom++); }
-  static Tag bottom() { return s_bottom_element; }
+  static Zone unique_atom() { return Zone(s_next_atom++); }
+  static Zone bottom() { return s_bottom_element; }
 
-  bool operator==(const Tag& other) const { return m_atoms == other.m_atoms; }
-  bool operator!=(const Tag& other) const { return m_atoms != other.m_atoms; }
+  bool operator==(const Zone& other) const { return m_atoms == other.m_atoms; }
+  bool operator!=(const Zone& other) const { return m_atoms != other.m_atoms; }
   bool is_bottom() const { return m_atoms.empty(); }
 
   /// Greatest lower bound
-  Tag meet(const Tag& other) const {
+  Zone meet(const Zone& other) const {
     std::set<unsigned> intersection;
     std::set_intersection(m_atoms.cbegin(), m_atoms.cend(), other.m_atoms.cbegin(),
       other.m_atoms.cend(), std::inserter(intersection, intersection.begin()));
-    return Tag(std::move(intersection));
+    return Zone(std::move(intersection));
   }
 
   /// Least upper bound
-  Tag join(const Tag& other) const {
+  Zone join(const Zone& other) const {
     std::set<unsigned> join_atoms(m_atoms);
     join_atoms.insert(other.m_atoms.cbegin(), other.m_atoms.cend());
-    return Tag(std::move(join_atoms));
+    return Zone(std::move(join_atoms));
   }
 };
 

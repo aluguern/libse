@@ -11,7 +11,7 @@
 
 #include "core/type.h"
 
-#include "concurrent/tag.h"
+#include "concurrent/zone.h"
 
 namespace z3 { class expr; }
 
@@ -46,7 +46,7 @@ private:
   const unsigned m_thread_id;
   const bool m_is_read;
   const Type* const m_type_ptr;
-  const Tag m_tag;
+  const Zone m_zone;
   const std::shared_ptr<ReadInstr<bool>> m_condition_ptr;
 
   // Even positive integers (m = 2k for k in 0 to 2^15-1) are for read
@@ -64,7 +64,7 @@ protected:
 
   /// Create a unique read or write event
 
-  /// \param tag - label to link up events
+  /// \param zone - label to link up events
   /// \param thread_id - unique thread identifier
   /// \param is_read - does the event cause memory to be read?
   /// \param type_ptr - pointer to statically allocated memory, never null
@@ -72,10 +72,10 @@ protected:
   ///
   /// The type_ptr describes the event in terms of its memory characteristics
   /// such as how many bytes are read or written.
-  Event(unsigned thread_id, const Tag& tag, bool is_read,
+  Event(unsigned thread_id, const Zone& zone, bool is_read,
     const Type* const type_ptr,
     const std::shared_ptr<ReadInstr<bool>>& condition_ptr = nullptr) :
-    m_event_id(next_id(is_read)), m_tag(tag), m_thread_id(thread_id),
+    m_event_id(next_id(is_read)), m_zone(zone), m_thread_id(thread_id),
     m_is_read(is_read), m_type_ptr(type_ptr), m_condition_ptr(condition_ptr) {
 
     assert(type_ptr != nullptr);
@@ -84,7 +84,7 @@ protected:
   /// Create a unique read or write event with a specific identifier
 
   /// \param event_id - unique event identifier
-  /// \param tag - label to link up events
+  /// \param zone - label to link up events
   /// \param thread_id - unique thread identifier
   /// \param is_read - does the event cause memory to be read?
   /// \param type_ptr - pointer to statically allocated memory, never null
@@ -92,10 +92,10 @@ protected:
   ///
   /// The type_ptr describes the event in terms of its memory characteristics
   /// such as how many bytes are read or written.
-  Event(unsigned event_id, unsigned thread_id, const Tag& tag,
+  Event(unsigned event_id, unsigned thread_id, const Zone& zone,
     bool is_read, const Type* const type_ptr,
     const std::shared_ptr<ReadInstr<bool>>& condition_ptr = nullptr) :
-    m_event_id(event_id), m_tag(tag), m_thread_id(thread_id),
+    m_event_id(event_id), m_zone(zone), m_thread_id(thread_id),
     m_is_read(is_read), m_type_ptr(type_ptr), m_condition_ptr(condition_ptr) {
 
     assert(type_ptr != nullptr);
@@ -108,7 +108,7 @@ public:
 
   unsigned event_id() const { return m_event_id; }
   unsigned thread_id() const { return m_thread_id; }
-  const Tag& tag() const { return m_tag; }
+  const Zone& zone() const { return m_zone; }
   bool is_read() const { return m_is_read; }
   bool is_write() const { return !m_is_read; }
   const Type& type() const { return *m_type_ptr; }
@@ -142,10 +142,10 @@ private:
   const std::unique_ptr<ReadInstr<T>> m_instr_ptr;
 
 protected:
-  WriteEvent(unsigned thread_id, const Tag& tag,
+  WriteEvent(unsigned thread_id, const Zone& zone,
     std::unique_ptr<ReadInstr<T>> instr_ptr,
     const std::shared_ptr<ReadInstr<bool>>& condition_ptr = nullptr) :
-    Event(thread_id, tag, false, &TypeInfo<T>::s_type, condition_ptr),
+    Event(thread_id, zone, false, &TypeInfo<T>::s_type, condition_ptr),
     m_instr_ptr(std::move(instr_ptr)) {
 
     assert(nullptr != m_instr_ptr);
@@ -164,10 +164,10 @@ public:
 template<typename T>
 class DirectWriteEvent : public WriteEvent<T> {
 public:
-  DirectWriteEvent(unsigned thread_id, const Tag& tag,
+  DirectWriteEvent(unsigned thread_id, const Zone& zone,
     std::unique_ptr<ReadInstr<T>> instr_ptr,
     const std::shared_ptr<ReadInstr<bool>>& condition_ptr = nullptr) :
-    WriteEvent<T>(thread_id, tag, std::move(instr_ptr), condition_ptr) {}
+    WriteEvent<T>(thread_id, zone, std::move(instr_ptr), condition_ptr) {}
 
   ~DirectWriteEvent() {}
 
@@ -185,11 +185,11 @@ private:
   const std::unique_ptr<DerefReadInstr<T[N], U>> m_deref_instr_ptr;
 
 public:
-  IndirectWriteEvent(unsigned thread_id, const Tag& tag,
+  IndirectWriteEvent(unsigned thread_id, const Zone& zone,
     std::unique_ptr<DerefReadInstr<T[N], U>> deref_instr_ptr,
     std::unique_ptr<ReadInstr<T>> instr_ptr,
     const std::shared_ptr<ReadInstr<bool>>& condition_ptr = nullptr) :
-    WriteEvent<T>(thread_id, tag, std::move(instr_ptr), condition_ptr), 
+    WriteEvent<T>(thread_id, zone, std::move(instr_ptr), condition_ptr), 
     m_deref_instr_ptr(std::move(deref_instr_ptr)) {
 
     assert(nullptr != m_deref_instr_ptr);
@@ -211,16 +211,16 @@ class ReadEvent : public Event {
 private:
   template<typename U>
   friend std::unique_ptr<ReadEvent<U>> internal_make_read_event(
-    const Tag& tag, unsigned event_id);
+    const Zone& zone, unsigned event_id);
 
-  ReadEvent(unsigned event_id, unsigned thread_id, const Tag& tag,
+  ReadEvent(unsigned event_id, unsigned thread_id, const Zone& zone,
     const std::shared_ptr<ReadInstr<bool>>& condition_ptr = nullptr) :
-    Event(event_id, thread_id, tag, true, &TypeInfo<T>::s_type, condition_ptr) {}
+    Event(event_id, thread_id, zone, true, &TypeInfo<T>::s_type, condition_ptr) {}
 
 public:
-  ReadEvent(unsigned thread_id, const Tag& tag,
+  ReadEvent(unsigned thread_id, const Zone& zone,
     const std::shared_ptr<ReadInstr<bool>>& condition_ptr = nullptr) :
-    Event(thread_id, tag, true, &TypeInfo<T>::s_type, condition_ptr) {}
+    Event(thread_id, zone, true, &TypeInfo<T>::s_type, condition_ptr) {}
 
   ~ReadEvent() {}
 
@@ -237,28 +237,28 @@ private:
   DECL_CONSTANT_ENCODER_FN
 
 protected:
-  SyncEvent(unsigned thread_id, const Tag& tag, bool receive,
+  SyncEvent(unsigned thread_id, const Zone& zone, bool receive,
     const std::shared_ptr<ReadInstr<bool>>& condition_ptr = nullptr) :
-    Event(thread_id, tag, receive, &TypeInfo<Sync>::s_type, condition_ptr) {}
+    Event(thread_id, zone, receive, &TypeInfo<Sync>::s_type, condition_ptr) {}
 };
 
 /// \internal Write event for thread synchronization
 
-/// Synchronization occurs through a unique \ref Event::tag() "tag atom".
+/// Synchronization occurs through a unique \ref Event::zone() "zone atom".
 class SendEvent : public SyncEvent {
 public:
   SendEvent(unsigned thread_id,
     const std::shared_ptr<ReadInstr<bool>>& condition_ptr = nullptr) :
-    SyncEvent(thread_id, Tag::unique_atom(), false, condition_ptr) {}
+    SyncEvent(thread_id, Zone::unique_atom(), false, condition_ptr) {}
 };
 
 /// \internal Read event for thread synchronization
 class ReceiveEvent : public SyncEvent {
 public:
-  /// Event that reads from the given tag, preferably SendEvent::tag()
-  ReceiveEvent(unsigned thread_id, const Tag& tag,
+  /// Event that reads from the given zone, preferably SendEvent::zone()
+  ReceiveEvent(unsigned thread_id, const Zone& zone,
     const std::shared_ptr<ReadInstr<bool>>& condition_ptr = nullptr) :
-    SyncEvent(thread_id, tag, true, condition_ptr) {}
+    SyncEvent(thread_id, zone, true, condition_ptr) {}
 };
 
 }
