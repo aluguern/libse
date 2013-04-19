@@ -410,28 +410,26 @@ public:
     for (const Zone& zone : zone_atoms) {
       const EventPtrSet write_event_ptrs = relation.find(zone,
         WriteEventPredicate::predicate());
-      for (const EventPtr& write_event_ptr_x : write_event_ptrs) {
-        for (const EventPtr& write_event_ptr_y : write_event_ptrs) {
-          if (write_event_ptr_x == write_event_ptr_y) { continue; }
 
-          const Event& x = *write_event_ptr_x;
-          const Event& y = *write_event_ptr_y;
+      const unsigned zone_write_event_count = write_event_ptrs.size();
+      Z3_ast args[zone_write_event_count];
+      unsigned i = 0;
+      for (const EventPtr& write_event_ptr : write_event_ptrs) {
+        const Event& write_event = *write_event_ptr;
+        args[i] = z3.clock(write_event);
+        Z3_inc_ref(z3.context, args[i]);
 
-          assert(!x.zone().is_bottom());
-          assert(!y.zone().is_bottom());
-
-          // Already built inequalities?
-          if (x.event_id() > y.event_id()) { continue; }
-
-          const z3::expr xy_order(z3.clock(x) < z3.clock(y));
-          const z3::expr yx_order(z3.clock(y) < z3.clock(x));
-          const z3::expr x_condition(event_condition(x, z3));
-          const z3::expr y_condition(event_condition(y, z3));
-
-          ws_expr = ws_expr and implies(x_condition and y_condition,
-            xy_order or yx_order);
-        }
+        i++;
       }
+
+      const z3::expr zone_ws_expr(z3.context,
+        Z3_mk_distinct(z3.context, zone_write_event_count, args));
+
+      for (i = 0; i < zone_write_event_count; i++) {
+        Z3_dec_ref(z3.context, args[i]);
+      }
+
+      ws_expr = ws_expr and zone_ws_expr;
     }
 
     return ws_expr;
