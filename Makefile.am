@@ -33,6 +33,16 @@ check-local:
 test: check-local check
 
 bench: all
+	time -p bench/strict_total_order_with_lazy_injection_safe
+	time -p bench/strict_total_order_with_lazy_injection_unsafe
+	time -p bench/strict_total_order_with_eager_injection_safe
+	time -p bench/strict_total_order_with_eager_injection_unsafe
+	time -p bench/strict_total_order_with_or_safe
+	time -p bench/strict_total_order_with_or_unsafe
+	time -p bench/strict_total_order_with_distinct_safe
+	time -p bench/strict_total_order_with_distinct_unsafe
+	time -p bench/strict_total_orders_with_distinct_safe
+	time -p bench/strict_total_orders_with_distinct_unsafe
 	time -p bench/if
 	time -p bench/fib_005_safe
 	time -p bench/fib_005_unsafe
@@ -136,7 +146,17 @@ test_se_LDADD = $(top_builddir)/gtest/lib/libgtest_main.la lib/libse.la
 
 # Benchmarks
 
-bin_PROGRAMS = bench/if \
+bin_PROGRAMS = bench/strict_total_order_with_lazy_injection_safe \
+               bench/strict_total_order_with_lazy_injection_unsafe \
+               bench/strict_total_order_with_eager_injection_safe \
+               bench/strict_total_order_with_eager_injection_unsafe \
+               bench/strict_total_order_with_or_safe \
+               bench/strict_total_order_with_or_unsafe \
+               bench/strict_total_order_with_distinct_safe \
+               bench/strict_total_order_with_distinct_unsafe \
+               bench/strict_total_orders_with_distinct_safe \
+               bench/strict_total_orders_with_distinct_unsafe \
+               bench/if \
                bench/fib_005_safe \
                bench/fib_005_unsafe \
                bench/fib_006_safe \
@@ -147,6 +167,17 @@ bin_PROGRAMS = bench/if \
                bench/stack_007_slice_unsafe \
                bench/queue_010_safe \
                bench/queue_010_unsafe
+
+bench_strict_total_order_with_lazy_injection_safe_SOURCES = bench/strict_total_order_with_lazy_injection_safe_bench.cpp
+bench_strict_total_order_with_lazy_injection_unsafe_SOURCES = bench/strict_total_order_with_lazy_injection_unsafe_bench.cpp
+bench_strict_total_order_with_eager_injection_safe_SOURCES = bench/strict_total_order_with_eager_injection_safe_bench.cpp
+bench_strict_total_order_with_eager_injection_unsafe_SOURCES = bench/strict_total_order_with_eager_injection_unsafe_bench.cpp
+bench_strict_total_order_with_or_safe_SOURCES = bench/strict_total_order_with_or_safe_bench.cpp
+bench_strict_total_order_with_or_unsafe_SOURCES = bench/strict_total_order_with_or_unsafe_bench.cpp
+bench_strict_total_order_with_distinct_safe_SOURCES = bench/strict_total_order_with_distinct_safe_bench.cpp
+bench_strict_total_order_with_distinct_unsafe_SOURCES = bench/strict_total_order_with_distinct_unsafe_bench.cpp
+bench_strict_total_orders_with_distinct_safe_SOURCES = bench/strict_total_orders_with_distinct_safe_bench.cpp
+bench_strict_total_orders_with_distinct_unsafe_SOURCES = bench/strict_total_orders_with_distinct_unsafe_bench.cpp
 
 bench_if_SOURCES = bench/if_bench.cpp
 bench_if_CPPFLAGS = -std=c++0x -I$(srcdir)/include
