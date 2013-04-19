@@ -41,7 +41,7 @@ public:
   static void reset(unsigned atom = 0) { s_next_atom = atom; }
 
   static Zone unique_atom() { return Zone(s_next_atom++); }
-  static Zone bottom() { return s_bottom_element; }
+  static const Zone& bottom() { return s_bottom_element; }
 
   bool operator==(const Zone& other) const { return m_atoms == other.m_atoms; }
   bool operator!=(const Zone& other) const { return m_atoms != other.m_atoms; }
