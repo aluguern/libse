@@ -120,6 +120,7 @@ class ZoneAtom : public Zone {
   ZoneAtom(unsigned atom) : Zone(atom) {}
 
 public:
+  ZoneAtom(const ZoneAtom& other) : Zone(static_cast<unsigned>(other)) {}
   operator unsigned() const { return *atoms().cbegin(); }
 };
 

@@ -34,6 +34,9 @@ protected:
   const std::set<unsigned>& atoms() const { return m_atoms; }
 
 public:
+  Zone(Zone&& other) : m_atoms(std::move(other.m_atoms)) {}
+  Zone(const Zone& other) : m_atoms(other.m_atoms) {}
+
   /// \internal Reset the counter that make() uses
   static void reset(unsigned atom = 0) { s_next_atom = atom; }
 

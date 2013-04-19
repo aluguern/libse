@@ -21,6 +21,14 @@ public:
   z3::expr constant(Z3& helper) const { return helper.constant(*this); }
 };
 
+TEST(RelationTest, CopyZoneAtom) {
+  const Zone zone = Zone::unique_atom();
+  const ZoneAtom zone_atom = *ZoneAtomSets::zone_atom_set(zone).cbegin();
+  const ZoneAtom copy(zone_atom);
+
+  EXPECT_EQ(static_cast<unsigned>(zone_atom), static_cast<unsigned>(copy));
+  EXPECT_EQ(zone_atom, copy);
+}
 
 TEST(RelationTest, ReadEventPredicate) {
   const unsigned thread_id = 3;

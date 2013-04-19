@@ -90,3 +90,10 @@ TEST(ZoneTest, MeetBothAreNotAtoms) {
   const Zone meet_zone = zone_a.meet(zone_b);
   EXPECT_TRUE(meet_zone.is_bottom());
 }
+
+TEST(ZoneTest, Copy) {
+  const Zone zone_a = Zone::unique_atom();
+  const Zone zone_b = zone_a;
+
+  EXPECT_EQ(zone_a, zone_b);
+}
