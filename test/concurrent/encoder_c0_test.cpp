@@ -228,12 +228,32 @@ TEST(EncoderC0Test, Z3IndirectWriteEventConstant) {
     event_expr.get_sort().array_range().bv_size());
 }
 
-TEST(EncoderC0Test, Z3Clock) {
+TEST(EncoderC0Test, Z3ReadClock) {
   Z3 z3;
 
   const unsigned thread_id = 3;
   const Zone zone = Zone::unique_atom();
   const ReadEvent<int> event(thread_id, zone);
+
+  z3.solver.push();
+  z3.solver.add(z3.clock(event) <= 0);
+
+  // Proves that clock values are natural numbers
+  EXPECT_EQ(z3::unsat, z3.solver.check());
+
+  // Sanity check a satisfiable formula
+  z3.solver.pop();
+  z3.solver.add(z3.clock(event) <= 1);
+  EXPECT_EQ(z3::sat, z3.solver.check());
+}
+
+TEST(EncoderC0Test, Z3WriteClock) {
+  Z3 z3;
+
+  const unsigned thread_id = 3;
+  const Zone zone = Zone::unique_atom();
+  const DirectWriteEvent<int> event(thread_id, zone,
+    std::unique_ptr<ReadInstr<int>>(new LiteralReadInstr<int>(42)));
 
   z3.solver.push();
   z3.solver.add(z3.clock(event) <= 0);
