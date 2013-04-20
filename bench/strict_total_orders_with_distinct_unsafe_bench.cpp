@@ -3,7 +3,7 @@
 int main(void) {
   z3::context context;
 
-  const unsigned N = 700;
+  const int N = 700;
   Z3_ast x_args[N];
 
   for (unsigned i = 0; i < N; i++) {

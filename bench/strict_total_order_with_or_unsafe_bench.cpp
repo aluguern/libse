@@ -4,7 +4,7 @@ int main(void) {
   z3::context context;
 
   z3::expr total_order(context.bool_val(true));
-  const unsigned N = 700;
+  const int N = 700;
   for (int i = 0; i < N; i++) {
     const z3::expr a(context.constant(context.int_symbol(i), context.int_sort()));
     for (int j = i + 1; j < N; j++) {

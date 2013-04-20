@@ -10,7 +10,7 @@ int main(void) {
   const z3::func_decl func_inv_decl(context.function("f-inv",
     context.int_sort(), context.int_sort()));
 
-  const unsigned N = 700;
+  const int N = 700;
   for (unsigned i = 0; i < N; i++) {
     z3::expr i_expr(context.int_val(i));
     solver.add(func_inv_decl(func_decl(i_expr)) == i_expr);
