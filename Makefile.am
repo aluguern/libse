@@ -33,6 +33,8 @@ check-local:
 test: check-local check
 
 bench: all
+	time -p bench/sups_safe
+	time -p bench/sups_unsafe
 	time -p bench/strict_total_order_with_lazy_injection_safe
 	time -p bench/strict_total_order_with_lazy_injection_unsafe
 	time -p bench/strict_total_order_with_eager_injection_safe
@@ -146,7 +148,9 @@ test_se_LDADD = $(top_builddir)/gtest/lib/libgtest_main.la lib/libse.la
 
 # Benchmarks
 
-bin_PROGRAMS = bench/strict_total_order_with_lazy_injection_safe \
+bin_PROGRAMS = bench/sups_safe \
+               bench/sups_unsafe \
+               bench/strict_total_order_with_lazy_injection_safe \
                bench/strict_total_order_with_lazy_injection_unsafe \
                bench/strict_total_order_with_eager_injection_safe \
                bench/strict_total_order_with_eager_injection_unsafe \
@@ -168,6 +172,8 @@ bin_PROGRAMS = bench/strict_total_order_with_lazy_injection_safe \
                bench/queue_010_safe \
                bench/queue_010_unsafe
 
+bench_sups_safe_SOURCES = bench/sups_safe_bench.cpp
+bench_sups_unsafe_SOURCES = bench/sups_unsafe_bench.cpp
 bench_strict_total_order_with_lazy_injection_safe_SOURCES = bench/strict_total_order_with_lazy_injection_safe_bench.cpp
 bench_strict_total_order_with_lazy_injection_unsafe_SOURCES = bench/strict_total_order_with_lazy_injection_unsafe_bench.cpp
 bench_strict_total_order_with_eager_injection_safe_SOURCES = bench/strict_total_order_with_eager_injection_safe_bench.cpp
