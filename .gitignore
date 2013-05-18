@@ -6,11 +6,16 @@
 *.swp
 *.m4
 *.deps
+*.log
 gtest/
 solvers/
 m4/
 autom4te.cache/
 build-aux/
+lib/
+bench/
+test/.libs/
+test/se*
 config.log
 config.status
 Makefile
