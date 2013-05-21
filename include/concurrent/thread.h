@@ -35,7 +35,7 @@ private:
   unsigned m_next_thread_id;
   ZoneRelation<Event> m_zone_relation;
 
-  // Must only be accessed before Z3 solver is deallocated
+  // Must only be accessed before Z3C0 solver is deallocated
   std::forward_list<z3::expr> m_error_exprs;
 
 private:
@@ -59,7 +59,7 @@ private:
   }
 
   // Encodes all write events reachable from the given block
-  void internal_encode_events(const std::shared_ptr<Block>& block_ptr, Z3& z3) {
+  void internal_encode_events(const std::shared_ptr<Block>& block_ptr, Z3C0& z3) {
     for (const std::shared_ptr<Event>& event_ptr : block_ptr->body()) {
       if (event_ptr->is_write()) {
         const z3::expr equality_expr(event_ptr->encode_eq(m_value_encoder, z3));
@@ -136,7 +136,7 @@ public:
   /// Encode the concurrent SSA and control structure of the current thread
 
   /// \returns event that demarcates the end of the recorded thread
-  static std::shared_ptr<SendEvent> end_thread(Z3& z3) {
+  static std::shared_ptr<SendEvent> end_thread(Z3C0& z3) {
     Recorder& current_recorder = s_singleton.current_recorder();
     const std::shared_ptr<SendEvent> send_event_ptr(new SendEvent(
       current_recorder.thread_id(), current_recorder.block_condition_ptr()));
@@ -164,10 +164,10 @@ public:
     begin_thread();
   }
 
-  /// Calls end_thread(Z3&) and then encodes all memory accesses between threads
+  /// Calls end_thread(Z3C0&) and then encodes all memory accesses between threads
 
   /// \warning Must always be called after begin_main_thread()
-  static void end_main_thread(Z3& z3) {
+  static void end_main_thread(Z3C0& z3) {
     assert(s_singleton.m_recorder_stack.size() == 1);
     end_thread(z3);
 
@@ -205,7 +205,7 @@ public:
   ///
   /// \warning Block conditions are ignored and an unsatisfiable error
   ///          condition renders any others unsatisfiable as well
-  static void internal_error(std::unique_ptr<ReadInstr<bool>> condition_ptr, Z3& z3) {
+  static void internal_error(std::unique_ptr<ReadInstr<bool>> condition_ptr, Z3C0& z3) {
     const z3::expr condition_expr(s_singleton.m_value_encoder.encode_eq(
       std::move(condition_ptr), z3));
 
@@ -213,7 +213,7 @@ public:
   }
 
   /// Assert condition with the current block condition as antecedent
-  static void expect(std::unique_ptr<ReadInstr<bool>> condition_ptr, Z3& z3) {
+  static void expect(std::unique_ptr<ReadInstr<bool>> condition_ptr, Z3C0& z3) {
     ThisThread::recorder().insert_all(*condition_ptr);
 
     const z3::expr condition_expr(s_singleton.m_value_encoder.encode_eq(
@@ -234,7 +234,7 @@ public:
 
   /// \remark The logical disjunction of all given error conditions allows
   ///         multiple of them to be checked simultaneously by the SAT solver
-  static void error(std::unique_ptr<ReadInstr<bool>> condition_ptr, Z3& z3) {
+  static void error(std::unique_ptr<ReadInstr<bool>> condition_ptr, Z3C0& z3) {
     ThisThread::recorder().insert_all(*condition_ptr);
 
     const z3::expr error_condition_expr(s_singleton.m_value_encoder.encode_eq(
@@ -255,13 +255,13 @@ public:
 /// Symbolic thread for the analysis of concurrent C++ code
 class Thread {
 private:
-  static Z3 s_z3;
+  static Z3C0 s_z3;
 
   // Constant and never null once the constructor body has been executed
   std::shared_ptr<SendEvent> m_send_event_ptr;
 
 public:
-  static Z3& z3() { return s_z3; }
+  static Z3C0& z3() { return s_z3; }
 
   /// Terminate the recording of the main thread
   static void end_main_thread() { Threads::end_main_thread(s_z3); }

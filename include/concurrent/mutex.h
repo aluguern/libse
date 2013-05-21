@@ -19,7 +19,7 @@ private:
   SharedVar<unsigned> m_thread_id;
 
 protected:
-  void unlock(Z3& z3) {
+  void unlock(Z3C0& z3) {
     assert(m_lock_thread_id == ThisThread::thread_id());
     Threads::expect(m_thread_id == m_lock_thread_id, z3);
   }

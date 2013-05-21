@@ -7,7 +7,7 @@
 namespace se {
 
 Threads Threads::s_singleton;
-Z3 Thread::s_z3;
+Z3C0 Thread::s_z3;
 
 namespace ThisThread {
   Recorder& recorder() { return Threads::current_recorder(); }

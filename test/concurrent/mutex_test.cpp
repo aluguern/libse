@@ -4,15 +4,15 @@
 
 using namespace se;
 
-/// Makes Mutex::unlock(Z3&) public
+/// Makes Mutex::unlock(Z3C0&) public
 class InternalMutex : public Mutex {
 public:
   InternalMutex() : Mutex() {}
-  void unlock(Z3& z3) { return Mutex::unlock(z3); }
+  void unlock(Z3C0& z3) { return Mutex::unlock(z3); }
 };
 
 TEST(MutexTest, SatSingleWriter) {
-  Z3 z3;
+  Z3C0 z3;
 
   Threads::reset();
   Threads::begin_main_thread();
@@ -34,7 +34,7 @@ TEST(MutexTest, SatSingleWriter) {
 }
 
 TEST(MutexTest, UnsatSingleWriter) {
-  Z3 z3;
+  Z3C0 z3;
 
   Threads::reset();
   Threads::begin_main_thread();
@@ -61,7 +61,7 @@ TEST(MutexTest, UnsatSingleWriter) {
 }
 
 TEST(MutexTest, Sat1MultipleWriters) {
-  Z3 z3;
+  Z3C0 z3;
 
   Threads::reset();
   Threads::begin_main_thread();
@@ -122,7 +122,7 @@ TEST(MutexTest, Sat1MultipleWriters) {
 }
 
 TEST(MutexTest, Sat2MultipleWriters) {
-  Z3 z3;
+  Z3C0 z3;
 
   Threads::reset();
   Threads::begin_main_thread();
@@ -178,7 +178,7 @@ TEST(MutexTest, Sat2MultipleWriters) {
 }
 
 TEST(MutexTest, UnsatMultipleWriters) {
-  Z3 z3;
+  Z3C0 z3;
 
   Threads::reset();
   Threads::begin_main_thread();
@@ -246,7 +246,7 @@ TEST(MutexTest, UnsatMultipleWriters) {
 }
 
 TEST(MutexTest, SatJoinMultipleWriters) {
-  Z3 z3;
+  Z3C0 z3;
 
   std::shared_ptr<SendEvent> t1_send_event_ptr;
   std::shared_ptr<SendEvent> t2_send_event_ptr;
@@ -292,7 +292,7 @@ TEST(MutexTest, SatJoinMultipleWriters) {
 }
 
 TEST(MutexTest, UnsatJoinMultipleWriters) {
-  Z3 z3;
+  Z3C0 z3;
 
   std::shared_ptr<SendEvent> t1_send_event_ptr;
   std::shared_ptr<SendEvent> t2_send_event_ptr;

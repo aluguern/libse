@@ -20,7 +20,7 @@ namespace se {
 template<typename T>
 class ReadInstr;
 
-class Z3;
+class Z3C0;
 class Z3ValueEncoderC0;
 
 /// Untyped read or write event
@@ -124,15 +124,15 @@ public:
     return m_event_id == other.m_event_id;
   }
 
-  virtual z3::expr encode_eq(const Z3ValueEncoderC0& encoder, Z3& helper) const = 0;
-  virtual z3::expr constant(Z3& helper) const = 0;
+  virtual z3::expr encode_eq(const Z3ValueEncoderC0& encoder, Z3C0& helper) const = 0;
+  virtual z3::expr constant(Z3C0& helper) const = 0;
 };
 
-#define DECL_VALUE_ENCODER_FN \
-  z3::expr encode_eq(const Z3ValueEncoderC0& encoder, Z3& helper) const;
+#define DECL_VALUE_ENCODER_C0_FN \
+  z3::expr encode_eq(const Z3ValueEncoderC0& encoder, Z3C0& helper) const;
 
-#define DECL_CONSTANT_ENCODER_FN \
-  z3::expr constant(Z3& helper) const;
+#define DECL_CONSTANT_ENCODER_C0_FN \
+  z3::expr constant(Z3C0& helper) const;
 
 /// Event that writes to memory through a variable of type `T`
 template<typename T>
@@ -171,8 +171,8 @@ public:
 
   ~DirectWriteEvent() {}
 
-  DECL_VALUE_ENCODER_FN
-  DECL_CONSTANT_ENCODER_FN
+  DECL_VALUE_ENCODER_C0_FN
+  DECL_CONSTANT_ENCODER_C0_FN
 };
 
 template<typename T, typename U> class DerefReadInstr;
@@ -201,8 +201,8 @@ public:
     return *m_deref_instr_ptr;
   }
 
-  DECL_VALUE_ENCODER_FN
-  DECL_CONSTANT_ENCODER_FN
+  DECL_VALUE_ENCODER_C0_FN
+  DECL_CONSTANT_ENCODER_C0_FN
 };
 
 /// Event that reads `sizeof(T)` bytes from memory
@@ -224,8 +224,8 @@ public:
 
   ~ReadEvent() {}
 
-  DECL_VALUE_ENCODER_FN
-  DECL_CONSTANT_ENCODER_FN
+  DECL_VALUE_ENCODER_C0_FN
+  DECL_CONSTANT_ENCODER_C0_FN
 };
 
 /// \internal Event for thread synchronization
@@ -233,8 +233,8 @@ class SyncEvent : public Event {
 private:
   typedef bool Sync;
 
-  DECL_VALUE_ENCODER_FN
-  DECL_CONSTANT_ENCODER_FN
+  DECL_VALUE_ENCODER_C0_FN
+  DECL_CONSTANT_ENCODER_C0_FN
 
 protected:
   SyncEvent(unsigned thread_id, const Zone& zone, bool receive,

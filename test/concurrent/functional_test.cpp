@@ -12,7 +12,7 @@ TEST(ConcurrentFunctionalTest, Counter) {
 }
 
 TEST(ConcurrentFunctionalTest, LocalArray) {
-  Z3 z3;
+  Z3C0 z3;
 
   Threads::reset();
   Threads::begin_main_thread();
@@ -96,7 +96,7 @@ public:
 };
 
 TEST(ConcurrentFunctionalTest, Else) {
-  Z3 z3;
+  Z3C0 z3;
   CharBlockPrinter printer;
 
   Threads::reset();
@@ -135,7 +135,7 @@ TEST(ConcurrentFunctionalTest, Else) {
 
 
 TEST(ConcurrentFunctionalTest, ElseIf) {
-  Z3 z3;
+  Z3C0 z3;
   CharBlockPrinter printer;
 
   Threads::reset();
@@ -194,7 +194,7 @@ TEST(ConcurrentFunctionalTest, ElseIf) {
   (std::unique_ptr<ReadInstr<bool>>(new LiteralReadInstr<bool>(false)))
 
 TEST(ConcurrentFunctionalTest, SeriesParallelGraph) {
-  Z3 z3;
+  Z3C0 z3;
   CharBlockPrinter printer;
 
   Threads::reset();
@@ -382,7 +382,7 @@ TEST(ConcurrentFunctionalTest, SeriesParallelGraph) {
 }
 
 TEST(ConcurrentFunctionalTest, Loop) {
-  Z3 z3;
+  Z3C0 z3;
   CharBlockPrinter printer;
 
   Threads::reset();
@@ -417,7 +417,7 @@ TEST(ConcurrentFunctionalTest, Loop) {
 }
 
 TEST(ConcurrentFunctionalTest, ThreeThreadsReadWriteScalarSharedVar) {
-  Z3 z3;
+  Z3C0 z3;
 
   Threads::reset();
   Threads::begin_main_thread();
@@ -505,7 +505,7 @@ TEST(ConcurrentFunctionalTest, ThreeThreadsReadWriteScalarSharedVar) {
 }
 
 TEST(ConcurrentFunctionalTest, SatSingleThreadWithSharedVar) {
-  Z3 z3;
+  Z3C0 z3;
 
   Threads::reset();
   Threads::begin_main_thread();
@@ -522,7 +522,7 @@ TEST(ConcurrentFunctionalTest, SatSingleThreadWithSharedVar) {
 }
 
 TEST(ConcurrentFunctionalTest, SatJoinPathsInSingleThreadWithSharedVar) {
-  Z3 z3;
+  Z3C0 z3;
 
   Threads::reset();
   Threads::begin_main_thread();
@@ -596,7 +596,7 @@ TEST(ConcurrentFunctionalTest, SatJoinPathsInSingleThreadWithSharedVar) {
 }
 
 TEST(ConcurrentFunctionalTest, UnsatJoinPathsInSingleThreadWithSharedVar) {
-  Z3 z3;
+  Z3C0 z3;
 
   Threads::reset();
   Threads::begin_main_thread();
@@ -636,7 +636,7 @@ TEST(ConcurrentFunctionalTest, UnsatJoinPathsInSingleThreadWithSharedVar) {
 }
 
 TEST(ConcurrentFunctionalTest, LocalScalarAndLocalArray) {
-  Z3 z3;
+  Z3C0 z3;
 
   Threads::reset();
   Threads::begin_main_thread();
@@ -660,7 +660,7 @@ TEST(ConcurrentFunctionalTest, LocalScalarAndLocalArray) {
 }
 
 TEST(ConcurrentFunctionalTest, SharedScalarVariableInSingleThread) {
-  Z3 z3;
+  Z3C0 z3;
 
   Threads::reset();
   Threads::begin_main_thread();
@@ -691,7 +691,7 @@ TEST(ConcurrentFunctionalTest, SharedScalarVariableInSingleThread) {
 }
 
 TEST(ConcurrentFunctionalTest, SharedArrayInSingleThread) {
-  Z3 z3;
+  Z3C0 z3;
 
   Threads::reset();
   Threads::begin_main_thread();
@@ -716,7 +716,7 @@ TEST(ConcurrentFunctionalTest, SharedArrayInSingleThread) {
 }
 
 TEST(ConcurrentFunctionalTest, SharedArrayWithSymbolicIndex) {
-  Z3 z3;
+  Z3C0 z3;
 
   Threads::reset();
   Threads::begin_main_thread();
@@ -828,7 +828,7 @@ TEST(ConcurrentFunctionalTest, SharedArrayWithSymbolicIndex) {
 }
 
 TEST(ConcurrentFunctionalTest, MultipleWritesToSharedArrayLocationsInSingleThreadButLiteralIndex) {
-  Z3 z3;
+  Z3C0 z3;
 
   Threads::reset();
   Threads::begin_main_thread();
@@ -847,7 +847,7 @@ TEST(ConcurrentFunctionalTest, MultipleWritesToSharedArrayLocationsInSingleThrea
 }
 
 TEST(ConcurrentFunctionalTest, MultipleWritesToSharedArrayInSingleThreadAndVariableIndex) {
-  Z3 z3;
+  Z3C0 z3;
 
   Threads::reset();
   Threads::begin_main_thread();
@@ -870,7 +870,7 @@ TEST(ConcurrentFunctionalTest, MultipleWritesToSharedArrayInSingleThreadAndVaria
 }
 
 TEST(ConcurrentFunctionalTest, SatJoinPathsInSingleThreadWithNondetermisticConditionAndArraySharedVar) {
-  Z3 z3;
+  Z3C0 z3;
 
   Threads::reset();
   Threads::begin_main_thread();
@@ -929,7 +929,7 @@ TEST(ConcurrentFunctionalTest, SatJoinPathsInSingleThreadWithNondetermisticCondi
 }
 
 TEST(ConcurrentFunctionalTest, SatJoinPathsInSingleThreadWithDeterminsticConditionAndArraySharedVar) {
-  Z3 z3;
+  Z3C0 z3;
 
   Threads::reset();
   Threads::begin_main_thread();
@@ -981,7 +981,7 @@ TEST(ConcurrentFunctionalTest, SatJoinPathsInSingleThreadWithDeterminsticConditi
 }
 
 TEST(ConcurrentFunctionalTest, UnsatJoinPathsInSingleThreadWithArraySharedVar) {
-  Z3 z3;
+  Z3C0 z3;
 
   Threads::reset();
   Threads::begin_main_thread();
@@ -1022,7 +1022,7 @@ TEST(ConcurrentFunctionalTest, UnsatJoinPathsInSingleThreadWithArraySharedVar) {
 }
 
 TEST(ConcurrentFunctionalTest, SatJoinThreads) {
-  Z3 z3;
+  Z3C0 z3;
 
   Threads::reset();
   Threads::begin_main_thread();
@@ -1043,7 +1043,7 @@ TEST(ConcurrentFunctionalTest, SatJoinThreads) {
 }
 
 TEST(ConcurrentFunctionalTest, UnsatJoinThreads) {
-  Z3 z3;
+  Z3C0 z3;
 
   Threads::reset();
   Threads::begin_main_thread();
@@ -1065,7 +1065,7 @@ TEST(ConcurrentFunctionalTest, UnsatJoinThreads) {
 }
 
 TEST(ConcurrentFunctionalTest, CopyLocalVar) {
-  Z3 z3;
+  Z3C0 z3;
 
   Threads::reset();
   Threads::begin_main_thread();
@@ -1104,7 +1104,7 @@ TEST(ConcurrentFunctionalTest, CopyLocalVar) {
 }
 
 TEST(ConcurrentFunctionalTest, CopySharedVarToLocalVar) {
-  Z3 z3;
+  Z3C0 z3;
 
   Threads::reset();
   Threads::begin_main_thread();
@@ -1143,7 +1143,7 @@ TEST(ConcurrentFunctionalTest, CopySharedVarToLocalVar) {
 }
 
 TEST(ConcurrentFunctionalTest, AnyReadInstr) {
-  Z3 z3;
+  Z3C0 z3;
 
   Threads::reset();
   Threads::begin_main_thread();
@@ -1191,7 +1191,7 @@ TEST(ConcurrentFunctionalTest, AnyReadInstr) {
 }
 
 TEST(ConcurrentFunctionalTest, ConditionalErrorSingleThread) {
-  Z3 z3;
+  Z3C0 z3;
 
   Threads::reset();
   Threads::begin_main_thread();
@@ -1209,7 +1209,7 @@ TEST(ConcurrentFunctionalTest, ConditionalErrorSingleThread) {
 }
 
 TEST(ConcurrentFunctionalTest, ConditionalErrorMultipleThreads) {
-  Z3 z3;
+  Z3C0 z3;
 
   Threads::reset();
   Threads::begin_main_thread();
@@ -1231,7 +1231,7 @@ TEST(ConcurrentFunctionalTest, ConditionalErrorMultipleThreads) {
 }
 
 TEST(ConcurrentFunctionalTest, FalseConditionalError) {
-  Z3 z3;
+  Z3C0 z3;
 
   Threads::reset();
   Threads::begin_main_thread();
@@ -1249,7 +1249,7 @@ TEST(ConcurrentFunctionalTest, FalseConditionalError) {
 }
 
 TEST(ConcurrentFunctionalTest, SatErrorAmongAnotherUnsatError) {
-  Z3 z3;
+  Z3C0 z3;
 
   Threads::reset();
   Threads::begin_main_thread();

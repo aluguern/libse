@@ -17,11 +17,11 @@ public:
     const std::shared_ptr<ReadInstr<bool>>& condition_ptr = nullptr) :
         Event(thread_id, zone, true, &TypeInfo<int>::s_type, condition_ptr) {}
 
-  z3::expr encode_eq(const Z3ValueEncoderC0& encoder, Z3& helper) const {
+  z3::expr encode_eq(const Z3ValueEncoderC0& encoder, Z3C0& helper) const {
     return helper.constant(*this);
   }
 
-  z3::expr constant(Z3& helper) const { return helper.constant(*this); }
+  z3::expr constant(Z3C0& helper) const { return helper.constant(*this); }
 };
 
 TEST(EventTest, EventId) {

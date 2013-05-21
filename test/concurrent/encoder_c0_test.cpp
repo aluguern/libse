@@ -7,7 +7,7 @@
 using namespace se;
 
 TEST(EncoderC0Test, Z3JoinClocks) {
-  Z3 z3;
+  Z3C0 z3;
 
   z3::expr x(z3.context.constant(z3.context.int_symbol(1),
     z3.context.int_sort()));
@@ -35,7 +35,7 @@ TEST(EncoderC0Test, Z3JoinClocks) {
 }
 
 TEST(EncoderC0Test, Z3BvLiteralBool) {
-  Z3 z3;
+  Z3C0 z3;
 
   const bool literal = true;
   const LiteralReadInstr<bool> instr(literal);
@@ -49,7 +49,7 @@ TEST(EncoderC0Test, Z3BvLiteralBool) {
 }
 
 TEST(EncoderC0Test, Z3BvLiteral) {
-  Z3 z3;
+  Z3C0 z3;
 
   const short literal = 3;
   const LiteralReadInstr<short> instr(literal);
@@ -71,7 +71,7 @@ TEST(EncoderC0Test, Z3BvLiteral) {
 }
 
 TEST(EncoderC0Test, Z3BvConstant) {
-  Z3 z3;
+  Z3C0 z3;
 
   const unsigned thread_id = 3;
   const Zone zone = Zone::unique_atom();
@@ -88,7 +88,7 @@ TEST(EncoderC0Test, Z3BvConstant) {
 }
 
 TEST(EncoderC0Test, Z3BoolConstant) {
-  Z3 z3;
+  Z3C0 z3;
 
   const unsigned thread_id = 3;
   const Zone zone = Zone::unique_atom();
@@ -103,7 +103,7 @@ TEST(EncoderC0Test, Z3BoolConstant) {
 }
 
 TEST(EncoderC0Test, Z3ArrayConstant) {
-  Z3 z3;
+  Z3C0 z3;
 
   const unsigned thread_id = 3;
   const Zone zone = Zone::unique_atom();
@@ -180,25 +180,11 @@ TEST(EncoderC0Test, Z3ArrayConstant) {
   z3.solver.pop();
 }
 
-TEST(EncoderC0Test, ReadFromSymbol) {
-  const unsigned write_thread_id = 7;
-  const unsigned read_thread_id = 8;
-
-  Z3 z3;
-
-  const Zone zone = Zone::unique_atom();
-  std::unique_ptr<ReadInstr<short>> instr_ptr(new LiteralReadInstr<short>(5));
-  const DirectWriteEvent<short> write_event(write_thread_id, zone, std::move(instr_ptr));
-  const ReadEvent<short> read_event(read_thread_id, zone);
-
-  EXPECT_TRUE(z3.constant(write_event, read_event).is_bool());
-}
-
 TEST(EncoderC0Test, Z3IndirectWriteEventConstant) {
   const unsigned thread_id = 3;
   const size_t array_size = 5;
 
-  Z3 z3;
+  Z3C0 z3;
 
   const Zone pointer_zone = Zone::unique_atom();
   std::unique_ptr<ReadEvent<char[array_size]>> pointer_event_ptr(new ReadEvent<char[array_size]>(thread_id, pointer_zone));
@@ -229,7 +215,7 @@ TEST(EncoderC0Test, Z3IndirectWriteEventConstant) {
 }
 
 TEST(EncoderC0Test, Z3ReadClock) {
-  Z3 z3;
+  Z3C0 z3;
 
   const unsigned thread_id = 3;
   const Zone zone = Zone::unique_atom();
@@ -248,7 +234,7 @@ TEST(EncoderC0Test, Z3ReadClock) {
 }
 
 TEST(EncoderC0Test, Z3WriteClock) {
-  Z3 z3;
+  Z3C0 z3;
 
   const unsigned thread_id = 3;
   const Zone zone = Zone::unique_atom();
@@ -269,7 +255,7 @@ TEST(EncoderC0Test, Z3WriteClock) {
 
 TEST(EncoderC0Test, Z3ReadEncoderC0ForLiteralReadInstr) {
   const Z3ReadEncoderC0 encoder;
-  Z3 z3;
+  Z3C0 z3;
 
   const short literal = 3;
   const LiteralReadInstr<short> instr(literal);
@@ -295,7 +281,7 @@ TEST(EncoderC0Test, Z3ReadEncoderC0ForLiteralReadInstr) {
 
 TEST(EncoderC0Test, Z3ReadEncoderC0ForBasicReadInstrAsBv) {
   const Z3ReadEncoderC0 encoder;
-  Z3 z3;
+  Z3C0 z3;
 
   const unsigned thread_id = 3;
   const Zone zone = Zone::unique_atom();
@@ -309,7 +295,7 @@ TEST(EncoderC0Test, Z3ReadEncoderC0ForBasicReadInstrAsBv) {
 
 TEST(EncoderC0Test, Z3ReadEncoderC0ForBasicReadInstrAsArray) {
   const Z3ReadEncoderC0 encoder;
-  Z3 z3;
+  Z3C0 z3;
 
   const unsigned thread_id = 3;
   const Zone zone = Zone::unique_atom();
@@ -335,7 +321,7 @@ TEST(EncoderC0Test, Z3ReadEncoderC0ForBasicReadInstrAsArray) {
 
 TEST(EncoderC0Test, Z3ReadEncoderC0ForUnaryReadInstrAsLiteralBool) {
   const Z3ReadEncoderC0 encoder;
-  Z3 z3;
+  Z3C0 z3;
 
   const unsigned thread_id = 3;
   const Zone zone = Zone::unique_atom();
@@ -351,7 +337,7 @@ TEST(EncoderC0Test, Z3ReadEncoderC0ForUnaryReadInstrAsLiteralBool) {
 
 TEST(EncoderC0Test, Z3ReadEncoderC0ForUnaryReadInstrAsLiteralInteger) {
   const Z3ReadEncoderC0 encoder;
-  Z3 z3;
+  Z3C0 z3;
 
   std::unique_ptr<ReadInstr<short>> instr_ptr(new LiteralReadInstr<short>(7));
   const UnaryReadInstr<SUB, short> instr(std::move(instr_ptr));
@@ -364,7 +350,7 @@ TEST(EncoderC0Test, Z3ReadEncoderC0ForUnaryReadInstrAsLiteralInteger) {
 
 TEST(EncoderC0Test, Z3ReadEncoderC0ForUnaryReadInstrAsInteger) {
   const Z3ReadEncoderC0 encoder;
-  Z3 z3;
+  Z3C0 z3;
 
   const unsigned thread_id = 3;
   const Zone zone = Zone::unique_atom();
@@ -394,7 +380,7 @@ TEST(EncoderC0Test, Z3ReadEncoderC0ForUnaryReadInstrAsInteger) {
 
 TEST(EncoderC0Test, Z3ReadEncoderC0ForBinaryReadInstrAsBool) {
   const Z3ReadEncoderC0 encoder;
-  Z3 z3;
+  Z3C0 z3;
 
   const unsigned thread_id = 3;
   const Zone zone = Zone::unique_atom();
@@ -417,7 +403,7 @@ TEST(EncoderC0Test, Z3ReadEncoderC0ForBinaryReadInstrAsBool) {
 
 TEST(EncoderC0Test, Z3ReadEncoderC0ForBinaryReadInstrAsInteger) {
   const Z3ReadEncoderC0 encoder;
-  Z3 z3;
+  Z3C0 z3;
 
   const unsigned thread_id = 3;
   const Zone zone = Zone::unique_atom();
@@ -443,7 +429,7 @@ TEST(EncoderC0Test, Z3ReadEncoderC0ForBinaryReadInstrAsInteger) {
 
 TEST(EncoderC0Test, Z3ReadEncoderC0ForDerefReadInstrAsInteger) {
   const Z3ReadEncoderC0 encoder;
-  Z3 z3;
+  Z3C0 z3;
 
   const unsigned thread_id = 3;
   const Zone zone = Zone::unique_atom();
@@ -465,7 +451,7 @@ TEST(EncoderC0Test, Z3ValueEncoderC0DirectWriteEvent) {
   const unsigned thread_id = 3;
 
   const Z3ValueEncoderC0 encoder;
-  Z3 z3;
+  Z3C0 z3;
 
   std::unique_ptr<ReadInstr<long>> read_instr_ptr(new LiteralReadInstr<long>(42L));
 
@@ -486,7 +472,7 @@ TEST(EncoderC0Test, Z3ValueEncoderC0DirectWriteEventThroughDispatch) {
   const unsigned thread_id = 3;
 
   const Z3ValueEncoderC0 encoder;
-  Z3 z3;
+  Z3C0 z3;
 
   std::unique_ptr<ReadInstr<long>> read_instr_ptr(new LiteralReadInstr<long>(42L));
 
@@ -509,7 +495,7 @@ TEST(EncoderC0Test, Z3ValueEncoderC0IndirectWriteEvent) {
   const size_t array_size = 5;
 
   const Z3ValueEncoderC0 encoder;
-  Z3 z3;
+  Z3C0 z3;
 
   const Zone pointer_zone = Zone::unique_atom();
   std::unique_ptr<ReadEvent<char[array_size]>> pointer_event_ptr(new ReadEvent<char[array_size]>(thread_id, pointer_zone));
@@ -550,7 +536,7 @@ TEST(EncoderC0Test, Z3ValueEncoderC0IndirectWriteEventThroughDispatch) {
   const size_t array_size = 5;
 
   const Z3ValueEncoderC0 encoder;
-  Z3 z3;
+  Z3C0 z3;
 
   const Zone pointer_zone = Zone::unique_atom();
   std::unique_ptr<ReadEvent<char[array_size]>> pointer_event_ptr(new ReadEvent<char[array_size]>(thread_id, pointer_zone));
@@ -592,7 +578,7 @@ TEST(EncoderC0Test, Z3ValueEncoderC0ReadEvent) {
   const unsigned thread_id = 3;
 
   const Z3ValueEncoderC0 encoder;
-  Z3 z3;
+  Z3C0 z3;
 
   const Zone zone = Zone::unique_atom();
   const ReadEvent<int> read_event(thread_id, zone);
@@ -607,7 +593,7 @@ TEST(EncoderC0Test, Z3ValueEncoderC0ReadEventThroughDispatch) {
   const unsigned thread_id = 3;
 
   const Z3ValueEncoderC0 encoder;
-  Z3 z3;
+  Z3C0 z3;
 
   const Zone zone = Zone::unique_atom();
   const ReadEvent<int> read_event(thread_id, zone);
@@ -624,7 +610,7 @@ TEST(EncoderC0Test, Z3OrderEncoderC0ForRfWithoutCondition) {
   const unsigned read_thread_id = 8;
 
   const Z3OrderEncoderC0 encoder;
-  Z3 z3;
+  Z3C0 z3;
 
   ZoneRelation<Event> relation;
 
@@ -653,7 +639,7 @@ TEST(EncoderC0Test, Z3OrderEncoderC0ForWsWithoutCondition) {
   const unsigned write_thread_minor_id = 8;
 
   const Z3OrderEncoderC0 encoder;
-  Z3 z3;
+  Z3C0 z3;
 
   ZoneRelation<Event> relation;
 
@@ -682,7 +668,7 @@ TEST(EncoderC0Test, Z3OrderEncoderC0ForFrWithoutCondition) {
 
   const Z3ValueEncoderC0 value_encoder;
   const Z3OrderEncoderC0 order_encoder;
-  Z3 z3;
+  Z3C0 z3;
 
   ZoneRelation<Event> relation;
 
