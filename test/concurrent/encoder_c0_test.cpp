@@ -10,10 +10,10 @@ TEST(EncoderC0Test, Z3JoinClocks) {
   Z3C0 z3;
 
   z3::expr x(z3.context.constant(z3.context.int_symbol(1),
-    z3.context.int_sort()));
+    z3.clock_sort()));
 
   z3::expr y(z3.context.constant(z3.context.int_symbol(2),
-    z3.context.int_sort()));
+    z3.clock_sort()));
 
   z3::expr z(z3.join_clocks(x, y));
 

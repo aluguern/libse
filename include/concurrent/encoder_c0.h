@@ -63,6 +63,14 @@ private:
     return create_array_constant<T, N>(event);
   }
 
+  z3::sort clock_sort() {
+    return context.int_sort();
+  }
+
+  bool is_clock(const z3::expr& expr) {
+    return expr.is_int();
+  }
+
 public:
   using Z3::context;
   using Z3::solver;
@@ -86,21 +94,19 @@ public:
   }
 
   z3::expr clock(const Event& event) {
-    z3::sort sort(context.int_sort());
-    z3::expr clock(context.constant(create_symbol(event), sort));
+    z3::expr clock(context.constant(create_symbol(event), clock_sort()));
     solver.add(clock > 0);
     return clock;
   }
 
-  z3::expr join_clocks(const z3::expr& clock_x, const z3::expr& clock_y) {
-    assert(clock_x.is_int() && clock_y.is_int());
+  z3::expr join_clocks(const z3::expr& x, const z3::expr& y) {
+    assert(is_clock(x) && is_clock(y));
 
     const std::string join_name = std::to_string(join_id++) + "_Join";
-    z3::sort clock_sort(context.int_sort());
     z3::symbol join_clock_symbol(context.str_symbol(join_name.c_str()));
-    z3::expr join_clock(context.constant(join_clock_symbol, clock_sort));
+    z3::expr join_clock(context.constant(join_clock_symbol, clock_sort()));
     solver.add(join_clock > 0);
-    solver.add(clock_x < join_clock && clock_y < join_clock);
+    solver.add(x < join_clock && y < join_clock);
     return join_clock;
   }
 
@@ -301,6 +307,8 @@ private:
   z3::expr internal_encode_spo(const std::shared_ptr<Block>& block_ptr,
     const z3::expr& earlier_clock, Z3C0& z3) const {
 
+    assert(z3.is_clock(earlier_clock));
+
     z3::expr inner_clock(earlier_clock);
     if (!block_ptr->body().empty()) {
       // Consider changing Block::body() to return an ordered set if it would
@@ -455,8 +463,8 @@ public:
   void encode_spo(const std::shared_ptr<Block>& most_outer_block_ptr,
     Z3C0& z3) const {
 
-    z3::expr epoch_clock(z3.context.constant(z3.context.str_symbol("epoch_clock"),
-      z3.context.int_sort()));
+    z3::expr epoch_clock(z3.context.constant(z3.context.str_symbol("epoch"),
+      z3.clock_sort()));
 
     internal_encode_spo(most_outer_block_ptr, epoch_clock, z3);
   }

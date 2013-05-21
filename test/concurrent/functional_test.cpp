@@ -31,7 +31,7 @@ TEST(ConcurrentFunctionalTest, LocalArray) {
   out << z3.solver;
   EXPECT_EQ("(solver\n  (= k!5 ((as const (Array (_ BitVec 64) (_ BitVec 8))) #x00))\n"
             "  (= k!7 (store k!5 #x0000000000000002 #x5a))\n"
-            "  true\n  (> k!2 0)\n  (< epoch_clock k!2)\n"
+            "  true\n  (> k!2 0)\n  (< epoch k!2)\n"
             "  (> k!9 0)\n  (< k!2 k!9))", out.str());
 
   // error condition has not been added yet
