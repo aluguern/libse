@@ -71,6 +71,11 @@ private:
     return expr.is_int();
   }
 
+  z3::expr happens_before(const z3::expr& x, const z3::expr& y) {
+    assert(is_clock(x) && is_clock(y));
+    return x < y;
+  }
+
 public:
   using Z3::context;
   using Z3::solver;
@@ -106,7 +111,7 @@ public:
     z3::symbol join_clock_symbol(context.str_symbol(join_name.c_str()));
     z3::expr join_clock(context.constant(join_clock_symbol, clock_sort()));
     solver.add(join_clock > 0);
-    solver.add(x < join_clock && y < join_clock);
+    solver.add(happens_before(x, join_clock) && happens_before(y, join_clock));
     return join_clock;
   }
 
@@ -323,7 +328,7 @@ private:
         if (body_event.zone().is_bottom()) { continue; }
 
         z3::expr next_body_clock(z3.clock(body_event));
-        z3.solver.add(body_clock < next_body_clock);
+        z3.solver.add(z3.happens_before(body_clock, next_body_clock));
         body_clock = next_body_clock;
       }
 
@@ -369,7 +374,9 @@ public:
         assert(!write_event.zone().is_bottom());
         if (read_event.zone().meet(write_event.zone()).is_bottom()) { continue; }
 
-        const z3::expr wr_order(z3.clock(write_event) < z3.clock(read_event));
+        const z3::expr wr_order(
+          z3.happens_before(z3.clock(write_event), z3.clock(read_event)));
+
         const z3::expr wr_schedule(z3.rf(write_event, read_event));
         const z3::expr wr_equality(write_event.constant(z3) ==
           read_event.constant(z3));
@@ -445,8 +452,8 @@ public:
             assert(!read_event.zone().is_bottom());
 
             const z3::expr xr_schedule(z3.rf(write_event_x, read_event));
-            const z3::expr xy_order(z3.clock(write_event_x) < z3.clock(write_event_y));
-            const z3::expr ry_order(z3.clock(read_event) < z3.clock(write_event_y));
+            const z3::expr xy_order(z3.happens_before(z3.clock(write_event_x), z3.clock(write_event_y)));
+            const z3::expr ry_order(z3.happens_before(z3.clock(read_event), z3.clock(write_event_y)));
             const z3::expr y_condition(event_condition(write_event_y, z3));
 
             fr_expr = fr_expr and
