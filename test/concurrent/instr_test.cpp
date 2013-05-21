@@ -7,6 +7,9 @@
 
 using namespace se;
 
+#define READ_EVENT_ID(id) (id)
+#define WRITE_EVENT_ID(id) (id)
+
 TEST(InstrTest, LiteralReadInstrWithCondition) {
   Event::reset_id(7);
 
@@ -41,7 +44,7 @@ TEST(InstrTest, BasicReadInstrWithoutCondition) {
   std::unique_ptr<ReadEvent<int>> event_ptr(new ReadEvent<int>(thread_id, zone));
 
   const BasicReadInstr<int> instr(std::move(event_ptr));
-  EXPECT_EQ(2*4, instr.event_ptr()->event_id());
+  EXPECT_EQ(READ_EVENT_ID(4), instr.event_ptr()->event_id());
 }
 
 TEST(InstrTest, BasicReadInstrWithCondition) {
@@ -58,7 +61,7 @@ TEST(InstrTest, BasicReadInstrWithCondition) {
   std::unique_ptr<ReadEvent<int>> event_ptr(new ReadEvent<int>(thread_id, zone, condition_ptr));
 
   const BasicReadInstr<int> instr(std::move(event_ptr));
-  EXPECT_EQ(2*8, instr.event_ptr()->event_id());
+  EXPECT_EQ(READ_EVENT_ID(8), instr.event_ptr()->event_id());
 }
 
 TEST(InstrTest, UnaryReadInstrWithoutCondition) {
@@ -71,7 +74,7 @@ TEST(InstrTest, UnaryReadInstrWithoutCondition) {
   const UnaryReadInstr<NOT, int> instr(std::move(basic_read_instr));
 
   const BasicReadInstr<int>& operand = dynamic_cast<const BasicReadInstr<int>&>(instr.operand_ref());
-  EXPECT_EQ(2*7, operand.event_ptr()->event_id());
+  EXPECT_EQ(READ_EVENT_ID(7), operand.event_ptr()->event_id());
 }
 
 TEST(InstrTest, UnaryReadInstrWithCondition) {
@@ -90,7 +93,7 @@ TEST(InstrTest, UnaryReadInstrWithCondition) {
   const UnaryReadInstr<NOT, int> instr(std::move(basic_read_instr));
 
   const BasicReadInstr<int>& operand = dynamic_cast<const BasicReadInstr<int>&>(instr.operand_ref());
-  EXPECT_EQ(2*8, operand.event_ptr()->event_id());
+  EXPECT_EQ(READ_EVENT_ID(8), operand.event_ptr()->event_id());
 }
 
 TEST(InstrTest, BinaryReadInstrWithoutCondition) {
@@ -108,9 +111,9 @@ TEST(InstrTest, BinaryReadInstrWithoutCondition) {
 
   const BasicReadInstr<int>& left_child = dynamic_cast<const BasicReadInstr<int>&>(instr.loperand_ref());
   const BasicReadInstr<long>& right_child = dynamic_cast<const BasicReadInstr<long>&>(instr.roperand_ref());
-  EXPECT_EQ(2*7, left_child.event_ptr()->event_id());
+  EXPECT_EQ(READ_EVENT_ID(7), left_child.event_ptr()->event_id());
 
-  EXPECT_EQ(2*8, right_child.event_ptr()->event_id());
+  EXPECT_EQ(READ_EVENT_ID(8), right_child.event_ptr()->event_id());
 }
 
 TEST(InstrTest, BinaryReadInstrWithCondition) {
@@ -133,9 +136,9 @@ TEST(InstrTest, BinaryReadInstrWithCondition) {
 
   const BasicReadInstr<int>& left_child = dynamic_cast<const BasicReadInstr<int>&>(instr.loperand_ref());
   const BasicReadInstr<long>& right_child = dynamic_cast<const BasicReadInstr<long>&>(instr.roperand_ref());
-  EXPECT_EQ(2*8, left_child.event_ptr()->event_id());
+  EXPECT_EQ(READ_EVENT_ID(8), left_child.event_ptr()->event_id());
 
-  EXPECT_EQ(2*9, right_child.event_ptr()->event_id());
+  EXPECT_EQ(READ_EVENT_ID(9), right_child.event_ptr()->event_id());
 }
 
 // The library forbids a binary operator to be constructed from distinct conditions.
@@ -181,8 +184,8 @@ TEST(InstrTest, DereferenceFixedSizeArrayReadInstrWithoutCondition) {
 
   const BasicReadInstr<size_t>& offset_instr = dynamic_cast<const BasicReadInstr<size_t>&>(dereference_instr.offset_ref());
   const BasicReadInstr<char[array_size]>& memory_instr = dynamic_cast<const BasicReadInstr<char[array_size]>&>(dereference_instr.memory_ref());
-  EXPECT_EQ(2*7, offset_instr.event_ptr()->event_id());
-  EXPECT_EQ(2*8, memory_instr.event_ptr()->event_id());
+  EXPECT_EQ(READ_EVENT_ID(7), offset_instr.event_ptr()->event_id());
+  EXPECT_EQ(READ_EVENT_ID(8), memory_instr.event_ptr()->event_id());
 }
 
 TEST(InstrTest, DereferenceFixedSizeArrayReadInstrWithCondition) {
@@ -207,8 +210,8 @@ TEST(InstrTest, DereferenceFixedSizeArrayReadInstrWithCondition) {
 
   const BasicReadInstr<size_t>& offset_instr = dynamic_cast<const BasicReadInstr<size_t>&>(dereference_instr.offset_ref());
   const BasicReadInstr<char[array_size]>& memory_instr = dynamic_cast<const BasicReadInstr<char[array_size]>&>(dereference_instr.memory_ref());
-  EXPECT_EQ(2*8, offset_instr.event_ptr()->event_id());
-  EXPECT_EQ(2*9, memory_instr.event_ptr()->event_id());
+  EXPECT_EQ(READ_EVENT_ID(8), offset_instr.event_ptr()->event_id());
+  EXPECT_EQ(READ_EVENT_ID(9), memory_instr.event_ptr()->event_id());
 }
 
 TEST(InstrTest, ReadInstrResult) {
@@ -235,12 +238,12 @@ TEST(InstrTest, Filter) {
   instr.filter(event_ptrs);
 
   const ReadEvent<int>& event_a = dynamic_cast<const ReadEvent<int>&>(*event_ptrs.front());
-  EXPECT_EQ(2*7, event_a.event_id());
+  EXPECT_EQ(READ_EVENT_ID(7), event_a.event_id());
 
   event_ptrs.pop_front();
 
   const ReadEvent<long>& event_b = dynamic_cast<const ReadEvent<long>&>(*event_ptrs.front());
-  EXPECT_EQ(2*8, event_b.event_id());
+  EXPECT_EQ(READ_EVENT_ID(8), event_b.event_id());
 
   event_ptrs.pop_front();
   EXPECT_TRUE(event_ptrs.empty());

@@ -7,6 +7,9 @@
 
 using namespace se;
 
+#define READ_EVENT_ID(id) (id)
+#define WRITE_EVENT_ID(id) (id)
+
 TEST(RecorderTest, LoopPolicy) {
   constexpr LoopPolicy p(make_loop_policy<7, 2>());
   static_assert(7 == p.id(), "Wrong loop ID");
@@ -819,17 +822,17 @@ TEST(RecorderTest, Body) {
   std::forward_list<std::shared_ptr<Event>>& event_ptrs = recorder.current_block_body();
 
   const ReadEvent<char>& read_char_event = dynamic_cast<const ReadEvent<char>&>(*event_ptrs.front());
-  EXPECT_EQ(2*3, read_char_event.event_id());
+  EXPECT_EQ(READ_EVENT_ID(3), read_char_event.event_id());
 
   event_ptrs.pop_front();
 
   const ReadEvent<long>& read_long_event = dynamic_cast<const ReadEvent<long>&>(*event_ptrs.front());
-  EXPECT_EQ(2*4, read_long_event.event_id());
+  EXPECT_EQ(READ_EVENT_ID(4), read_long_event.event_id());
 
   event_ptrs.pop_front();
 
   const WriteEvent<long>& write_long_event = dynamic_cast<const WriteEvent<long>&>(*event_ptrs.front());
-  EXPECT_EQ(2*5+1, write_long_event.event_id());
+  EXPECT_EQ(WRITE_EVENT_ID(5), write_long_event.event_id());
 
   event_ptrs.pop_front();
   EXPECT_TRUE(event_ptrs.empty());

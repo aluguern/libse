@@ -39,7 +39,9 @@ class Z3ValueEncoderC0;
 /// is said to be conditional; otherwise, it is said to be unconditional.
 class Event {
 private:
-  // On 32-bit architectures, the legal range of identifiers is 0 to 2^15-1.
+  // On 32-bit architectures, the maximal write event identifier is 2^30-1.
+  // This upper limit stems from Z3 which aligns char pointers for symbol
+  // names by 4 bytes .
   static unsigned s_next_id;
 
   const unsigned m_event_id;
@@ -49,19 +51,7 @@ private:
   const Zone m_zone;
   const std::shared_ptr<ReadInstr<bool>> m_condition_ptr;
 
-  // Even positive integers (m = 2k for k in 0 to 2^15-1) are for read
-  // events. In turn, odd positive integers (n = 2k + 1 for k in 0 to 2^15-1)
-  // are write events. That is, the maximal read event identifier is 2^30-2
-  // and the maximal write event identifier is 2^30-1. These upper limits
-  // stem from Z3 which aligns char pointers for symbol names by 4 bytes on
-  // 32-bit architectures.
-  static unsigned next_id(bool is_read) {
-    const unsigned even = 2 * s_next_id++;
-    return is_read ? even : even + 1;
-  }
-
 protected:
-
   /// Create a unique read or write event
 
   /// \param zone - label to link up events
@@ -75,7 +65,7 @@ protected:
   Event(unsigned thread_id, const Zone& zone, bool is_read,
     const Type* const type_ptr,
     const std::shared_ptr<ReadInstr<bool>>& condition_ptr = nullptr) :
-    m_event_id(next_id(is_read)), m_zone(zone), m_thread_id(thread_id),
+    m_event_id(s_next_id++), m_zone(zone), m_thread_id(thread_id),
     m_is_read(is_read), m_type_ptr(type_ptr), m_condition_ptr(condition_ptr) {
 
     assert(type_ptr != nullptr);

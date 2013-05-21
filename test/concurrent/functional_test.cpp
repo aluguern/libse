@@ -29,10 +29,10 @@ TEST(ConcurrentFunctionalTest, LocalArray) {
 
   std::stringstream out;
   out << z3.solver;
-  EXPECT_EQ("(solver\n  (= k!5 ((as const (Array (_ BitVec 64) (_ BitVec 8))) #x00))\n"
-            "  (= k!7 (store k!5 #x0000000000000002 #x5a))\n"
-            "  true\n  (> k!2 0)\n  (< epoch k!2)\n"
-            "  (> k!9 0)\n  (< k!2 k!9))", out.str());
+  EXPECT_EQ("(solver\n  (= k!2 ((as const (Array (_ BitVec 64) (_ BitVec 8))) #x00))\n"
+            "  (= k!3 (store k!2 #x0000000000000002 #x5a))\n"
+            "  true\n  (> k!1 0)\n  (< epoch k!1)\n"
+            "  (> k!4 0)\n  (< k!1 k!4))", out.str());
 
   // error condition has not been added yet
   EXPECT_EQ(z3::sat, z3.solver.check());

@@ -5,6 +5,9 @@
 
 using namespace se;
 
+#define READ_EVENT_ID(id) (id)
+#define WRITE_EVENT_ID(id) (id)
+
 TEST(VarTest, SharedDeclVarInitScalar) {
   Threads::reset(7);
   Threads::begin_main_thread();
@@ -14,7 +17,7 @@ TEST(VarTest, SharedDeclVarInitScalar) {
   const LiteralReadInstr<char>& instr = dynamic_cast<const LiteralReadInstr<char>&>(var.direct_write_event_ref().instr_ref());
   EXPECT_EQ(0, instr.literal());
   EXPECT_FALSE(var.zone().is_bottom());
-  EXPECT_EQ(2*7+1, var.direct_write_event_ref().event_id());
+  EXPECT_EQ(WRITE_EVENT_ID(7), var.direct_write_event_ref().event_id());
 }
 
 TEST(VarTest, LocalDeclVarInitScalar) {
@@ -26,7 +29,7 @@ TEST(VarTest, LocalDeclVarInitScalar) {
   const LiteralReadInstr<char>& instr = dynamic_cast<const LiteralReadInstr<char>&>(var.direct_write_event_ref().instr_ref());
   EXPECT_EQ(0, instr.literal());
   EXPECT_TRUE(var.zone().is_bottom());
-  EXPECT_EQ(2*7+1, var.direct_write_event_ref().event_id());
+  EXPECT_EQ(WRITE_EVENT_ID(7), var.direct_write_event_ref().event_id());
 }
 
 TEST(VarTest, LocalVarInitScalar) {
@@ -82,10 +85,10 @@ TEST(VarTest, CopyLocalVar) {
   Threads::begin_main_thread();
 
   LocalVar<char> var;
-  EXPECT_EQ(2*7+1, var.direct_write_event_ref().event_id());
+  EXPECT_EQ(WRITE_EVENT_ID(7), var.direct_write_event_ref().event_id());
 
   LocalVar<char> other = var;
-  EXPECT_EQ(2*8+1, other.direct_write_event_ref().event_id());
+  EXPECT_EQ(WRITE_EVENT_ID(8), other.direct_write_event_ref().event_id());
 
   // local variables can never be linked through RF, FR etc.
   EXPECT_TRUE(var.zone().is_bottom());
@@ -98,11 +101,11 @@ TEST(VarTest, CopySharedVarToLocalVar) {
   Threads::begin_main_thread();
 
   SharedVar<char> var;
-  EXPECT_EQ(2*7+1, var.direct_write_event_ref().event_id());
+  EXPECT_EQ(WRITE_EVENT_ID(7), var.direct_write_event_ref().event_id());
   EXPECT_FALSE(var.zone().is_bottom());
 
   LocalVar<char> other = var;
-  EXPECT_EQ(2*9+1, other.direct_write_event_ref().event_id());
+  EXPECT_EQ(WRITE_EVENT_ID(9), other.direct_write_event_ref().event_id());
   EXPECT_NE(var.zone(), other.zone());
   EXPECT_TRUE(other.zone().is_bottom());
 }
