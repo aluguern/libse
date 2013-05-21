@@ -1,7 +1,7 @@
 # Provide various options to initialize the Autoconf and configure processes.
 AC_PREREQ([2.59])
 
-AC_INIT([libse], [1.0], [alex.horn@cs.ox.ac.uk])
+AC_INIT([libse], [2.0], [alex.horn@cs.ox.ac.uk])
 
 AC_CONFIG_SRCDIR([src/concurrent/event.cpp])
 AC_CONFIG_AUX_DIR([build-aux])
