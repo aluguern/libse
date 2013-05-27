@@ -4,6 +4,7 @@
 #include "libse.h"
 #include "concurrent/mutex.h"
 
+se::Slicer slicer;
 se::SharedVar<int> i = 10, j = 10;
 se::Mutex mutex;
 
@@ -28,15 +29,22 @@ void f1() {
 }
 
 int main(void) {
-  se::Thread t0(f0);
-  se::Thread t1(f1);
+  slicer.begin_slice_loop();
+  do {
+    se::Thread::z3().reset();
 
-  t0.join();
-  t1.join();
+    se::Thread t0(f0);
+    se::Thread t1(f1);
 
-  se::Thread::error(!(i == 16) || !(j == 5));
+    t0.join();
+    t1.join();
 
-  se::Thread::end_main_thread();
+    se::Thread::error(!(i == 16) || !(j == 5));
 
-  return z3::sat == se::Thread::z3().solver.check();
+    if (se::Thread::encode() && z3::sat == se::Thread::z3().solver.check()) {
+      return 1;
+    }
+  } while (slicer.next_slice());
+
+  return 0;
 }

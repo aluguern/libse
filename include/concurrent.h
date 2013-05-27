@@ -14,9 +14,9 @@
 #include "concurrent/event.h"
 #include "concurrent/instr.h"
 #include "concurrent/encoder_c0.h"
-#include "concurrent/recorder.h"
 #include "concurrent/thread.h"
 #include "concurrent/var.h"
+#include "concurrent/slicer.h"
 
 namespace se {
 
@@ -52,7 +52,7 @@ inline std::unique_ptr<ReadInstr<typename
   alloc_read_instr(const T& literal) {
 
   return std::unique_ptr<ReadInstr<T>>(new LiteralReadInstr<T>(
-    literal, ThisThread::recorder().block_condition_ptr()));
+    literal, ThisThread::path_condition_ptr()));
 }
 
 template<typename T> struct UnwrapType<LocalVar<T>> { typedef T base; };

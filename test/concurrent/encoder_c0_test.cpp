@@ -6,34 +6,6 @@
 
 using namespace se;
 
-TEST(EncoderC0Test, Z3JoinClocks) {
-  Z3C0 z3;
-
-  z3::expr x(z3.context.constant(z3.context.int_symbol(1),
-    z3.clock_sort()));
-
-  z3::expr y(z3.context.constant(z3.context.int_symbol(2),
-    z3.clock_sort()));
-
-  z3::expr z(z3.join_clocks(x, y));
-
-  EXPECT_EQ(z3::sat, z3.solver.check());
-
-  z3.solver.push();
-
-  z3.solver.add(z <= x);
-  EXPECT_EQ(z3::unsat, z3.solver.check());
-
-  z3.solver.pop();
-
-  z3.solver.push();
-
-  z3.solver.add(z <= y);
-  EXPECT_EQ(z3::unsat, z3.solver.check());
-
-  z3.solver.pop();
-}
-
 TEST(EncoderC0Test, Z3BvLiteralBool) {
   Z3C0 z3;
 

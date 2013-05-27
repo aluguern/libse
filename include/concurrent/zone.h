@@ -15,7 +15,7 @@ namespace se {
 
 /// An element in an atomistic lattice
 class Zone {
-private:
+public:
   static unsigned s_next_atom;
   static Zone s_bottom_element;
 

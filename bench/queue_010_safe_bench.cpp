@@ -10,6 +10,8 @@
 #define FALSE	(0)
 #define TRUE	(1)
 
+se::Slicer slicer;
+
 typedef struct {
   se::SharedVar<int[N]> element;
   se::SharedVar<size_t> head;
@@ -33,23 +35,22 @@ void init(QType *q) {
 
 se::LocalVar<int> empty(QType *q) {
   se::SharedVar<int> status = 0;
-  if (se::ThisThread::recorder().begin_then(q->head == q->tail)) {
+  if (slicer.begin_block(__COUNTER__, q->head == q->tail)) {
     status = EMPTY;
   }
-  se::ThisThread::recorder().end_branch();
+  slicer.end_block(__COUNTER__);
   return status;
 }
 
 void enqueue(QType *q, se::LocalVar<int> x) {
   q->element[q->tail] = x;
   q->amount = q->amount + 1;
-  if (se::ThisThread::recorder().begin_then(q->tail == static_cast<size_t>(N))) {
+  if (slicer.begin_block(__COUNTER__, q->tail == static_cast<size_t>(N))) {
     q->tail = static_cast<size_t>(1);
-  }
-  if (se::ThisThread::recorder().begin_else()) {
+  } else {
     q->tail = q->tail + static_cast<size_t>(1);
   }
-  se::ThisThread::recorder().end_branch();
+  slicer.end_block(__COUNTER__);
 }
 
 se::LocalVar<int> dequeue(QType *q) {
@@ -57,13 +58,12 @@ se::LocalVar<int> dequeue(QType *q) {
 
   x = q->element[q->head];
   q->amount = q->amount - 1;
-  if (se::ThisThread::recorder().begin_then(q->head == static_cast<size_t>(N))) {
+  if (slicer.begin_block(__COUNTER__, q->head == static_cast<size_t>(N))) {
     q->head = static_cast<size_t>(1);
-  }
-  if (se::ThisThread::recorder().begin_else()) {
+  } else {
     q->head = q->head + static_cast<size_t>(1);
   }
-  se::ThisThread::recorder().end_branch();
+  slicer.end_block(__COUNTER__);
 
   return x;
 }
@@ -72,7 +72,7 @@ void f1() {
   se::LocalVar<int> v;
 
   mutex.lock();
-  if (se::ThisThread::recorder().begin_then(enqueue_flag == TRUE)) {
+  if (slicer.begin_block(__COUNTER__, enqueue_flag == TRUE)) {
     for (int i = 0; i < N; i = i + 1) {
       v = se::any<int>();
 
@@ -83,36 +83,41 @@ void f1() {
     enqueue_flag = FALSE;
     dequeue_flag = TRUE;
   }
-  se::ThisThread::recorder().end_branch();
+  slicer.end_block(__COUNTER__);
   mutex.unlock();
 }
 
 void f2() {
   mutex.lock();
-  if (se::ThisThread::recorder().begin_then(dequeue_flag == TRUE)) {
+  if (slicer.begin_block(__COUNTER__, dequeue_flag == TRUE)) {
     for (int i = 0; i < N; i = i + 1) {
-      if (se::ThisThread::recorder().begin_then(!(empty(&queue) == EMPTY))) {
+      if (slicer.begin_block(__COUNTER__, !(empty(&queue) == EMPTY))) {
         se::LocalVar<int> stored_element;
         stored_element = stored_elements[i];
         se::Thread::error(!(dequeue(&queue) == stored_element));
       }
-      se::ThisThread::recorder().end_branch();
+      slicer.end_block(__COUNTER__);
     }
 
     dequeue_flag = FALSE;
     enqueue_flag = TRUE;
   }
-  se::ThisThread::recorder().end_branch();
+  slicer.end_block(__COUNTER__);
   mutex.unlock();
 }
 
 int main(void) {
-  init(&queue);
+  slicer.begin_slice_loop();
+  do {
+    init(&queue);
 
-  se::Thread t1(f1);
-  se::Thread t2(f2);
+    se::Thread t1(f1);
+    se::Thread t2(f2);
 
-  se::Thread::end_main_thread();
+    if (se::Thread::encode() && z3::sat == se::Thread::z3().solver.check()) {
+      return 1;
+    }
+  } while (slicer.next_slice());
 
-  return z3::sat == se::Thread::z3().solver.check();
+  return 0;
 }

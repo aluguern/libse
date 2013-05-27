@@ -54,7 +54,6 @@ bench: all
 	time -p bench/stateful01_unsafe
 	time -p bench/stack_007_slice_safe
 	time -p bench/stack_007_slice_unsafe
-	time -p bench/queue_010_safe
 	time -p bench/queue_010_unsafe
 
 .PHONY: bench doc
@@ -81,7 +80,6 @@ lib_libse_la_SOURCES = \
   src/concurrent/zone.cpp \
   src/concurrent/event.cpp \
   src/concurrent/encoder_c0.cpp \
-  src/concurrent/recorder.cpp \
   src/concurrent/relation.cpp \
   src/concurrent/thread.cpp \
   src/libse.cpp
@@ -93,10 +91,10 @@ pkginclude_HEADERS = \
   include/concurrent/zone.h \
   include/concurrent/event.h \
   include/concurrent/instr.h \
-  include/concurrent/block.h \
   include/concurrent/encoder.h \
   include/concurrent/encoder_c0.h \
-  include/concurrent/recorder.h \
+  include/concurrent/slice.h \
+  include/concurrent/slicer.h \
   include/concurrent/var.h \
   include/concurrent/relation.h \
   include/concurrent/thread.h \
@@ -134,13 +132,13 @@ test_se_SOURCES = \
   test/concurrent/zone_test.cpp \
   test/concurrent/event_test.cpp \
   test/concurrent/instr_test.cpp \
-  test/concurrent/block_test.cpp \
   test/concurrent/encoder_test.cpp \
   test/concurrent/encoder_c0_test.cpp \
-  test/concurrent/recorder_test.cpp \
   test/concurrent/var_test.cpp \
   test/concurrent/relation_test.cpp \
+  test/concurrent/slice_test.cpp \
   test/concurrent/thread_test.cpp \
+  test/concurrent/slicer_test.cpp \
   test/concurrent/mutex_test.cpp \
   test/concurrent_test.cpp \
   test/concurrent/functional_test.cpp

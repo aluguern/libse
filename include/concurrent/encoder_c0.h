@@ -11,7 +11,6 @@
 
 #include "concurrent/encoder.h"
 #include "concurrent/instr.h"
-#include "concurrent/block.h"
 #include "concurrent/relation.h"
 
 namespace se {
@@ -28,8 +27,6 @@ private:
 
   template<typename T, typename U, size_t N>
   friend z3::expr IndirectWriteEvent<T, U, N>::constant(Z3C0&) const;
-
-  unsigned join_id;
 
   z3::symbol create_symbol(const Event& event) {
     return context.int_symbol(event.event_id());
@@ -63,14 +60,6 @@ private:
     return create_array_constant<T, N>(event);
   }
 
-public:
-  using Z3::context;
-  using Z3::solver;
-
-  Z3C0() : Z3(), m_rf_func_decl(context.function("rf",
-    /* domain */ context.int_sort(), /* range */ context.int_sort())),
-    join_id(0) {}
-
   z3::sort clock_sort() {
     return context.int_sort();
   }
@@ -83,6 +72,13 @@ public:
     assert(is_clock(x) && is_clock(y));
     return x < y;
   }
+
+public:
+  using Z3::context;
+  using Z3::solver;
+
+  Z3C0() : Z3(), m_rf_func_decl(context.function("rf",
+    /* domain */ context.int_sort(), /* range */ context.int_sort())) {}
 
   z3::expr constant(const Event& event) {
     z3::sort sort(context.bv_sort(event.type().bv_size()));
@@ -102,17 +98,6 @@ public:
     z3::expr clock(context.constant(create_symbol(event), clock_sort()));
     solver.add(clock > 0);
     return clock;
-  }
-
-  z3::expr join_clocks(const z3::expr& x, const z3::expr& y) {
-    assert(is_clock(x) && is_clock(y));
-
-    const std::string join_name = std::to_string(join_id++) + "_Join";
-    z3::symbol join_clock_symbol(context.str_symbol(join_name.c_str()));
-    z3::expr join_clock(context.constant(join_clock_symbol, clock_sort()));
-    solver.add(join_clock > 0);
-    solver.add(happens_before(x, join_clock) && happens_before(y, join_clock));
-    return join_clock;
   }
 
   /// Individual array element literal
@@ -309,50 +294,6 @@ private:
   typedef std::shared_ptr<Event> EventPtr;
   typedef std::unordered_set<EventPtr> EventPtrSet;
 
-  z3::expr internal_encode_spo(const std::shared_ptr<Block>& block_ptr,
-    const z3::expr& earlier_clock, Z3C0& z3) const {
-
-    assert(z3.is_clock(earlier_clock));
-
-    z3::expr inner_clock(earlier_clock);
-    if (!block_ptr->body().empty()) {
-      // Consider changing Block::body() to return an ordered set if it would
-      // simplify the treatment of local events (below, currently excluded).
-      const std::forward_list<std::shared_ptr<Event>>& body = block_ptr->body();
-
-      z3::expr body_clock(inner_clock);
-      for (const std::shared_ptr<Event>& body_event_ptr : body) {
-        const Event& body_event = *body_event_ptr;
-
-        /* skip local events */
-        if (body_event.zone().is_bottom()) { continue; }
-
-        z3::expr next_body_clock(z3.clock(body_event));
-        z3.solver.add(z3.happens_before(body_clock, next_body_clock));
-        body_clock = next_body_clock;
-      }
-
-      inner_clock = body_clock;
-    }
-
-    for (const std::shared_ptr<Block>& inner_block_ptr :
-      block_ptr->inner_block_ptrs()) {
-
-      z3::expr then_clock(internal_encode_spo(inner_block_ptr, inner_clock, z3));
-      const std::shared_ptr<Block>& inner_else_block_ptr(
-        inner_block_ptr->else_block_ptr());
-      if (inner_else_block_ptr) {
-        z3::expr else_clock(internal_encode_spo(inner_else_block_ptr,
-          inner_clock, z3));
-        inner_clock = z3.join_clocks(then_clock, else_clock);
-      } else {
-        inner_clock = then_clock;
-      }
-    }
-
-    return inner_clock;
-  }
-
 public:
   Z3OrderEncoderC0() : m_read_encoder() {}
 
@@ -464,16 +405,6 @@ public:
     }
 
     return fr_expr;
-  }
-
-  /// Encode a single thread as a series-parallel directed acyclic graph
-  void encode_spo(const std::shared_ptr<Block>& most_outer_block_ptr,
-    Z3C0& z3) const {
-
-    z3::expr epoch_clock(z3.context.constant(z3.context.str_symbol("epoch"),
-      z3.clock_sort()));
-
-    internal_encode_spo(most_outer_block_ptr, epoch_clock, z3);
   }
 };
 

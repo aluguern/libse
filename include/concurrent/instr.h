@@ -147,7 +147,7 @@ class UnaryReadInstr : public ReadInstr<typename ReturnType<opcode, U>::result_t
 private:
   const std::shared_ptr<ReadInstr<U>> m_operand_ptr;
 
-  friend class Recorder;
+  friend class Slicer;
   UnaryReadInstr(std::shared_ptr<ReadInstr<U>> operand_ptr) :
     m_operand_ptr(operand_ptr) {}
 
@@ -229,9 +229,19 @@ protected:
   }
 
 public:
+  typedef std::forward_list<std::shared_ptr<ReadInstr<T>>> OperandPtrs;
+
   /// \pre: There are at least two operands
-  NaryReadInstr(std::forward_list<std::shared_ptr<ReadInstr<T>>>&& operand_ptrs,
-    size_t size) : m_operand_ptrs(std::move(operand_ptrs)), m_size(size) {
+  NaryReadInstr(OperandPtrs&& operand_ptrs, size_t size) :
+    m_operand_ptrs(std::move(operand_ptrs)), m_size(size) {
+
+    assert(!m_operand_ptrs.empty());
+    assert(1 < size);
+  }
+
+  /// \pre: There are at least two operands
+  NaryReadInstr(const OperandPtrs& operand_ptrs, size_t size) :
+    m_operand_ptrs(std::move(operand_ptrs)), m_size(size) {
 
     assert(!m_operand_ptrs.empty());
     assert(1 < size);

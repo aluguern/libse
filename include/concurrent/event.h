@@ -23,6 +23,13 @@ class ReadInstr;
 class Z3C0;
 class Z3ValueEncoderC0;
 
+// On 32-bit architectures, the maximal write event identifier is 2^30-1.
+// This upper limit stems from Z3 which aligns char pointers for symbol
+// names by 4 bytes .
+typedef unsigned EventId;
+
+typedef unsigned ThreadId;
+
 /// Untyped read or write event
 
 /// An Event object can only be instantiated through a subclass. Usually,
@@ -39,13 +46,10 @@ class Z3ValueEncoderC0;
 /// is said to be conditional; otherwise, it is said to be unconditional.
 class Event {
 private:
-  // On 32-bit architectures, the maximal write event identifier is 2^30-1.
-  // This upper limit stems from Z3 which aligns char pointers for symbol
-  // names by 4 bytes .
   static unsigned s_next_id;
 
-  const unsigned m_event_id;
-  const unsigned m_thread_id;
+  const EventId m_event_id;
+  const ThreadId m_thread_id;
   const bool m_is_read;
   const Type* const m_type_ptr;
   const Zone m_zone;
@@ -62,7 +66,7 @@ protected:
   ///
   /// The type_ptr describes the event in terms of its memory characteristics
   /// such as how many bytes are read or written.
-  Event(unsigned thread_id, const Zone& zone, bool is_read,
+  Event(ThreadId thread_id, const Zone& zone, bool is_read,
     const Type* const type_ptr,
     const std::shared_ptr<ReadInstr<bool>>& condition_ptr = nullptr) :
     m_event_id(s_next_id++), m_zone(zone), m_thread_id(thread_id),
@@ -82,7 +86,7 @@ protected:
   ///
   /// The type_ptr describes the event in terms of its memory characteristics
   /// such as how many bytes are read or written.
-  Event(unsigned event_id, unsigned thread_id, const Zone& zone,
+  Event(EventId event_id, ThreadId thread_id, const Zone& zone,
     bool is_read, const Type* const type_ptr,
     const std::shared_ptr<ReadInstr<bool>>& condition_ptr = nullptr) :
     m_event_id(event_id), m_zone(zone), m_thread_id(thread_id),
@@ -96,8 +100,8 @@ public:
 
   virtual ~Event() {}
 
-  unsigned event_id() const { return m_event_id; }
-  unsigned thread_id() const { return m_thread_id; }
+  EventId event_id() const { return m_event_id; }
+  ThreadId thread_id() const { return m_thread_id; }
   const Zone& zone() const { return m_zone; }
   bool is_read() const { return m_is_read; }
   bool is_write() const { return !m_is_read; }
@@ -132,7 +136,7 @@ private:
   const std::unique_ptr<ReadInstr<T>> m_instr_ptr;
 
 protected:
-  WriteEvent(unsigned thread_id, const Zone& zone,
+  WriteEvent(ThreadId thread_id, const Zone& zone,
     std::unique_ptr<ReadInstr<T>> instr_ptr,
     const std::shared_ptr<ReadInstr<bool>>& condition_ptr = nullptr) :
     Event(thread_id, zone, false, &TypeInfo<T>::s_type, condition_ptr),
@@ -154,7 +158,7 @@ public:
 template<typename T>
 class DirectWriteEvent : public WriteEvent<T> {
 public:
-  DirectWriteEvent(unsigned thread_id, const Zone& zone,
+  DirectWriteEvent(ThreadId thread_id, const Zone& zone,
     std::unique_ptr<ReadInstr<T>> instr_ptr,
     const std::shared_ptr<ReadInstr<bool>>& condition_ptr = nullptr) :
     WriteEvent<T>(thread_id, zone, std::move(instr_ptr), condition_ptr) {}
@@ -175,7 +179,7 @@ private:
   const std::unique_ptr<DerefReadInstr<T[N], U>> m_deref_instr_ptr;
 
 public:
-  IndirectWriteEvent(unsigned thread_id, const Zone& zone,
+  IndirectWriteEvent(ThreadId thread_id, const Zone& zone,
     std::unique_ptr<DerefReadInstr<T[N], U>> deref_instr_ptr,
     std::unique_ptr<ReadInstr<T>> instr_ptr,
     const std::shared_ptr<ReadInstr<bool>>& condition_ptr = nullptr) :
@@ -201,14 +205,14 @@ class ReadEvent : public Event {
 private:
   template<typename U>
   friend std::unique_ptr<ReadEvent<U>> internal_make_read_event(
-    const Zone& zone, unsigned event_id);
+    const Zone& zone, EventId event_id);
 
-  ReadEvent(unsigned event_id, unsigned thread_id, const Zone& zone,
+  ReadEvent(EventId event_id, ThreadId thread_id, const Zone& zone,
     const std::shared_ptr<ReadInstr<bool>>& condition_ptr = nullptr) :
     Event(event_id, thread_id, zone, true, &TypeInfo<T>::s_type, condition_ptr) {}
 
 public:
-  ReadEvent(unsigned thread_id, const Zone& zone,
+  ReadEvent(ThreadId thread_id, const Zone& zone,
     const std::shared_ptr<ReadInstr<bool>>& condition_ptr = nullptr) :
     Event(thread_id, zone, true, &TypeInfo<T>::s_type, condition_ptr) {}
 
@@ -227,7 +231,7 @@ private:
   DECL_CONSTANT_ENCODER_C0_FN
 
 protected:
-  SyncEvent(unsigned thread_id, const Zone& zone, bool receive,
+  SyncEvent(ThreadId thread_id, const Zone& zone, bool receive,
     const std::shared_ptr<ReadInstr<bool>>& condition_ptr = nullptr) :
     Event(thread_id, zone, receive, &TypeInfo<Sync>::s_type, condition_ptr) {}
 };
@@ -237,7 +241,7 @@ protected:
 /// Synchronization occurs through a unique \ref Event::zone() "zone atom".
 class SendEvent : public SyncEvent {
 public:
-  SendEvent(unsigned thread_id,
+  SendEvent(ThreadId thread_id,
     const std::shared_ptr<ReadInstr<bool>>& condition_ptr = nullptr) :
     SyncEvent(thread_id, Zone::unique_atom(), false, condition_ptr) {}
 };
@@ -246,7 +250,7 @@ public:
 class ReceiveEvent : public SyncEvent {
 public:
   /// Event that reads from the given zone, preferably SendEvent::zone()
-  ReceiveEvent(unsigned thread_id, const Zone& zone,
+  ReceiveEvent(ThreadId thread_id, const Zone& zone,
     const std::shared_ptr<ReadInstr<bool>>& condition_ptr = nullptr) :
     SyncEvent(thread_id, zone, true, condition_ptr) {}
 };

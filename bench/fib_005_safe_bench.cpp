@@ -5,6 +5,7 @@
 
 #define N 5
 
+se::Slicer slicer;
 se::SharedVar<int> i = 1, j = 1;
 
 void f0() {
@@ -22,15 +23,22 @@ void f1() {
 }
 
 int main(void) {
-  se::Thread t0(f0);
-  se::Thread t1(f1);
+  slicer.begin_slice_loop();
+  do {
+    se::Thread::z3().reset();
 
-  se::Thread::error(144 < i || 144 < j);
+    se::Thread t0(f0);
+    se::Thread t1(f1);
 
-  t0.join();
-  t1.join();
+    se::Thread::error(144 < i || 144 < j);
 
-  se::Thread::end_main_thread();
+    t0.join();
+    t1.join();
 
-  return z3::sat == se::Thread::z3().solver.check();
+    if (se::Thread::encode() && z3::sat == se::Thread::z3().solver.check()) {
+      return 1;
+    }
+  } while (slicer.next_slice());
+
+  return 0;
 }

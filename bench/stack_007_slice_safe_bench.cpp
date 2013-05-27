@@ -6,6 +6,7 @@
 
 #define N 12
 
+se::Slicer slicer;
 se::SharedVar<unsigned int> top = 0;
 se::Mutex mutex;
 
@@ -33,19 +34,26 @@ void f2() {
   int i;
   for (i = 0; i < N; i++) {
     mutex.lock();
-    if (se::ThisThread::recorder().begin_then(0 < top)) {
+    if (slicer.begin_block(__COUNTER__, 0 < top)) {
       pop();
     }
-    se::ThisThread::recorder().end_branch();
+    slicer.end_block(__COUNTER__);
     mutex.unlock();
   }
 }
 
 int main(void) {
-  se::Thread t1(f1);
-  se::Thread t2(f2);
+  slicer.begin_slice_loop();
+  do {
+    se::Thread::z3().reset();
 
-  se::Thread::end_main_thread();
+    se::Thread t1(f1);
+    se::Thread t2(f2);
 
-  return z3::sat == se::Thread::z3().solver.check();
+    if (se::Thread::encode() && z3::sat == se::Thread::z3().solver.check()) {
+      return 1;
+    }
+  } while (slicer.next_slice());
+
+  return 0;
 }

@@ -11,6 +11,7 @@ TEST(ConcurrentFunctionalTest, Counter) {
   EXPECT_EQ(counter + 1, __COUNTER__);
 }
 
+/*
 TEST(ConcurrentFunctionalTest, LocalArray) {
   Z3C0 z3;
 
@@ -25,7 +26,7 @@ TEST(ConcurrentFunctionalTest, LocalArray) {
   Threads::error(!(a[2] == 'Z'), z3);
 
   // Do not encode global memory accesses for this test
-  Threads::end_thread(z3);
+  Threads::end_thread();
 
   std::stringstream out;
   out << z3.solver;
@@ -40,151 +41,7 @@ TEST(ConcurrentFunctionalTest, LocalArray) {
   Threads::end_main_thread(z3);
   EXPECT_EQ(z3::unsat, z3.solver.check());
 }
-
-class CharBlockPrinter {
-public:
-  std::stringstream out;
-
-private:
-  int indent;
-  void print(std::string str) {
-    assert(indent >= 0);
-    out << std::string(indent, ' ') << str << std::endl;
-  }
-
-  void print(char c) {
-    assert(indent >= 0);
-    out << std::string(indent, ' ') << c << std::endl;
-  }
-
-public:
-  CharBlockPrinter() : out(), indent(0) {}
-
-  void print_block_ptr(std::shared_ptr<Block> block_ptr) {
-    print("{");
-    indent += 2;
-
-    for (std::shared_ptr<Event> event_ptr : block_ptr->body()) {
-      if (event_ptr->is_read()) { continue; }
-
-      const WriteEvent<char>& write_event =
-        static_cast<const WriteEvent<char>&>(*event_ptr);
-
-      const LiteralReadInstr<char>& literal_read_instr =
-        static_cast<const LiteralReadInstr<char>&>(write_event.instr_ref());
-
-      if (literal_read_instr.literal()) {
-        print(literal_read_instr.literal());
-      }
-    }
-
-    for (std::shared_ptr<Block> inner_block_ptr : block_ptr->inner_block_ptrs()) {
-      print_block_ptr(inner_block_ptr);
-    }
-
-    if (block_ptr->else_block_ptr()) {
-      indent -= 2;
-      print("} else {");
-      indent += 2;
-
-      print_block_ptr(block_ptr->else_block_ptr());
-    }
-
-    indent -= 2;
-    print("}");
-  }
-};
-
-TEST(ConcurrentFunctionalTest, Else) {
-  Z3C0 z3;
-  CharBlockPrinter printer;
-
-  Threads::reset();
-  Threads::begin_main_thread();
-
-  SharedVar<char> x;
-
-  x = 'A';
-  if (ThisThread::recorder().begin_then(any<bool>())) {
-    x = 'B';
-  }
-  if (ThisThread::recorder().begin_else()) {
-    x = 'C';
-  } ThisThread::recorder().end_branch();
-  x = 'D';
-
-  printer.print_block_ptr(ThisThread::recorder().most_outer_block_ptr());
-  EXPECT_EQ("{\n"
-            "  {\n"
-            "    A\n"
-            "  }\n"
-            "  {\n"
-            "    B\n"
-            "  } else {\n"
-            "    {\n"
-            "      C\n"
-            "    }\n"
-            "  }\n"
-            "  {\n"
-            "    D\n"
-            "  }\n"
-            "}\n", printer.out.str());
-
-  Threads::end_main_thread(z3);
-}
-
-
-TEST(ConcurrentFunctionalTest, ElseIf) {
-  Z3C0 z3;
-  CharBlockPrinter printer;
-
-  Threads::reset();
-  Threads::begin_main_thread();
-
-  SharedVar<char> x;
-
-  x = 'A';
-  ThisThread::recorder().begin_then(any<bool>()); {
-  } ThisThread::recorder().begin_else(); {
-      ThisThread::recorder().begin_then(any<bool>()); {
-        ThisThread::recorder().begin_then(any<bool>()); {
-          x = 'B';
-        } ThisThread::recorder().begin_else(); {
-          x = 'C';
-          x = 'D';
-        } ThisThread::recorder().end_branch();
-      } ThisThread::recorder().end_branch();
-      x = 'E';
-  } ThisThread::recorder().end_branch();
-
-  printer.print_block_ptr(ThisThread::recorder().most_outer_block_ptr());
-  EXPECT_EQ("{\n"
-            "  {\n"
-            "    A\n"
-            "  }\n"
-            "  {\n"
-            "  } else {\n"
-            "    {\n"
-            "      {\n"
-            "        {\n"
-            "          B\n"
-            "        } else {\n"
-            "          {\n"
-            "            C\n"
-            "            D\n"
-            "          }\n"
-            "        }\n"
-            "      }\n"
-            "      {\n"
-            "        E\n"
-            "      }\n"
-            "    }\n"
-            "  }\n"
-            "  {\n  }\n"
-            "}\n", printer.out.str());
-
-  Threads::end_main_thread(z3);
-}
+*/
 
 // Do not introduce any new read events as part of a conditional check
 #define TRUE_READ_INSTR \
@@ -192,229 +49,6 @@ TEST(ConcurrentFunctionalTest, ElseIf) {
 
 #define FALSE_READ_INSTR \
   (std::unique_ptr<ReadInstr<bool>>(new LiteralReadInstr<bool>(false)))
-
-TEST(ConcurrentFunctionalTest, SeriesParallelGraph) {
-  Z3C0 z3;
-  CharBlockPrinter printer;
-
-  Threads::reset();
-  Threads::begin_main_thread();
-
-  SharedVar<char> x;
-
-  x = 'A';
-  ThisThread::recorder().begin_then(TRUE_READ_INSTR); {
-    x = 'B';
-    ThisThread::recorder().begin_then(TRUE_READ_INSTR); {
-      ThisThread::recorder().begin_then(TRUE_READ_INSTR); {
-        x = 'C';
-      } ThisThread::recorder().end_branch();
-      ThisThread::recorder().begin_then(TRUE_READ_INSTR); {
-        x = 'D';
-      } ThisThread::recorder().end_branch();
-    } ThisThread::recorder().end_branch();
-    ThisThread::recorder().begin_then(TRUE_READ_INSTR); {
-      x = 'E';
-      ThisThread::recorder().begin_then(TRUE_READ_INSTR); {
-        x = 'F';
-      } ThisThread::recorder().end_branch();
-      ThisThread::recorder().begin_then(TRUE_READ_INSTR); {
-        x = 'G';
-      } ThisThread::recorder().end_branch();
-    } ThisThread::recorder().end_branch();
-    ThisThread::recorder().begin_then(TRUE_READ_INSTR); {
-      ThisThread::recorder().begin_then(TRUE_READ_INSTR); {
-        x = 'H';
-      } ThisThread::recorder().end_branch();
-      x = 'I';
-      ThisThread::recorder().begin_then(TRUE_READ_INSTR); {
-        x = 'J';
-      } ThisThread::recorder().end_branch();
-    } ThisThread::recorder().end_branch();
-    ThisThread::recorder().begin_then(TRUE_READ_INSTR); {
-      x = 'K';
-      ThisThread::recorder().begin_then(TRUE_READ_INSTR); {
-        x = 'L';
-      } ThisThread::recorder().end_branch();
-      x = 'M';
-      ThisThread::recorder().begin_then(TRUE_READ_INSTR); {
-        x = 'N';
-      } ThisThread::recorder().end_branch();
-    } ThisThread::recorder().end_branch();
-  } ThisThread::recorder().begin_else(); {
-    ThisThread::recorder().begin_then(TRUE_READ_INSTR); {
-      ThisThread::recorder().begin_then(TRUE_READ_INSTR); {
-        x = 'O';
-      } ThisThread::recorder().begin_else(); {
-        x = 'P';
-      } ThisThread::recorder().end_branch();
-    } ThisThread::recorder().end_branch();
-    x = 'Q';
-    ThisThread::recorder().begin_then(TRUE_READ_INSTR); {
-      x = 'R';
-      ThisThread::recorder().begin_then(TRUE_READ_INSTR); {
-        x = 'S';
-      } ThisThread::recorder().begin_else(); {
-        x = 'T';
-      } ThisThread::recorder().end_branch();
-    } ThisThread::recorder().end_branch();
-    ThisThread::recorder().begin_then(TRUE_READ_INSTR); {
-      ThisThread::recorder().begin_then(TRUE_READ_INSTR); {
-        x = 'U';
-      } ThisThread::recorder().begin_else(); {
-        x = 'W';
-      } ThisThread::recorder().end_branch();
-      x = 'V';
-    } ThisThread::recorder().end_branch();
-    ThisThread::recorder().begin_then(TRUE_READ_INSTR); {
-      x = 'X';
-      ThisThread::recorder().begin_then(TRUE_READ_INSTR); {
-        x = 'Y';
-      } ThisThread::recorder().end_branch();
-      ThisThread::recorder().begin_then(TRUE_READ_INSTR); {
-        x = 'Z';
-      } ThisThread::recorder().end_branch();
-      x = '!';
-    } ThisThread::recorder().end_branch();
-  } ThisThread::recorder().end_branch();
-
-  printer.print_block_ptr(ThisThread::recorder().most_outer_block_ptr());
-  EXPECT_EQ("{\n"
-            "  {\n"
-            "    A\n"
-            "  }\n"
-            "  {\n"
-            "    B\n"
-            "    {\n"
-            "      {\n"
-            "        C\n"
-            "      }\n"
-            "      {\n"
-            "        D\n"
-            "      }\n"
-            "    }\n"
-            "    {\n"
-            "      E\n"
-            "      {\n"
-            "        F\n"
-            "      }\n"
-            "      {\n"
-            "        G\n"
-            "      }\n"
-            "    }\n"
-            "    {\n"
-            "      {\n"
-            "        H\n"
-            "      }\n"
-            "      {\n"
-            "        I\n"
-            "      }\n"
-            "      {\n"
-            "        J\n"
-            "      }\n"
-            "    }\n"
-            "    {\n"
-            "      K\n"
-            "      {\n"
-            "        L\n"
-            "      }\n"
-            "      {\n"
-            "        M\n"
-            "      }\n"
-            "      {\n"
-            "        N\n"
-            "      }\n"
-            "    }\n"
-            "  } else {\n"
-            "    {\n"
-            "      {\n"
-            "        {\n"
-            "          O\n"
-            "        } else {\n"
-            "          {\n"
-            "            P\n"
-            "          }\n"
-            "        }\n"
-            "      }\n"
-            "      {\n"
-            "        Q\n"
-            "      }\n"
-            "      {\n"
-            "        R\n"
-            "        {\n"
-            "          S\n"
-            "        } else {\n"
-            "          {\n"
-            "            T\n"
-            "          }\n"
-            "        }\n"
-            "      }\n"
-            "      {\n"
-            "        {\n"
-            "          U\n"
-            "        } else {\n"
-            "          {\n"
-            "            W\n"
-            "          }\n"
-            "        }\n"
-            "        {\n"
-            "          V\n"
-            "        }\n"
-            "      }\n"
-            "      {\n"
-            "        X\n"
-            "        {\n"
-            "          Y\n"
-            "        }\n"
-            "        {\n"
-            "          Z\n"
-            "        }\n"
-            "        {\n"
-            "          !\n"
-            "        }\n"
-            "      }\n"
-            "    }\n"
-            "  }\n"
-            "  {\n  }\n"
-            "}\n", printer.out.str());
-
-  Threads::end_main_thread(z3);
-}
-
-TEST(ConcurrentFunctionalTest, Loop) {
-  Z3C0 z3;
-  CharBlockPrinter printer;
-
-  Threads::reset();
-  Threads::begin_main_thread();
-
-  SharedVar<char> x;
-
-  x = 'A';
-  char k = 1;
-  while (ThisThread::recorder().unwind_loop(x < '?', make_loop_policy<__COUNTER__, 3>())) {
-    x = k++;
-  }
-
-  printer.print_block_ptr(ThisThread::recorder().most_outer_block_ptr());
-  EXPECT_EQ("{\n"
-            "  {\n"
-            "    A\n"
-            "  }\n"
-            "  {\n"
-            "    \x1\n"
-            "    {\n"
-            "      \x2\n"
-            "      {\n"
-            "        \x3\n"
-            "      }\n"
-            "    }\n"
-            "  }\n"
-            "  {\n  }\n"
-            "}\n", printer.out.str());
-
-  Threads::end_main_thread(z3);
-}
 
 TEST(ConcurrentFunctionalTest, ThreeThreadsReadWriteScalarSharedVar) {
   Z3C0 z3;
@@ -430,14 +64,14 @@ TEST(ConcurrentFunctionalTest, ThreeThreadsReadWriteScalarSharedVar) {
 
   x = 'P';
 
-  Threads::end_thread(z3);
+  Threads::end_thread();
 
   // Record second child thread
   Threads::begin_thread();
 
   x = 'Q';
 
-  Threads::end_thread(z3);
+  Threads::end_thread();
 
   // Prepare property encoding
   LocalVar<char> a;
@@ -521,7 +155,7 @@ TEST(ConcurrentFunctionalTest, SatSingleThreadWithSharedVar) {
   EXPECT_EQ(z3::sat, z3.solver.check());
 }
 
-TEST(ConcurrentFunctionalTest, SatJoinPathsInSingleThreadWithSharedVar) {
+TEST(ConcurrentFunctionalTest, UnsatInSingleThreadWithSharedVar) {
   Z3C0 z3;
 
   Threads::reset();
@@ -531,22 +165,11 @@ TEST(ConcurrentFunctionalTest, SatJoinPathsInSingleThreadWithSharedVar) {
   LocalVar<char> a;
 
   x = 'A';
-  if (ThisThread::recorder().begin_then(any<bool>())) {
-    x = 'B';
-  }
-  if (ThisThread::recorder().begin_else()) {
-    x = 'C';
-  }
-  ThisThread::recorder().end_branch();
+  x = 'B';
   a = x;
 
   // Create properties within main thread context
-  std::unique_ptr<ReadInstr<bool>> c0(a == 'B');
-  std::unique_ptr<ReadInstr<bool>> c1(!(a == 'C'));
-  std::unique_ptr<ReadInstr<bool>> c2(a == 'B' && !(a == 'C'));
-  std::unique_ptr<ReadInstr<bool>> c3(a == 'C');
-  std::unique_ptr<ReadInstr<bool>> c4(!(a == 'B') && a == 'C');
-  std::unique_ptr<ReadInstr<bool>> c5(a == 'A');
+  std::unique_ptr<ReadInstr<bool>> c0(a == 'A');
 
   Threads::end_main_thread(z3);
 
@@ -555,47 +178,97 @@ TEST(ConcurrentFunctionalTest, SatJoinPathsInSingleThreadWithSharedVar) {
   z3.solver.push();
 
   Threads::internal_error(std::move(c0), z3);
-  EXPECT_EQ(z3::sat, z3.solver.check());
-
-  z3.solver.pop();
-
-  z3.solver.push();
-
-  Threads::internal_error(std::move(c1), z3);
-  EXPECT_EQ(z3::sat, z3.solver.check());
-
-  z3.solver.pop();
-
-  z3.solver.push();
-
-  Threads::internal_error(std::move(c2), z3);
-  EXPECT_EQ(z3::sat, z3.solver.check());
-
-  z3.solver.pop();
-
-  z3.solver.push();
-
-  Threads::internal_error(std::move(c3), z3);
-  EXPECT_EQ(z3::sat, z3.solver.check());
-
-  z3.solver.pop();
-
-  z3.solver.push();
-
-  Threads::internal_error(std::move(c4), z3);
-  EXPECT_EQ(z3::sat, z3.solver.check());
-
-  z3.solver.pop();
-
-  z3.solver.push();
-
-  Threads::internal_error(std::move(c5), z3);
   EXPECT_EQ(z3::unsat, z3.solver.check());
 
   z3.solver.pop();
 }
 
-TEST(ConcurrentFunctionalTest, UnsatJoinPathsInSingleThreadWithSharedVar) {
+TEST(ConcurrentFunctionalTest, SatSlicesInSingleThreadWithSharedVar) {
+  Slicer slicer;
+
+  bool r0 = false;
+  bool r1 = false;
+  bool r2 = false;
+  bool r3 = false;
+  bool r4 = false;
+
+  do {
+    Z3C0 z3;
+
+    Threads::reset();
+    Threads::begin_main_thread();
+
+    SharedVar<char> x;
+    LocalVar<char> a;
+
+    x = 'A';
+    if (slicer.begin_block(__COUNTER__, any<bool>())) {
+      x = 'B';
+    } else {
+      x = 'C';
+    }
+    slicer.end_block(__COUNTER__);
+    a = x;
+
+    // Create properties within main thread context
+    std::unique_ptr<ReadInstr<bool>> c0(a == 'B');
+    std::unique_ptr<ReadInstr<bool>> c1(!(a == 'C'));
+    std::unique_ptr<ReadInstr<bool>> c2(a == 'B' && !(a == 'C'));
+    std::unique_ptr<ReadInstr<bool>> c3(a == 'C');
+    std::unique_ptr<ReadInstr<bool>> c4(!(a == 'B') && a == 'C');
+
+    Threads::end_main_thread(z3);
+
+    EXPECT_EQ(z3::sat, z3.solver.check());
+
+    z3.solver.push();
+
+    Threads::internal_error(std::move(c0), z3);
+    r0 |= z3::sat == z3.solver.check();
+
+    z3.solver.pop();
+
+    z3.solver.push();
+
+    Threads::internal_error(std::move(c1), z3);
+    r1 |= z3::sat == z3.solver.check();
+
+    z3.solver.pop();
+
+    z3.solver.push();
+
+    Threads::internal_error(std::move(c2), z3);
+    r2 |= z3::sat == z3.solver.check();
+
+    z3.solver.pop();
+
+    z3.solver.push();
+
+    Threads::internal_error(std::move(c3), z3);
+    r3 |= z3::sat == z3.solver.check();
+
+    z3.solver.pop();
+
+    z3.solver.push();
+
+    Threads::internal_error(std::move(c4), z3);
+    r4 |= z3::sat == z3.solver.check();
+
+    z3.solver.pop();
+  } while (slicer.next_slice());
+
+  EXPECT_EQ(2, slicer.slice_count());
+
+  EXPECT_TRUE(r0);
+  EXPECT_TRUE(r1);
+  EXPECT_TRUE(r2);
+  EXPECT_TRUE(r3);
+  EXPECT_TRUE(r4);
+}
+
+/*
+
+TEST(ConcurrentFunctionalTest, UnsatSlicesInSingleThreadWithSharedVar) {
   Z3C0 z3;
 
   Threads::reset();
@@ -634,6 +307,7 @@ TEST(ConcurrentFunctionalTest, UnsatJoinPathsInSingleThreadWithSharedVar) {
 
   z3.solver.pop();
 }
+*/
 
 TEST(ConcurrentFunctionalTest, LocalScalarAndLocalArray) {
   Z3C0 z3;
@@ -869,118 +543,148 @@ TEST(ConcurrentFunctionalTest, MultipleWritesToSharedArrayInSingleThreadAndVaria
   EXPECT_EQ(z3::unsat, z3.solver.check());
 }
 
-TEST(ConcurrentFunctionalTest, SatJoinPathsInSingleThreadWithNondetermisticConditionAndArraySharedVar) {
-  Z3C0 z3;
 
-  Threads::reset();
-  Threads::begin_main_thread();
+TEST(ConcurrentFunctionalTest, SatSlicesInSingleThreadWithNondetermisticConditionAndArraySharedVar) {
+  Slicer slicer;
 
-  SharedVar<char[3]> x;
-  SharedVar<char> y;
-  LocalVar<char> a;
+  bool r0 = false;
+  bool r1 = false;
+  bool r2 = false;
+  bool r3 = false;
 
-  x[2] = 'A';
-  if (ThisThread::recorder().begin_then(any<bool>())) {
-    x[2] = 'B';
-  }
-  if (ThisThread::recorder().begin_else()) {
-    x[2] = 'C';
-  }
-  ThisThread::recorder().end_branch();
-  a = x[2];
+  do {
+    Z3C0 z3;
+  
+    Threads::reset();
+    Threads::begin_main_thread();
+  
+    SharedVar<char[3]> x;
+    SharedVar<char> y;
+    LocalVar<char> a;
+  
+    x[2] = 'A';
+    if (slicer.begin_block(__COUNTER__, any<bool>())) {
+      x[2] = 'B';
+    } else {
+      x[2] = 'C';
+    }
+    slicer.end_block(__COUNTER__);
+    a = x[2];
+  
+    // Create properties within main thread context
+    std::unique_ptr<ReadInstr<bool>> c0(a == 'B');
+    std::unique_ptr<ReadInstr<bool>> c1(!(a == 'C'));
+    std::unique_ptr<ReadInstr<bool>> c2(a == 'B' && !(a == 'C'));
+    std::unique_ptr<ReadInstr<bool>> c3(!(a == 'B') && a == 'C');
+  
+    Threads::end_main_thread(z3);
+  
+    EXPECT_EQ(z3::sat, z3.solver.check());
+  
+    z3.solver.push();
+  
+    Threads::internal_error(std::move(c0), z3);
+    r0 |= z3::sat == z3.solver.check();
+  
+    z3.solver.pop();
+  
+    z3.solver.push();
+  
+    Threads::internal_error(std::move(c1), z3);
+    r1 |= z3::sat == z3.solver.check();
+  
+    z3.solver.pop();
+  
+    z3.solver.push();
+  
+    Threads::internal_error(std::move(c2), z3);
+    r2 |= z3::sat == z3.solver.check();
+  
+    z3.solver.pop();
+  
+    z3.solver.push();
+  
+    Threads::internal_error(std::move(c3), z3);
+    r3 |= z3::sat == z3.solver.check();
+  
+    z3.solver.pop();
+  } while (slicer.next_slice());
 
-  // Create properties within main thread context
-  std::unique_ptr<ReadInstr<bool>> c0(a == 'B');
-  std::unique_ptr<ReadInstr<bool>> c1(!(a == 'C'));
-  std::unique_ptr<ReadInstr<bool>> c2(a == 'B' && !(a == 'C'));
-  std::unique_ptr<ReadInstr<bool>> c3(!(a == 'B') && a == 'C');
+  EXPECT_EQ(2, slicer.slice_count());
 
-  Threads::end_main_thread(z3);
-
-  EXPECT_EQ(z3::sat, z3.solver.check());
-
-  z3.solver.push();
-
-  Threads::internal_error(std::move(c0), z3);
-  EXPECT_EQ(z3::sat, z3.solver.check());
-
-  z3.solver.pop();
-
-  z3.solver.push();
-
-  Threads::internal_error(std::move(c1), z3);
-  EXPECT_EQ(z3::sat, z3.solver.check());
-
-  z3.solver.pop();
-
-  z3.solver.push();
-
-  Threads::internal_error(std::move(c2), z3);
-  EXPECT_EQ(z3::sat, z3.solver.check());
-
-  z3.solver.pop();
-
-  z3.solver.push();
-
-  Threads::internal_error(std::move(c3), z3);
-  EXPECT_EQ(z3::sat, z3.solver.check());
-
-  z3.solver.pop();
+  EXPECT_TRUE(r0);
+  EXPECT_TRUE(r1);
+  EXPECT_TRUE(r2);
+  EXPECT_TRUE(r3);
 }
 
-TEST(ConcurrentFunctionalTest, SatJoinPathsInSingleThreadWithDeterminsticConditionAndArraySharedVar) {
-  Z3C0 z3;
+TEST(ConcurrentFunctionalTest, SatSlicesInSingleThreadWithDeterminsticConditionAndArraySharedVar) {
+  Slicer slicer; 
 
-  Threads::reset();
-  Threads::begin_main_thread();
+  bool r0 = false;
+  bool r1 = false;
+  bool r2 = true;
 
-  SharedVar<char[3]> x;
-  LocalVar<char> p;
-  LocalVar<char> a;
+  do {
+    Z3C0 z3;
+  
+    Threads::reset();
+    Threads::begin_main_thread();
+  
+    SharedVar<char[3]> x;
+    LocalVar<char> p;
+    LocalVar<char> a;
+  
+    p = '?';
+    x[2] = 'A';
+    if (slicer.begin_block(__COUNTER__, p == '?')) {
+      x[2] = 'B'; // choose always 'B' branch
+    } else {
+      x[2] = 'C';
+    }
+    slicer.end_block(__COUNTER__);
+    a = x[2];
+  
+    // Create properties within main thread context
+    std::unique_ptr<ReadInstr<bool>> c0(a == 'B');
+    std::unique_ptr<ReadInstr<bool>> c1(!(a == 'C'));
+    std::unique_ptr<ReadInstr<bool>> c2(!(a == 'B') && a == 'C');
+  
+    Threads::end_main_thread(z3);
+  
+    EXPECT_EQ(z3::sat, z3.solver.check());
+  
+    z3.solver.push();
+  
+    Threads::internal_error(std::move(c0), z3);
+    r0 |= z3::sat == z3.solver.check();
+  
+    z3.solver.pop();
+  
+    z3.solver.push();
+  
+    Threads::internal_error(std::move(c1), z3);
+    r1 |= z3::sat == z3.solver.check();
+  
+    z3.solver.pop();
+  
+    z3.solver.push();
+  
+    Threads::internal_error(std::move(c2), z3);
+    r2 &= z3::unsat == z3.solver.check();
+  
+    z3.solver.pop();
+  } while (slicer.next_slice());
 
-  p = '?';
-  x[2] = 'A';
-  if (ThisThread::recorder().begin_then(p == '?')) {
-    x[2] = 'B'; // choose always 'B' branch
-  }
-  if (ThisThread::recorder().begin_else()) {
-    x[2] = 'C';
-  }
-  ThisThread::recorder().end_branch();
-  a = x[2];
+  EXPECT_EQ(2, slicer.slice_count());
 
-  // Create properties within main thread context
-  std::unique_ptr<ReadInstr<bool>> c0(a == 'B');
-  std::unique_ptr<ReadInstr<bool>> c1(!(a == 'C'));
-  std::unique_ptr<ReadInstr<bool>> c3(!(a == 'B') && a == 'C');
-
-  Threads::end_main_thread(z3);
-
-  EXPECT_EQ(z3::sat, z3.solver.check());
-
-  z3.solver.push();
-
-  Threads::internal_error(std::move(c0), z3);
-  EXPECT_EQ(z3::sat, z3.solver.check());
-
-  z3.solver.pop();
-
-  z3.solver.push();
-
-  Threads::internal_error(std::move(c1), z3);
-  EXPECT_EQ(z3::sat, z3.solver.check());
-
-  z3.solver.pop();
-
-  z3.solver.push();
-
-  Threads::internal_error(std::move(c3), z3);
-  EXPECT_EQ(z3::unsat, z3.solver.check());
-
-  z3.solver.pop();
+  EXPECT_TRUE(r0);
+  EXPECT_TRUE(r1);
+  EXPECT_TRUE(r2);
 }
 
-TEST(ConcurrentFunctionalTest, UnsatJoinPathsInSingleThreadWithArraySharedVar) {
+/*
+TEST(ConcurrentFunctionalTest, UnsatSlicesInSingleThreadWithArraySharedVar) {
   Z3C0 z3;
 
   Threads::reset();
@@ -1020,6 +724,7 @@ TEST(ConcurrentFunctionalTest, UnsatJoinPathsInSingleThreadWithArraySharedVar) {
 
   z3.solver.pop();
 }
+*/
 
 TEST(ConcurrentFunctionalTest, SatJoinThreads) {
   Z3C0 z3;
@@ -1033,7 +738,7 @@ TEST(ConcurrentFunctionalTest, SatJoinThreads) {
 
   x = 'A';
 
-  Threads::end_thread(z3);
+  Threads::end_thread();
 
   Threads::error(x == '\0', z3);
 
@@ -1054,7 +759,7 @@ TEST(ConcurrentFunctionalTest, UnsatJoinThreads) {
 
   x = 'A';
 
-  const std::shared_ptr<SendEvent> send_event_ptr = Threads::end_thread(z3);
+  const std::shared_ptr<SendEvent> send_event_ptr = Threads::end_thread();
 
   Threads::join(send_event_ptr);
   Threads::error(x == '\0', z3);
@@ -1191,80 +896,160 @@ TEST(ConcurrentFunctionalTest, AnyReadInstr) {
 }
 
 TEST(ConcurrentFunctionalTest, ConditionalErrorSingleThread) {
-  Z3C0 z3;
+  Slicer slicer;
 
-  Threads::reset();
-  Threads::begin_main_thread();
+  unsigned checks = 0;
+  unsigned unchecks = 0;
 
-  SharedVar<int> var;
-  var = any<int>();
+  do {
+    Z3C0 z3;
 
-  if (ThisThread::recorder().begin_then(0 < var)) {
-    Threads::error(var == 0, z3);
-  }
-  ThisThread::recorder().end_branch();
-  Threads::end_main_thread(z3);
+    Threads::reset();
+    Threads::begin_main_thread();
 
-  EXPECT_EQ(z3::unsat, z3.solver.check());
+    SharedVar<int> var;
+    var = any<int>();
+
+    if (slicer.begin_block(__COUNTER__, 0 < var)) {
+      Threads::error(var == 0, z3);
+    }
+    slicer.end_block(__COUNTER__);
+
+    const bool check = Threads::end_main_thread(z3);
+    if (check) {
+      checks++;
+      EXPECT_EQ(z3::unsat, z3.solver.check());
+    } else {
+      unchecks++;
+    }
+  } while (slicer.next_slice());
+
+  EXPECT_EQ(2, slicer.slice_count());
+
+  EXPECT_EQ(1, checks);
+  EXPECT_EQ(1, unchecks);
 }
+
 
 TEST(ConcurrentFunctionalTest, ConditionalErrorMultipleThreads) {
-  Z3C0 z3;
+  Slicer slicer;
 
-  Threads::reset();
-  Threads::begin_main_thread();
+  unsigned checks = 0;
+  unsigned unchecks = 0;
 
-  SharedVar<int> var;
-  var = any<int>();
+  do {
+    Z3C0 z3;
 
-  Threads::begin_thread();
+    Threads::reset();
+    Threads::begin_main_thread();
 
-  if (ThisThread::recorder().begin_then(0 < var)) {
-    Threads::error(var == 0, z3);
-  }
-  ThisThread::recorder().end_branch();
+    SharedVar<int> var;
+    var = any<int>();
 
-  Threads::end_thread(z3);
-  Threads::end_main_thread(z3);
+    Threads::begin_thread();
 
-  EXPECT_EQ(z3::unsat, z3.solver.check());
+    if (slicer.begin_block(__COUNTER__, 0 < var)) {
+      Threads::error(var == 0, z3);
+    }
+    slicer.end_block(__COUNTER__);
+
+    Threads::end_thread();
+
+    const bool check = Threads::end_main_thread(z3);
+    if (check) {
+      checks++;
+      EXPECT_EQ(z3::unsat, z3.solver.check());
+    } else {
+      unchecks++;
+    }
+  } while (slicer.next_slice());
+
+  EXPECT_EQ(2, slicer.slice_count());
+
+  EXPECT_EQ(1, checks);
+  EXPECT_EQ(1, unchecks);
 }
 
+
 TEST(ConcurrentFunctionalTest, FalseConditionalError) {
-  Z3C0 z3;
+  Slicer slicer;
 
-  Threads::reset();
-  Threads::begin_main_thread();
+  unsigned checks = 0;
+  unsigned unchecks = 0;
 
-  Threads::begin_thread();
-  if (ThisThread::recorder().begin_then(FALSE_READ_INSTR)) {
-    Threads::error(TRUE_READ_INSTR, z3);
-  }
-  ThisThread::recorder().end_branch();
-  Threads::end_thread(z3);
+  do {
+    Z3C0 z3;
 
-  Threads::end_main_thread(z3);
+    Threads::reset();
+    Threads::begin_main_thread();
 
-  EXPECT_EQ(z3::unsat, z3.solver.check());
+    Threads::begin_thread();
+    if (slicer.begin_block(__COUNTER__, FALSE_READ_INSTR)) {
+      Threads::error(TRUE_READ_INSTR, z3);
+    }
+    slicer.end_block(__COUNTER__);
+    Threads::end_thread();
+
+    const bool check = Threads::end_main_thread(z3);
+    if (check) {
+      checks++;
+      EXPECT_EQ(z3::unsat, z3.solver.check());
+    } else {
+      unchecks++;
+    }
+  } while (slicer.next_slice());
+
+  EXPECT_EQ(2, slicer.slice_count());
+
+  EXPECT_EQ(1, checks);
+  EXPECT_EQ(1, unchecks);
 }
 
 TEST(ConcurrentFunctionalTest, SatErrorAmongAnotherUnsatError) {
-  Z3C0 z3;
+  Slicer slicer;
 
-  Threads::reset();
-  Threads::begin_main_thread();
+  unsigned sat_checks = 0;
+  unsigned unsat_checks = 0;
+  unsigned unknown_checks = 0;
+  unsigned unchecks = 0;
+  z3::check_result expect = z3::unknown;
 
-  if (ThisThread::recorder().begin_then(FALSE_READ_INSTR)) {
-    Threads::error(TRUE_READ_INSTR, z3);
-  }
-  ThisThread::recorder().end_branch();
+  do {
+    Z3C0 z3;
 
-  if (ThisThread::recorder().begin_then(TRUE_READ_INSTR)) {
-    Threads::error(TRUE_READ_INSTR, z3);
-  }
-  ThisThread::recorder().end_branch();
+    Threads::reset();
+    Threads::begin_main_thread();
 
-  Threads::end_main_thread(z3);
+    if (slicer.begin_block(__COUNTER__, FALSE_READ_INSTR)) {
+      expect = z3::unsat;
+      Threads::error(TRUE_READ_INSTR, z3);
+    }
+    slicer.end_block(__COUNTER__);
 
-  EXPECT_EQ(z3::sat, z3.solver.check());
+    if (slicer.begin_block(__COUNTER__, TRUE_READ_INSTR)) {
+      expect = z3::sat;
+      Threads::error(TRUE_READ_INSTR, z3);
+    }
+    slicer.end_block(__COUNTER__);
+
+    const bool check = Threads::end_main_thread(z3);
+    if (check) {
+      switch (expect) {
+      case z3::sat:     sat_checks++;     break;
+      case z3::unsat:   unsat_checks++;   break;
+      case z3::unknown: unknown_checks++; break;
+      }
+      EXPECT_EQ(expect, z3.solver.check());
+    } else {
+      unchecks++;
+    }
+    expect = z3::unknown;
+  } while (slicer.next_slice());
+
+  EXPECT_EQ(4, slicer.slice_count());
+
+  EXPECT_EQ(2, sat_checks);
+  EXPECT_EQ(1, unsat_checks);
+  EXPECT_EQ(0, unknown_checks);
+  EXPECT_EQ(1, unchecks);
 }

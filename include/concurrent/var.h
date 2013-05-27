@@ -10,7 +10,7 @@
 
 #include "concurrent/event.h"
 #include "concurrent/instr.h"
-#include "concurrent/recorder.h"
+#include "concurrent/thread.h"
 
 namespace se {
 
@@ -30,7 +30,7 @@ std::unique_ptr<ReadInstr<typename std::enable_if<
 template<typename T>
 std::unique_ptr<ReadEvent<T>> make_read_event(const Zone& zone) {
   return std::unique_ptr<ReadEvent<T>>(new ReadEvent<T>(ThisThread::thread_id(),
-    zone, ThisThread::recorder().block_condition_ptr()));
+    zone, ThisThread::path_condition_ptr()));
 }
 
 template<typename T>
@@ -39,7 +39,7 @@ std::unique_ptr<ReadEvent<T>> internal_make_read_event(const Zone& zone,
 
   const unsigned thread_id = ThisThread::thread_id();
   return std::unique_ptr<ReadEvent<T>>(new ReadEvent<T>(event_id, thread_id,
-    zone, ThisThread::recorder().block_condition_ptr()));
+    zone, ThisThread::path_condition_ptr()));
 }
 
 /// Variable declaration allowing only direct memory writes
@@ -96,7 +96,7 @@ public:
     m_direct_write_event_ptr(make_direct_write_event<T>(m_zone,
       std::move(instr_ptr))) {
 
-    ThisThread::recorder().insert_event_ptr(m_direct_write_event_ptr);
+    Threads::slice().append(ThisThread::thread_id(), m_direct_write_event_ptr);
   }
 
   /// Declare a variable of type `T` that only allows direct memory writes
@@ -111,7 +111,7 @@ public:
     m_direct_write_event_ptr(make_direct_write_event<T>(m_zone,
       std::unique_ptr<ReadInstr<T>>(new LiteralReadInstr<T>(v)))) {
 
-    ThisThread::recorder().insert_event_ptr(m_direct_write_event_ptr);
+    Threads::slice().append(ThisThread::thread_id(), m_direct_write_event_ptr);
   }
 
   ~DeclVar() {}
@@ -164,7 +164,7 @@ public:
     m_direct_write_event_ptr(make_direct_write_event<T[N]>(m_zone)),
     m_indirect_write_event_ptr() {
 
-    ThisThread::recorder().insert_event_ptr(m_direct_write_event_ptr);
+    Threads::slice().append(ThisThread::thread_id(), m_direct_write_event_ptr);
   }
 
   ~DeclVar() {}
@@ -219,7 +219,7 @@ private:
     assert(nullptr != instr_ptr);
 
     const std::shared_ptr<IndirectWriteEvent<Range, Domain, N>> write_event_ptr(
-      ThisThread::recorder().instr(zone(), std::move(m_deref_instr_ptr),
+      ThisThread::instr(zone(), std::move(m_deref_instr_ptr),
         std::move(instr_ptr)));
 
     m_var_ptr->set_indirect_write_event_ptr(write_event_ptr);
@@ -338,8 +338,10 @@ public:
     m_local_read(internal_make_read_event<T>(m_var.zone(),
       m_var.direct_write_event_ref().event_id())) {
 
-    ThisThread::recorder().insert_all(m_var.direct_write_event_ref().instr_ref());
-    ThisThread::recorder().insert_event_ptr(m_var.direct_write_event_ptr());
+    Threads::slice().append_all(ThisThread::thread_id(),
+      m_var.direct_write_event_ref().instr_ref());
+    Threads::slice().append(ThisThread::thread_id(),
+      m_var.direct_write_event_ptr());
   }
 
   const Zone& zone() const { return m_var.zone(); }
@@ -374,7 +376,7 @@ public:
 
   LocalVar<T>& operator=(std::unique_ptr<ReadInstr<T>> instr_ptr) {
     const std::shared_ptr<DirectWriteEvent<T>> write_event_ptr(
-      ThisThread::recorder().instr(zone(), std::move(instr_ptr)));
+      ThisThread::instr(zone(), std::move(instr_ptr)));
 
     m_var.set_direct_write_event_ptr(write_event_ptr);
     m_local_read.set_read_event_ptr(internal_make_read_event<T>(zone(),
@@ -444,7 +446,7 @@ public:
 
   SharedVar<T>& operator=(std::unique_ptr<ReadInstr<T>> instr_ptr) {
     const std::shared_ptr<DirectWriteEvent<T>> write_event_ptr(
-      ThisThread::recorder().instr(zone(), std::move(instr_ptr)));
+      ThisThread::instr(zone(), std::move(instr_ptr)));
 
     m_var.set_direct_write_event_ptr(write_event_ptr);
 

@@ -18,6 +18,10 @@ public:
 
   Z3() : context(), solver(context) {}
 
+  void reset() {
+    solver.reset();
+  }
+
   /// Creates a Z3 constant according to the event's \ref Event::type() "type"
   virtual z3::expr constant(const Event& event) = 0;
 
@@ -28,9 +32,6 @@ public:
 
   /// Unique clock constraint for an event
   virtual z3::expr clock(const Event& event) = 0;
-
-  /// Least upper bound of two elements in a well-ordered set
-  virtual z3::expr join_clocks(const z3::expr& x, const z3::expr& y) = 0;
 };
 
 template<Opcode opcode, typename T>

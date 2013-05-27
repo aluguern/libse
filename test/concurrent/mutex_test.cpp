@@ -11,6 +11,20 @@ public:
   void unlock(Z3C0& z3) { return Mutex::unlock(z3); }
 };
 
+TEST(MutexTest, SatMainThreadSingleWriter) {
+  Z3C0 z3;
+
+  Threads::reset();
+  Threads::begin_main_thread();
+  SharedVar<int> shared_var;
+
+  shared_var = 1;
+
+  Threads::end_main_thread(z3);
+
+  EXPECT_EQ(z3::sat, z3.solver.check());
+}
+
 TEST(MutexTest, SatSingleWriter) {
   Z3C0 z3;
 
@@ -22,11 +36,11 @@ TEST(MutexTest, SatSingleWriter) {
   Threads::begin_thread();
   shared_var = shared_var + 3;
   shared_var = shared_var + 1;
-  Threads::end_thread(z3);
+  Threads::end_thread();
 
   Threads::begin_thread();
   Threads::error(shared_var == 3, z3);
-  Threads::end_thread(z3);
+  Threads::end_thread();
 
   Threads::end_main_thread(z3);
 
@@ -47,13 +61,13 @@ TEST(MutexTest, UnsatSingleWriter) {
   shared_var = shared_var + 3;
   shared_var = shared_var + 1;
   mutex.unlock(z3);
-  Threads::end_thread(z3);
+  Threads::end_thread();
 
   Threads::begin_thread();
   mutex.lock();
   Threads::error(shared_var == 3, z3);
   mutex.unlock(z3);
-  Threads::end_thread(z3);
+  Threads::end_thread();
 
   Threads::end_main_thread(z3);
 
@@ -84,7 +98,7 @@ TEST(MutexTest, Sat1MultipleWriters) {
   z = 'C';
   mutex.unlock(z3);
 
-  Threads::end_thread(z3);
+  Threads::end_thread();
 
   Threads::begin_thread();
 
@@ -94,7 +108,7 @@ TEST(MutexTest, Sat1MultipleWriters) {
   z = '\3';
   mutex.unlock(z3);
 
-  Threads::end_thread(z3);
+  Threads::end_thread();
 
   // Main thread does not use lock and therefore fails!
   a = x;
@@ -143,7 +157,7 @@ TEST(MutexTest, Sat2MultipleWriters) {
   y = 'B';
   z = 'C';
 
-  Threads::end_thread(z3);
+  Threads::end_thread();
 
   Threads::begin_thread();
 
@@ -151,7 +165,7 @@ TEST(MutexTest, Sat2MultipleWriters) {
   y = '\2';
   z = '\3';
 
-  Threads::end_thread(z3);
+  Threads::end_thread();
 
   a = x;
   b = y;
@@ -201,7 +215,7 @@ TEST(MutexTest, UnsatMultipleWriters) {
   z = 'C';
   mutex.unlock(z3);
 
-  Threads::end_thread(z3);
+  Threads::end_thread();
 
   Threads::begin_thread();
 
@@ -211,7 +225,7 @@ TEST(MutexTest, UnsatMultipleWriters) {
   z = '\3';
   mutex.unlock(z3);
 
-  Threads::end_thread(z3);
+  Threads::end_thread();
 
   mutex.lock();
   a = x;
@@ -268,7 +282,7 @@ TEST(MutexTest, SatJoinMultipleWriters) {
   y = y + 1;
   mutex.unlock(z3);
 
-  t1_send_event_ptr = Threads::end_thread(z3);
+  t1_send_event_ptr = Threads::end_thread();
 
   Threads::begin_thread();
 
@@ -280,7 +294,7 @@ TEST(MutexTest, SatJoinMultipleWriters) {
   y = y - 6;
   mutex.unlock(z3);
 
-  t2_send_event_ptr = Threads::end_thread(z3);
+  t2_send_event_ptr = Threads::end_thread();
 
   Threads::join(t1_send_event_ptr);
   Threads::join(t2_send_event_ptr);
@@ -314,7 +328,7 @@ TEST(MutexTest, UnsatJoinMultipleWriters) {
   y = y + 1;
   mutex.unlock(z3);
 
-  t1_send_event_ptr = Threads::end_thread(z3);
+  t1_send_event_ptr = Threads::end_thread();
 
   Threads::begin_thread();
 
@@ -326,7 +340,7 @@ TEST(MutexTest, UnsatJoinMultipleWriters) {
   y = y - 6;
   mutex.unlock(z3);
 
-  t2_send_event_ptr = Threads::end_thread(z3);
+  t2_send_event_ptr = Threads::end_thread();
 
   Threads::join(t1_send_event_ptr);
   Threads::join(t2_send_event_ptr);

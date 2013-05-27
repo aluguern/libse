@@ -1,22 +1,28 @@
 #include "libse.h"
 
+se::Slicer slicer;
 se::SharedVar<char> x;
 
 int main(void) {
-  se::LocalVar<char> a;
+  slicer.begin_slice_loop();
+  do {
+    se::Thread::z3().reset();
 
-  x = 'A';
-  if (se::ThisThread::recorder().begin_then(x == '?')) {
-    x = 'B';
-  }
-  if (se::ThisThread::recorder().begin_else()) {
-    x = 'C';
-  }
-  se::ThisThread::recorder().end_branch();
-  a = x;
+    se::LocalVar<char> a;
 
-  se::Thread::error(!(a == 'B' || a == 'C'));
-  se::Thread::end_main_thread();
+    x = 'A';
+    if (slicer.begin_block(__COUNTER__, x == '?')) {
+      x = 'B';
+    }
+    slicer.end_block(__COUNTER__);
+    a = x;
 
-  return z3::sat == se::Thread::z3().solver.check();
+    se::Thread::error(!(a == 'B' || a == 'A'));
+
+    if (se::Thread::encode() && z3::sat == se::Thread::z3().solver.check()) {
+      return 1;
+    }
+  } while (slicer.next_slice());
+
+  return 0;
 }
