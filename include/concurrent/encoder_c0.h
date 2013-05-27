@@ -60,17 +60,8 @@ private:
     return create_array_constant<T, N>(event);
   }
 
-  z3::sort clock_sort() {
-    return context.int_sort();
-  }
-
   bool is_clock(const z3::expr& expr) {
     return expr.is_int();
-  }
-
-  z3::expr happens_before(const z3::expr& x, const z3::expr& y) {
-    assert(is_clock(x) && is_clock(y));
-    return x < y;
   }
 
 public:
@@ -83,6 +74,15 @@ public:
   z3::expr constant(const Event& event) {
     z3::sort sort(context.bv_sort(event.type().bv_size()));
     return context.constant(create_symbol(event), sort);
+  }
+
+  z3::sort clock_sort() {
+    return context.int_sort();
+  }
+
+  z3::expr happens_before(const z3::expr& x, const z3::expr& y) {
+    assert(is_clock(x) && is_clock(y));
+    return x < y;
   }
 
   z3::expr rf(const Event& write_event, const Event& read_event) {

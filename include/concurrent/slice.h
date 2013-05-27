@@ -57,8 +57,8 @@ public:
     const std::forward_list<std::shared_ptr<Event>>& event_ptrs) {
 
     EventPtrs& thread_event_ptrs = m_event_ptrs_map[thread_id];
-    thread_event_ptrs.insert(thread_event_ptrs.cend(),
-      /* range */ event_ptrs.cbegin(), event_ptrs.cend());
+    thread_event_ptrs.insert(thread_event_ptrs.end(),
+      /* range */ event_ptrs.begin(), event_ptrs.end());
   }
 
   const EventPtrsMap& event_ptrs_map() const {
