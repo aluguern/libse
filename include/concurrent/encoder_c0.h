@@ -63,6 +63,14 @@ private:
     return create_array_constant<T, N>(event);
   }
 
+public:
+  using Z3::context;
+  using Z3::solver;
+
+  Z3C0() : Z3(), m_rf_func_decl(context.function("rf",
+    /* domain */ context.int_sort(), /* range */ context.int_sort())),
+    join_id(0) {}
+
   z3::sort clock_sort() {
     return context.int_sort();
   }
@@ -75,14 +83,6 @@ private:
     assert(is_clock(x) && is_clock(y));
     return x < y;
   }
-
-public:
-  using Z3::context;
-  using Z3::solver;
-
-  Z3C0() : Z3(), m_rf_func_decl(context.function("rf",
-    /* domain */ context.int_sort(), /* range */ context.int_sort())),
-    join_id(0) {}
 
   z3::expr constant(const Event& event) {
     z3::sort sort(context.bv_sort(event.type().bv_size()));
