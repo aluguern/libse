@@ -49,6 +49,12 @@ void Thread::begin_block(const std::shared_ptr<ReadInstr<bool>>& condition_ptr) 
 
   m_condition_ptrs_size++;
   m_condition_ptrs.push_front(condition_ptr);
+
+  if (1 < m_condition_ptrs_size) {
+    std::unique_ptr<ReadInstr<bool>> path_condition_ptr(
+      new NaryReadInstr<LAND, bool>(m_condition_ptrs, m_condition_ptrs_size));
+    m_path_condition_ptr_cache.push(std::move(path_condition_ptr));
+  }
 }
 
 void Thread::end_block() {
@@ -70,12 +76,9 @@ std::shared_ptr<ReadInstr<bool>> Thread::path_condition_ptr() {
     return s_true_condition_ptr;
   } else if (m_condition_ptrs_size == 1) {
     return m_condition_ptrs.front();
-  } else if (m_path_condition_ptr_cache.size() != (m_condition_ptrs_size - 1)) {
-    std::unique_ptr<ReadInstr<bool>> condition_ptr(new NaryReadInstr<LAND, bool>(
-      m_condition_ptrs, m_condition_ptrs_size));
-    m_path_condition_ptr_cache.push(std::move(condition_ptr));
   }
 
+  // path conditions at depth higher than 1 are cached by Thread::begin_block()
   assert(0 < m_condition_ptrs_size);
   assert(m_path_condition_ptr_cache.size() == (m_condition_ptrs_size - 1));
 
