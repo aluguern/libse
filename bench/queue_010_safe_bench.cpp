@@ -35,22 +35,23 @@ void init(QType *q) {
 
 se::LocalVar<int> empty(QType *q) {
   se::SharedVar<int> status = 0;
-  if (slicer.begin_block(__COUNTER__, q->head == q->tail)) {
+  if (slicer.begin_then_branch(__COUNTER__, q->head == q->tail)) {
     status = EMPTY;
   }
-  slicer.end_block(__COUNTER__);
+  slicer.end_branch(__COUNTER__);
   return status;
 }
 
 void enqueue(QType *q, se::LocalVar<int> x) {
   q->element[q->tail] = x;
   q->amount = q->amount + 1;
-  if (slicer.begin_block(__COUNTER__, q->tail == static_cast<size_t>(N))) {
+  if (slicer.begin_then_branch(__COUNTER__, q->tail == static_cast<size_t>(N))) {
     q->tail = static_cast<size_t>(1);
-  } else {
+  }
+  if (slicer.begin_else_branch(__COUNTER__)) {
     q->tail = q->tail + static_cast<size_t>(1);
   }
-  slicer.end_block(__COUNTER__);
+  slicer.end_branch(__COUNTER__);
 }
 
 se::LocalVar<int> dequeue(QType *q) {
@@ -58,12 +59,13 @@ se::LocalVar<int> dequeue(QType *q) {
 
   x = q->element[q->head];
   q->amount = q->amount - 1;
-  if (slicer.begin_block(__COUNTER__, q->head == static_cast<size_t>(N))) {
+  if (slicer.begin_then_branch(__COUNTER__, q->head == static_cast<size_t>(N))) {
     q->head = static_cast<size_t>(1);
-  } else {
+  }
+  if (slicer.begin_else_branch(__COUNTER__)) {
     q->head = q->head + static_cast<size_t>(1);
   }
-  slicer.end_block(__COUNTER__);
+  slicer.end_branch(__COUNTER__);
 
   return x;
 }
@@ -72,7 +74,7 @@ void f1() {
   se::LocalVar<int> v;
 
   mutex.lock();
-  if (slicer.begin_block(__COUNTER__, enqueue_flag == TRUE)) {
+  if (slicer.begin_then_branch(__COUNTER__, enqueue_flag == TRUE)) {
     for (int i = 0; i < N; i = i + 1) {
       v = se::any<int>();
 
@@ -83,26 +85,26 @@ void f1() {
     enqueue_flag = FALSE;
     dequeue_flag = TRUE;
   }
-  slicer.end_block(__COUNTER__);
+  slicer.end_branch(__COUNTER__);
   mutex.unlock();
 }
 
 void f2() {
   mutex.lock();
-  if (slicer.begin_block(__COUNTER__, dequeue_flag == TRUE)) {
+  if (slicer.begin_then_branch(__COUNTER__, dequeue_flag == TRUE)) {
     for (int i = 0; i < N; i = i + 1) {
-      if (slicer.begin_block(__COUNTER__, !(empty(&queue) == EMPTY))) {
+      if (slicer.begin_then_branch(__COUNTER__, !(empty(&queue) == EMPTY))) {
         se::LocalVar<int> stored_element;
         stored_element = stored_elements[i];
         se::Thread::error(!(dequeue(&queue) == stored_element));
       }
-      slicer.end_block(__COUNTER__);
+      slicer.end_branch(__COUNTER__);
     }
 
     dequeue_flag = FALSE;
     enqueue_flag = TRUE;
   }
-  slicer.end_block(__COUNTER__);
+  slicer.end_branch(__COUNTER__);
   mutex.unlock();
 }
 

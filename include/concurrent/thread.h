@@ -16,6 +16,7 @@
 namespace se {
 
 class Thread;
+class Slice;
 
 namespace ThisThread {
   /// Current thread identifier
@@ -26,14 +27,20 @@ namespace ThisThread {
   /// \returns nullptr if this is the main thread
   const Thread* parent_thread_ptr();
 
-  /// Conjunction of conditions along per-thread slice
+  /// Root of series-parallel DAG that represents the events in the thread 
+  std::shared_ptr<Block> most_outer_block_ptr();
+
+  /// Conjunction of branch conditions along per-thread slice
   const std::shared_ptr<ReadInstr<bool>> path_condition_ptr();
 
-  /// Adds path condition to current per-thread slice 
-  void begin_block(const std::shared_ptr<ReadInstr<bool>>&);
+  /// Begin "then" branch
+  void begin_then(std::shared_ptr<ReadInstr<bool>>);
 
-  /// Removes latest path condition from per-thread slice
-  void end_block();
+  /// Begin optional "else" branch
+  void begin_else();
+
+  /// End conditional "then" and optional "else" branch
+  void end_branch();
 }
 
 /// Symbolic thread for the analysis of concurrent C++ code
@@ -76,6 +83,36 @@ private:
     return m_parent_thread_ptr;
   }
 
+  void register_condition(std::shared_ptr<ReadInstr<bool>> condition_ptr) {
+    m_condition_ptrs_size++;
+    m_condition_ptrs.push_front(condition_ptr);
+
+    if (1 < m_condition_ptrs_size) {
+      std::unique_ptr<ReadInstr<bool>> path_condition_ptr(
+        new NaryReadInstr<LAND, bool>(m_condition_ptrs, m_condition_ptrs_size));
+      m_path_condition_ptr_cache.push(std::move(path_condition_ptr));
+    }
+  }
+
+  std::shared_ptr<ReadInstr<bool>> unregister_condition() {
+    assert(0 < m_condition_ptrs_size);
+    assert(!m_condition_ptrs.empty());
+
+    const std::shared_ptr<ReadInstr<bool>> unregistered_condition_ptr =
+      m_condition_ptrs.front();
+
+    m_condition_ptrs_size--;
+    m_condition_ptrs.pop_front();
+
+    if (!m_path_condition_ptr_cache.empty()) {
+      assert(m_condition_ptrs_size == m_path_condition_ptr_cache.size());
+
+      m_path_condition_ptr_cache.pop();
+    }
+
+    return unregistered_condition_ptr;
+  }
+
 public:
   static Z3C0& z3() {
     return s_z3;
@@ -112,8 +149,9 @@ public:
     return m_thread_id;
   }
 
-  void begin_block(const std::shared_ptr<ReadInstr<bool>>& condition_ptr);
-  void end_block();
+  void begin_then(std::shared_ptr<ReadInstr<bool>>);
+  void begin_else();
+  void end_branch();
 
   std::shared_ptr<ReadInstr<bool>> path_condition_ptr();
 
@@ -146,11 +184,16 @@ private:
   typedef std::unordered_map<ThreadId, Slice> SliceMap;
   SliceMap m_slice_map;
 
+  ThreadId m_main_thread_id;
+  std::forward_list<std::shared_ptr<Event>> m_main_init_event_ptrs;
+
   Threads() :
     m_thread_stack(),
     m_current_thread_ptr(nullptr),
     m_error_exprs(),
-    m_slice_map() {
+    m_slice_map(),
+    m_main_thread_id(0),
+    m_main_init_event_ptrs() {
 
     internal_reset(0, 0);
   }
@@ -167,14 +210,67 @@ private:
     m_current_thread_ptr = nullptr;
     assert(m_error_exprs.empty());
 
-    for (SliceMap::reference slice_map_value : s_singleton.m_slice_map) {
-      slice_map_value.second.reset();
-    }
+    m_slice_map.clear();
+    m_slice_map[m_main_thread_id].append_all(m_main_init_event_ptrs);
   }
 
   // thread_ptr can be nullptr
   static void set_current_thread_ptr(Thread* thread_ptr) {
     s_singleton.m_current_thread_ptr = thread_ptr;
+  }
+
+  static z3::expr internal_encode_spo(const std::shared_ptr<Block>& block_ptr,
+    const z3::expr& earlier_clock,
+    ZoneRelation<Event>& zone_relation,
+    Z3C0& z3) {
+
+    const Z3ValueEncoderC0 value_encoder;
+    assert(z3.is_clock(earlier_clock));
+
+    z3::expr inner_clock(earlier_clock);
+    if (!block_ptr->body().empty()) {
+      // Consider changing Block::body() to return an ordered set if it would
+      // simplify the treatment of local events (below, currently excluded).
+      const std::forward_list<std::shared_ptr<Event>>& body = block_ptr->body();
+
+      z3::expr body_clock(inner_clock);
+      for (const std::shared_ptr<Event>& body_event_ptr : body) {
+        const Event& body_event = *body_event_ptr;
+
+        if (body_event.is_write()) {
+          const z3::expr equality_expr(body_event.encode_eq(value_encoder, z3));
+          z3.solver.add(equality_expr);
+        }
+  
+        if (!body_event.zone().is_bottom()) {
+          zone_relation.relate(body_event_ptr);
+
+          z3::expr next_body_clock(z3.clock(body_event));
+          z3.solver.add(z3.happens_before(body_clock, next_body_clock));
+          body_clock = next_body_clock;
+        }
+      }
+
+      inner_clock = body_clock;
+    }
+
+    for (const std::shared_ptr<Block>& inner_block_ptr :
+      block_ptr->inner_block_ptrs()) {
+
+      z3::expr then_clock(internal_encode_spo(inner_block_ptr, inner_clock,
+        zone_relation, z3));
+      const std::shared_ptr<Block>& inner_else_block_ptr(
+        inner_block_ptr->else_block_ptr());
+      if (inner_else_block_ptr) {
+        z3::expr else_clock(internal_encode_spo(inner_else_block_ptr,
+          inner_clock, zone_relation, z3));
+        inner_clock = z3.join_clocks(then_clock, else_clock);
+      } else {
+        inner_clock = then_clock;
+      }
+    }
+
+    return inner_clock;
   }
 
 public:
@@ -184,6 +280,10 @@ public:
   static Thread& current_thread() {
     assert(s_singleton.m_current_thread_ptr != nullptr);
     return *s_singleton.m_current_thread_ptr;
+  }
+
+  static std::shared_ptr<Block> slice_most_outer_block_ptr(ThreadId thread_id) {
+    return s_singleton.m_slice_map[thread_id].most_outer_block_ptr();
   }
 
   static void slice_append(ThreadId thread_id, const EventPtr& event_ptr) {
@@ -200,6 +300,19 @@ public:
   static void slice_append_all(ThreadId thread_id,
     const std::forward_list<std::shared_ptr<Event>>& event_ptrs) {
     s_singleton.m_slice_map[thread_id].append_all(event_ptrs);
+  }
+
+  static void slice_begin_then(ThreadId thread_id,
+    const std::shared_ptr<ReadInstr<bool>>& condition_ptr) {
+    s_singleton.m_slice_map[thread_id].begin_then(condition_ptr);
+  }
+
+  static void slice_begin_else(ThreadId thread_id) {
+    s_singleton.m_slice_map[thread_id].begin_else();
+  }
+
+  static void slice_end_branch(ThreadId thread_id) {
+    s_singleton.m_slice_map[thread_id].end_branch();
   }
 
   /// Erase any previous thread recordings
@@ -269,11 +382,16 @@ public:
   }
 
   /// Call before entering the `do { ... } while(slicer.next_slice())` loop
+  ///
+  /// \pre: when called, there are only unconditional events in the main thread
   static void begin_slice_loop() {
     assert(s_singleton.m_thread_stack.size() == 1);
     assert(s_singleton.m_slice_map.size() == 1);
 
-    s_singleton.m_slice_map.at(ThisThread::thread_id()).save();
+    s_singleton.m_main_thread_id = ThisThread::thread_id();
+    const Slice& main_slice = s_singleton.m_slice_map.at(
+      s_singleton.m_main_thread_id);
+    s_singleton.m_main_init_event_ptrs = main_slice.current_block_body();
   }
 
   /// Symbolically encodes all sliced memory accesses between threads
@@ -281,27 +399,14 @@ public:
   /// \returns is there at least one error condition to check?
   static bool encode(Z3C0& z3) {
     ZoneRelation<Event> zone_relation;
-    const Z3ValueEncoderC0 value_encoder;
     const Z3OrderEncoderC0 order_encoder;
 
     const z3::symbol epoch_symbol(z3.context.str_symbol("epoch"));
+    const z3::expr epoch_clock(z3.context.constant(epoch_symbol, z3.clock_sort()));
     for (SliceMap::const_reference slice_map_value : s_singleton.m_slice_map) {
-      z3::expr clock(z3.context.constant(epoch_symbol, z3.clock_sort()));
-      const Slice::EventPtrs& event_ptrs = slice_map_value.second.event_ptrs();
-      for (Slice::EventPtrs::const_reference event_ptr : event_ptrs) {
-        if (event_ptr->is_write()) {
-          const z3::expr equality_expr(event_ptr->encode_eq(value_encoder, z3));
-          z3.solver.add(equality_expr);
-        }
-  
-        if (!event_ptr->zone().is_bottom()) {
-          zone_relation.relate(event_ptr);
-
-          z3::expr next_clock(z3.clock(*event_ptr));
-          z3.solver.add(z3.happens_before(clock, next_clock));
-          clock = next_clock;
-        }
-      }
+      const std::shared_ptr<Block> most_outer_block_ptr =
+        slice_map_value.second.most_outer_block_ptr();
+      internal_encode_spo(most_outer_block_ptr, epoch_clock, zone_relation, z3);
     }
 
     z3.solver.add(order_encoder.rf_enc(zone_relation, z3));
@@ -405,7 +510,7 @@ std::shared_ptr<DirectWriteEvent<T>> Thread::instr(const Zone& zone,
 
   Threads::slice_append_all<T>(m_thread_id, *instr_ptr);
 
-  std::shared_ptr<DirectWriteEvent<T>> write_event_ptr(new DirectWriteEvent<T>(
+  const std::shared_ptr<DirectWriteEvent<T>> write_event_ptr(new DirectWriteEvent<T>(
     m_thread_id, zone, std::move(instr_ptr), path_condition_ptr()));
 
   Threads::slice_append(m_thread_id, write_event_ptr);
@@ -420,7 +525,7 @@ std::shared_ptr<IndirectWriteEvent<T, U, N>> Thread::instr(const Zone& zone,
   Threads::slice_append_all<T>(m_thread_id, *instr_ptr);
   Threads::slice_append_all<T>(m_thread_id, *deref_instr_ptr);
 
-  std::shared_ptr<IndirectWriteEvent<T, U, N>> write_event_ptr(
+  const std::shared_ptr<IndirectWriteEvent<T, U, N>> write_event_ptr(
     new IndirectWriteEvent<T, U, N>(m_thread_id, zone,
       std::move(deref_instr_ptr), std::move(instr_ptr),
         path_condition_ptr()));

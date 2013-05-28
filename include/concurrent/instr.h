@@ -147,7 +147,7 @@ class UnaryReadInstr : public ReadInstr<typename ReturnType<opcode, U>::result_t
 private:
   const std::shared_ptr<ReadInstr<U>> m_operand_ptr;
 
-  friend class Slicer;
+  friend class Bools;
   UnaryReadInstr(std::shared_ptr<ReadInstr<U>> operand_ptr) :
     m_operand_ptr(operand_ptr) {}
 
@@ -318,6 +318,18 @@ struct ReadInstrResult<BinaryReadInstr<opcode, T, U>> {
 
 template<typename T, typename U, size_t N>
 struct ReadInstrResult<DerefReadInstr<T[N], U>> { typedef T Type; };
+
+/// Boolean helper class
+class Bools {
+public:
+  Bools() = delete;
+  static std::unique_ptr<ReadInstr<bool>> negate(
+    const std::shared_ptr<ReadInstr<bool>>& condition_ptr) {
+
+    return std::unique_ptr<ReadInstr<bool>>(new UnaryReadInstr<NOT, bool>(
+      condition_ptr));
+  }
+};
 
 /// Optional control flow over the exact type of a read instruction
 

@@ -54,6 +54,7 @@ bench: all
 	time -p bench/stateful01_unsafe
 	time -p bench/stack_007_slice_safe
 	time -p bench/stack_007_slice_unsafe
+	time -p bench/queue_010_safe
 	time -p bench/queue_010_unsafe
 
 .PHONY: bench doc
@@ -93,6 +94,7 @@ pkginclude_HEADERS = \
   include/concurrent/instr.h \
   include/concurrent/encoder.h \
   include/concurrent/encoder_c0.h \
+  include/concurrent/block.h \
   include/concurrent/slice.h \
   include/concurrent/slicer.h \
   include/concurrent/var.h \
@@ -136,6 +138,7 @@ test_se_SOURCES = \
   test/concurrent/encoder_c0_test.cpp \
   test/concurrent/var_test.cpp \
   test/concurrent/relation_test.cpp \
+  test/concurrent/block_test.cpp \
   test/concurrent/slice_test.cpp \
   test/concurrent/thread_test.cpp \
   test/concurrent/slicer_test.cpp \

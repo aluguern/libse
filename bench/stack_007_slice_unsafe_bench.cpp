@@ -36,10 +36,10 @@ void f2() {
   int i;
   for (i = 0; i < N; i++) {
     mutex.lock();
-    if (slicer.begin_block(__COUNTER__, flag == 1)) {
+    if (slicer.begin_then_branch(__COUNTER__, flag == 1)) {
       pop();
     }
-    slicer.end_block(__COUNTER__);
+    slicer.end_branch(__COUNTER__);
     mutex.unlock();
   }
 }

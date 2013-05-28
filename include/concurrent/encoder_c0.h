@@ -28,6 +28,8 @@ private:
   template<typename T, typename U, size_t N>
   friend z3::expr IndirectWriteEvent<T, U, N>::constant(Z3C0&) const;
 
+  unsigned join_id;
+
   z3::symbol create_symbol(const Event& event) {
     return context.int_symbol(event.event_id());
   }
@@ -69,7 +71,8 @@ public:
   using Z3::solver;
 
   Z3C0() : Z3(), m_rf_func_decl(context.function("rf",
-    /* domain */ context.int_sort(), /* range */ context.int_sort())) {}
+    /* domain */ context.int_sort(), /* range */ context.int_sort())),
+    join_id(0) {}
 
   z3::expr constant(const Event& event) {
     z3::sort sort(context.bv_sort(event.type().bv_size()));
@@ -83,6 +86,17 @@ public:
   z3::expr happens_before(const z3::expr& x, const z3::expr& y) {
     assert(is_clock(x) && is_clock(y));
     return x < y;
+  }
+
+  z3::expr join_clocks(const z3::expr& x, const z3::expr& y) {
+    assert(is_clock(x) && is_clock(y));
+
+    const std::string join_name = std::to_string(join_id++) + "_Join";
+    z3::symbol join_clock_symbol(context.str_symbol(join_name.c_str()));
+    z3::expr join_clock(context.constant(join_clock_symbol, clock_sort()));
+    solver.add(join_clock > 0);
+    solver.add(happens_before(x, join_clock) && happens_before(y, join_clock));
+    return join_clock;
   }
 
   z3::expr rf(const Event& write_event, const Event& read_event) {

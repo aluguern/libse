@@ -11,10 +11,10 @@ int main(void) {
     se::LocalVar<char> a;
 
     x = 'A';
-    if (slicer.begin_block(__COUNTER__, x == '?')) {
+    if (slicer.begin_then_branch(__COUNTER__, x == '?')) {
       x = 'B';
     }
-    slicer.end_block(__COUNTER__);
+    slicer.end_branch(__COUNTER__);
     a = x;
 
     se::Thread::error(!(a == 'B' || a == 'A'));
