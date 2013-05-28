@@ -14,55 +14,53 @@
 namespace se {
 
 typedef std::shared_ptr<Event> EventPtr;
-typedef std::list<EventPtr> EventPtrs;
 
+/// Path in a series-parallel graph
 class Slice {
 public:
-  typedef std::unordered_map<ThreadId, EventPtrs> EventPtrsMap;
+  typedef std::list<EventPtr> EventPtrs;
 
 private:
-  EventPtrsMap m_event_ptrs_map;
-  EventPtrsMap m_save_event_ptrs_map;
+  EventPtrs m_event_ptrs;
+  EventPtrs m_save_event_ptrs;
 
 public:
   Slice() :
-    m_event_ptrs_map(),
-    m_save_event_ptrs_map() {}
+    m_event_ptrs(),
+    m_save_event_ptrs() {}
 
   /// Resets the slice to the initialization events
-  /// \see_also save_slice()
+  ///
+  /// \see_also save()
   void reset() {
-    m_event_ptrs_map = m_save_event_ptrs_map;
+    m_event_ptrs = m_save_event_ptrs;
   }
 
   /// Save the current events so that they can be restored with reset()
-  void save_slice() {
-    m_save_event_ptrs_map = m_event_ptrs_map;
+  void save() {
+    m_save_event_ptrs = m_event_ptrs;
   }
 
-  void append(ThreadId thread_id, const EventPtr& event_ptr) {
-    m_event_ptrs_map[thread_id].push_back(event_ptr);
+  void append(const EventPtr& event_ptr) {
+    m_event_ptrs.push_back(event_ptr);
   }
 
   /// Append all read events that are in the given instruction
   template<typename T>
-  void append_all(ThreadId thread_id, const ReadInstr<T>& instr) {
+  void append_all(const ReadInstr<T>& instr) {
     std::forward_list<std::shared_ptr<Event>> read_event_ptrs;
     instr.filter(read_event_ptrs);
-    append_all(thread_id, read_event_ptrs);
+    append_all(read_event_ptrs);
   }
 
   /// Append all the given event pointers
-  void append_all(ThreadId thread_id,
-    const std::forward_list<std::shared_ptr<Event>>& event_ptrs) {
-
-    EventPtrs& thread_event_ptrs = m_event_ptrs_map[thread_id];
-    thread_event_ptrs.insert(thread_event_ptrs.end(),
+  void append_all(const std::forward_list<std::shared_ptr<Event>>& event_ptrs) {
+    m_event_ptrs.insert(m_event_ptrs.end(),
       /* range */ event_ptrs.begin(), event_ptrs.end());
   }
 
-  const EventPtrsMap& event_ptrs_map() const {
-    return m_event_ptrs_map;
+  const EventPtrs& event_ptrs() const {
+    return m_event_ptrs;
   }
 };
 

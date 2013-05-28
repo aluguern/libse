@@ -45,7 +45,7 @@ void Thread::error(std::unique_ptr<ReadInstr<bool>> condition_ptr) {
 void Thread::begin_block(const std::shared_ptr<ReadInstr<bool>>& condition_ptr) {
   assert(nullptr != condition_ptr);
 
-  Threads::slice().append_all(m_thread_id, *condition_ptr);
+  Threads::slice_append_all(m_thread_id, *condition_ptr);
 
   m_condition_ptrs_size++;
   m_condition_ptrs.push_front(condition_ptr);

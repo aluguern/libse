@@ -6,6 +6,7 @@
 #define LIBSE_CONCURRENT_THREAD_H_
 
 #include <stack>
+#include <unordered_map>
 
 #include "concurrent/zone.h"
 #include "concurrent/event.h"
@@ -133,21 +134,23 @@ class Threads {
 private:
   static Threads s_singleton;
 
-  Slice m_slice;
   std::stack<Thread> m_thread_stack;
 
   // nullptr if and only if this is the main thread
   Thread* m_current_thread_ptr;
 
-  // Must only be accessed before Z3C0 solver is deallocated
+  // must only be accessed before Z3C0 solver is deallocated
   std::forward_list<z3::expr> m_error_exprs;
 
-private:
+  // per-thread series-parallel graph where each vertex is an event pointer
+  typedef std::unordered_map<ThreadId, Slice> SliceMap;
+  SliceMap m_slice_map;
+
   Threads() :
-    m_slice(),
     m_thread_stack(),
     m_current_thread_ptr(nullptr),
-    m_error_exprs() {
+    m_error_exprs(),
+    m_slice_map() {
 
     internal_reset(0, 0);
   }
@@ -157,13 +160,16 @@ private:
     Event::reset_id(next_event_id);
     Zone::reset(next_zone);
 
-    m_slice.reset();
     while (!m_thread_stack.empty()) { 
       m_thread_stack.pop();
     }
 
     m_current_thread_ptr = nullptr;
     assert(m_error_exprs.empty());
+
+    for (SliceMap::reference slice_map_value : s_singleton.m_slice_map) {
+      slice_map_value.second.reset();
+    }
   }
 
   // thread_ptr can be nullptr
@@ -172,16 +178,28 @@ private:
   }
 
 public:
-  static Slice& slice() {
-    return s_singleton.m_slice;
-  }
-
   /// \internal Modifiable reference to the current thread
 
   /// \pre: Threads::begin_thread(const Thread&) must have been called
   static Thread& current_thread() {
     assert(s_singleton.m_current_thread_ptr != nullptr);
     return *s_singleton.m_current_thread_ptr;
+  }
+
+  static void slice_append(ThreadId thread_id, const EventPtr& event_ptr) {
+    s_singleton.m_slice_map[thread_id].append(event_ptr);
+  }
+
+  /// Append all read events that are in the given instruction
+  template<typename T>
+  static void slice_append_all(ThreadId thread_id, const ReadInstr<T>& instr) {
+    s_singleton.m_slice_map[thread_id].append_all(instr);
+  }
+
+  /// Append all the given event pointers
+  static void slice_append_all(ThreadId thread_id,
+    const std::forward_list<std::shared_ptr<Event>>& event_ptrs) {
+    s_singleton.m_slice_map[thread_id].append_all(event_ptrs);
   }
 
   /// Erase any previous thread recordings
@@ -202,13 +220,13 @@ public:
       Thread& parent_thread = *child_thread.parent_thread_ptr();
       const std::shared_ptr<SendEvent> send_event_ptr(new SendEvent(
         parent_thread.thread_id(), parent_thread.path_condition_ptr()));
-      slice().append(parent_thread.thread_id(), send_event_ptr);
+      slice_append(parent_thread.thread_id(), send_event_ptr);
 
       std::unique_ptr<ReceiveEvent> receive_event_ptr(new ReceiveEvent(
         child_thread.thread_id(), send_event_ptr->zone(),
         child_thread.path_condition_ptr()));
 
-      slice().append(child_thread.thread_id(), std::move(receive_event_ptr));
+      slice_append(child_thread.thread_id(), std::move(receive_event_ptr));
     }
     set_current_thread_ptr(child_thread_ptr);
   }
@@ -220,7 +238,7 @@ public:
     const std::shared_ptr<SendEvent> send_event_ptr(new SendEvent(
       ThisThread::thread_id(), ThisThread::path_condition_ptr()));
 
-    slice().append(ThisThread::thread_id(), send_event_ptr);
+    slice_append(ThisThread::thread_id(), send_event_ptr);
     set_current_thread_ptr(current_thread().parent_thread_ptr());
 
     if (!s_singleton.m_thread_stack.empty()) {
@@ -252,7 +270,10 @@ public:
 
   /// Call before entering the `do { ... } while(slicer.next_slice())` loop
   static void begin_slice_loop() {
-    s_singleton.m_slice.save_slice();
+    assert(s_singleton.m_thread_stack.size() == 1);
+    assert(s_singleton.m_slice_map.size() == 1);
+
+    s_singleton.m_slice_map.at(ThisThread::thread_id()).save();
   }
 
   /// Symbolically encodes all sliced memory accesses between threads
@@ -264,17 +285,15 @@ public:
     const Z3OrderEncoderC0 order_encoder;
 
     const z3::symbol epoch_symbol(z3.context.str_symbol("epoch"));
-    for (Slice::EventPtrsMap::const_reference event_ptrs_map_value :
-      /* per-thread list of event pointers */ slice().event_ptrs_map()) {
-
+    for (SliceMap::const_reference slice_map_value : s_singleton.m_slice_map) {
       z3::expr clock(z3.context.constant(epoch_symbol, z3.clock_sort()));
-      const EventPtrs& event_ptrs = event_ptrs_map_value.second;
-      for (EventPtrs::const_reference event_ptr : event_ptrs) {
+      const Slice::EventPtrs& event_ptrs = slice_map_value.second.event_ptrs();
+      for (Slice::EventPtrs::const_reference event_ptr : event_ptrs) {
         if (event_ptr->is_write()) {
           const z3::expr equality_expr(event_ptr->encode_eq(value_encoder, z3));
           z3.solver.add(equality_expr);
         }
-
+  
         if (!event_ptr->zone().is_bottom()) {
           zone_relation.relate(event_ptr);
 
@@ -307,7 +326,7 @@ public:
       ThisThread::thread_id(), send_event_ptr->zone(),
       ThisThread::path_condition_ptr()));
 
-    slice().append(ThisThread::thread_id(), std::move(receive_event_ptr));
+    slice_append(ThisThread::thread_id(), std::move(receive_event_ptr));
   }
 
   /// \internal Assert given condition in the SAT solver outside of any thread
@@ -327,7 +346,7 @@ public:
 
   /// Assert condition with the current thread's path condition as antecedent
   static void expect(std::unique_ptr<ReadInstr<bool>> condition_ptr, Z3C0& z3) {
-    slice().append_all(ThisThread::thread_id(), *condition_ptr);
+    slice_append_all(ThisThread::thread_id(), *condition_ptr);
 
     const Z3ValueEncoderC0 value_encoder;
     const z3::expr condition_expr(value_encoder.encode_eq(
@@ -349,7 +368,7 @@ public:
   /// \remark The logical disjunction of all given error conditions allows
   ///         multiple of them to be checked simultaneously by the SAT solver
   static void error(std::unique_ptr<ReadInstr<bool>> condition_ptr, Z3C0& z3) {
-    slice().append_all(ThisThread::thread_id(), *condition_ptr);
+    slice_append_all(ThisThread::thread_id(), *condition_ptr);
 
     const Z3ValueEncoderC0 value_encoder;
     const z3::expr error_condition_expr(value_encoder.encode_eq(
@@ -384,12 +403,12 @@ template<typename T>
 std::shared_ptr<DirectWriteEvent<T>> Thread::instr(const Zone& zone,
   std::unique_ptr<ReadInstr<T>> instr_ptr) {
 
-  Threads::slice().append_all<T>(m_thread_id, *instr_ptr);
+  Threads::slice_append_all<T>(m_thread_id, *instr_ptr);
 
   std::shared_ptr<DirectWriteEvent<T>> write_event_ptr(new DirectWriteEvent<T>(
     m_thread_id, zone, std::move(instr_ptr), path_condition_ptr()));
 
-  Threads::slice().append(m_thread_id, write_event_ptr);
+  Threads::slice_append(m_thread_id, write_event_ptr);
   return write_event_ptr;
 }
 
@@ -398,15 +417,15 @@ std::shared_ptr<IndirectWriteEvent<T, U, N>> Thread::instr(const Zone& zone,
   std::unique_ptr<DerefReadInstr<T[N], U>> deref_instr_ptr,
   std::unique_ptr<ReadInstr<T>> instr_ptr) {
 
-  Threads::slice().append_all<T>(m_thread_id, *instr_ptr);
-  Threads::slice().append_all<T>(m_thread_id, *deref_instr_ptr);
+  Threads::slice_append_all<T>(m_thread_id, *instr_ptr);
+  Threads::slice_append_all<T>(m_thread_id, *deref_instr_ptr);
 
   std::shared_ptr<IndirectWriteEvent<T, U, N>> write_event_ptr(
     new IndirectWriteEvent<T, U, N>(m_thread_id, zone,
       std::move(deref_instr_ptr), std::move(instr_ptr),
         path_condition_ptr()));
 
-  Threads::slice().append(m_thread_id, write_event_ptr);
+  Threads::slice_append(m_thread_id, write_event_ptr);
   return write_event_ptr;
 }
 

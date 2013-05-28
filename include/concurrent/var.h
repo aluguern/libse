@@ -96,7 +96,7 @@ public:
     m_direct_write_event_ptr(make_direct_write_event<T>(m_zone,
       std::move(instr_ptr))) {
 
-    Threads::slice().append(ThisThread::thread_id(), m_direct_write_event_ptr);
+    Threads::slice_append(ThisThread::thread_id(), m_direct_write_event_ptr);
   }
 
   /// Declare a variable of type `T` that only allows direct memory writes
@@ -111,7 +111,7 @@ public:
     m_direct_write_event_ptr(make_direct_write_event<T>(m_zone,
       std::unique_ptr<ReadInstr<T>>(new LiteralReadInstr<T>(v)))) {
 
-    Threads::slice().append(ThisThread::thread_id(), m_direct_write_event_ptr);
+    Threads::slice_append(ThisThread::thread_id(), m_direct_write_event_ptr);
   }
 
   ~DeclVar() {}
@@ -164,7 +164,7 @@ public:
     m_direct_write_event_ptr(make_direct_write_event<T[N]>(m_zone)),
     m_indirect_write_event_ptr() {
 
-    Threads::slice().append(ThisThread::thread_id(), m_direct_write_event_ptr);
+    Threads::slice_append(ThisThread::thread_id(), m_direct_write_event_ptr);
   }
 
   ~DeclVar() {}
@@ -338,9 +338,9 @@ public:
     m_local_read(internal_make_read_event<T>(m_var.zone(),
       m_var.direct_write_event_ref().event_id())) {
 
-    Threads::slice().append_all(ThisThread::thread_id(),
+    Threads::slice_append_all(ThisThread::thread_id(),
       m_var.direct_write_event_ref().instr_ref());
-    Threads::slice().append(ThisThread::thread_id(),
+    Threads::slice_append(ThisThread::thread_id(),
       m_var.direct_write_event_ptr());
   }
 
