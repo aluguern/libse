@@ -80,9 +80,6 @@ public:
     return s_z3;
   }
 
-  /// Release resources and encode all threads as an SMT formula
-  static void end_main_thread();
-
   /// Encode all threads as an SMT formula
   ///
   /// \returns is there at least one error condition to check?

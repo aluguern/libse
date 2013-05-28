@@ -33,10 +33,6 @@ namespace ThisThread {
   }
 };
 
-void Thread::end_main_thread() {
-  Threads::end_main_thread(s_z3);
-}
-
 bool Thread::encode() {
   return Threads::encode(s_z3);
 }
