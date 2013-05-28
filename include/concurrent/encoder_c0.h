@@ -62,10 +62,6 @@ private:
     return create_array_constant<T, N>(event);
   }
 
-  bool is_clock(const z3::expr& expr) {
-    return expr.is_int();
-  }
-
 public:
   using Z3::context;
   using Z3::solver;
@@ -77,6 +73,10 @@ public:
   z3::expr constant(const Event& event) {
     z3::sort sort(context.bv_sort(event.type().bv_size()));
     return context.constant(create_symbol(event), sort);
+  }
+
+  bool is_clock(const z3::expr& expr) {
+    return expr.is_int();
   }
 
   z3::sort clock_sort() {
