@@ -4,6 +4,7 @@
 #include "concurrent/zone.h"
 
 using namespace se;
+using namespace se::ops;
 
 #define READ_EVENT_ID(id) (id)
 #define WRITE_EVENT_ID(id) (id)

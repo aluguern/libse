@@ -6,7 +6,7 @@
 
 namespace se {
 
-z3::expr SyncEvent::VALUE_ENCODER_C0_FN
-z3::expr SyncEvent::CONSTANT_ENCODER_C0_FN
+smt::UnsafeTerm SyncEvent::VALUE_ENCODER_FN_DEF
+smt::UnsafeTerm SyncEvent::CONSTANT_ENCODER_FN_DEF
 
 }

@@ -10,11 +10,11 @@ public:
   TestEvent(unsigned event_id) :
     Event(event_id, 0, Zone::unique_atom(), true, &TypeInfo<int>::s_type) {}
 
-  z3::expr encode_eq(const Z3ValueEncoderC0& encoder, Z3C0& helper) const {
+  smt::UnsafeTerm encode_eq(const ValueEncoder& encoder, Encoders& helper) const {
     return helper.constant(*this);
   }
 
-  z3::expr constant(Z3C0& helper) const { return helper.constant(*this); }
+  smt::UnsafeTerm constant(Encoders& helper) const { return helper.constant(*this); }
 };
 
 TEST(BlockTest, InsertEvents) {

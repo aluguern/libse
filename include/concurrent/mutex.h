@@ -7,6 +7,8 @@
 
 #include "concurrent.h"
 
+using namespace se::ops;
+
 namespace se {
 
 /// Symbolic spinlock
@@ -19,9 +21,9 @@ private:
   SharedVar<unsigned> m_thread_id;
 
 protected:
-  void unlock(Z3C0& z3) {
+  void unlock(Encoders& encoders) {
     assert(m_lock_thread_id == ThisThread::thread_id());
-    Threads::expect(m_thread_id == m_lock_thread_id, z3);
+    Threads::expect(m_thread_id == m_lock_thread_id, encoders);
   }
 
 public:
@@ -38,7 +40,7 @@ public:
   /// Release lock
 
   /// \pre: ThisThread is the same as the one that called lock()
-  void unlock() { unlock(Thread::z3()); }
+  void unlock() { unlock(Thread::encoders()); }
 };
 
 }

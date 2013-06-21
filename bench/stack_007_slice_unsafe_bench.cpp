@@ -4,21 +4,23 @@
 #include "libse.h"
 #include "concurrent/mutex.h"
 
+using namespace se::ops;
+
 #define N 12
 
 se::Slicer slicer;
-se::SharedVar<unsigned int> top = 0;
+se::SharedVar<unsigned int> top = 0U;
 se::SharedVar<int> flag = 0;
 se::Mutex mutex;
 
 void push(int x) {
-  top = top + 1;
+  top = top + 1U;
 }
 
 int pop() {
-  se::Thread::error(top == 0);
+  se::Thread::error(top == 0U);
 
-  top = top - 1;
+  top = top - 1U;
   return 0;
 }
 
@@ -47,12 +49,12 @@ void f2() {
 int main(void) {
   slicer.begin_slice_loop();
   do {
-    se::Thread::z3().reset();
+    se::Thread::encoders().reset();
 
     se::Thread t1(f1);
     se::Thread t2(f2);
 
-    if (se::Thread::encode() && z3::sat == se::Thread::z3().solver.check()) {
+    if (se::Thread::encode() && smt::sat == se::Thread::encoders().solver.check()) {
       return 0;
     }
   } while (slicer.next_slice());

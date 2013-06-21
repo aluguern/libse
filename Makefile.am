@@ -33,18 +33,6 @@ check-local:
 test: check-local check
 
 bench: all
-	time -p bench/sups_safe
-	time -p bench/sups_unsafe
-	time -p bench/strict_total_order_with_lazy_injection_safe
-	time -p bench/strict_total_order_with_lazy_injection_unsafe
-	time -p bench/strict_total_order_with_eager_injection_safe
-	time -p bench/strict_total_order_with_eager_injection_unsafe
-	time -p bench/strict_total_order_with_or_safe
-	time -p bench/strict_total_order_with_or_unsafe
-	time -p bench/strict_total_order_with_distinct_safe
-	time -p bench/strict_total_order_with_distinct_unsafe
-	time -p bench/strict_total_orders_with_distinct_safe
-	time -p bench/strict_total_orders_with_distinct_unsafe
 	time -p bench/if
 	time -p bench/fib_005_safe
 	time -p bench/fib_005_unsafe
@@ -78,14 +66,19 @@ dist_doc_DATA = README.md
 lib_LTLIBRARIES = lib/libse.la
 
 lib_libse_la_SOURCES = \
+  smt-kit/src/smt.cpp \
   src/concurrent/zone.cpp \
   src/concurrent/event.cpp \
-  src/concurrent/encoder_c0.cpp \
+  src/concurrent/encoder.cpp \
   src/concurrent/relation.cpp \
   src/concurrent/thread.cpp \
   src/libse.cpp
 
 pkginclude_HEADERS = \
+  smt-kit/include/smt \
+  smt-kit/include/smt.h \
+  smt-kit/include/smt_z3.h \
+  smt-kit/include/smt_msat.h \
   include/core/op.h \
   include/core/eval.h \
   include/core/type.h \
@@ -111,7 +104,7 @@ pkginclude_HEADERS = \
 # check_PROGRAMS -- Programs built by "make check" but not necessarily run
 
 # See README in Z3 source code for installation instructions
-tests_library_path = $(srcdir)/solvers/z3/build
+tests_library_path = $(srcdir)/solvers/z3/build:$(srcdir)/solvers/msat/lib
 
 TESTS_ENVIRONMENT = \
   LIBPATH=$(tests_library_path):$$LIBPATH \
@@ -128,6 +121,10 @@ TESTS = test/se
 check_PROGRAMS = test/se
 
 test_se_SOURCES = \
+  smt-kit/test/smt_test.cpp \
+  smt-kit/test/smt_functional_test.cpp \
+  smt-kit/test/smt_z3_test.cpp \
+  smt-kit/test/smt_msat_test.cpp \
   test/core/op_test.cpp \
   test/core/eval_test.cpp \
   test/core/type_test.cpp \

@@ -43,6 +43,8 @@ namespace ThisThread {
   void end_branch();
 }
 
+extern Encoders& global_encoders();
+
 /// Symbolic thread for the analysis of concurrent C++ code
 class Thread {
 private:
@@ -52,7 +54,6 @@ private:
   typedef std::shared_ptr<ReadInstr<bool>> ConditionPtr;
   typedef std::forward_list<ConditionPtr> ConditionPtrs;
 
-  static Z3C0 s_z3;
   static const std::shared_ptr<ReadInstr<bool>> s_true_condition_ptr;
   static ThreadId s_next_thread_id;
 
@@ -114,8 +115,8 @@ private:
   }
 
 public:
-  static Z3C0& z3() {
-    return s_z3;
+  static Encoders& encoders() {
+    return global_encoders();
   }
 
   /// Encode all threads as an SMT formula
@@ -177,8 +178,8 @@ private:
   // nullptr if and only if this is the main thread
   Thread* m_current_thread_ptr;
 
-  // must only be accessed before Z3C0 solver is deallocated
-  std::forward_list<z3::expr> m_error_exprs;
+  // must only be accessed before Encoders solver is deallocated
+  std::forward_list<smt::UnsafeTerm> m_error_exprs;
 
   // per-thread series-parallel graph where each vertex is an event pointer
   typedef std::unordered_map<ThreadId, Slice> SliceMap;
@@ -219,34 +220,33 @@ private:
     s_singleton.m_current_thread_ptr = thread_ptr;
   }
 
-  static z3::expr internal_encode_spo(const std::shared_ptr<Block>& block_ptr,
-    const z3::expr& earlier_clock,
+  static smt::Term<ClockSort> internal_encode_spo(const std::shared_ptr<Block>& block_ptr,
+    const smt::Term<ClockSort>& earlier_clock,
     ZoneRelation<Event>& zone_relation,
-    Z3C0& z3) {
+    Encoders& encoders) {
 
-    const Z3ValueEncoderC0 value_encoder;
-    assert(z3.is_clock(earlier_clock));
+    const ValueEncoder value_encoder;
 
-    z3::expr inner_clock(earlier_clock);
+    smt::Term<ClockSort> inner_clock(earlier_clock);
     if (!block_ptr->body().empty()) {
       // Consider changing Block::body() to return an ordered set if it would
       // simplify the treatment of local events (below, currently excluded).
       const std::forward_list<std::shared_ptr<Event>>& body = block_ptr->body();
 
-      z3::expr body_clock(inner_clock);
+      smt::Term<ClockSort> body_clock(inner_clock);
       for (const std::shared_ptr<Event>& body_event_ptr : body) {
         const Event& body_event = *body_event_ptr;
 
         if (body_event.is_write()) {
-          const z3::expr equality_expr(body_event.encode_eq(value_encoder, z3));
-          z3.solver.add(equality_expr);
+          const smt::UnsafeTerm equality_expr(body_event.encode_eq(value_encoder, encoders));
+          encoders.solver.unsafe_add(equality_expr);
         }
   
         if (!body_event.zone().is_bottom()) {
           zone_relation.relate(body_event_ptr);
 
-          z3::expr next_body_clock(z3.clock(body_event));
-          z3.solver.add(z3.happens_before(body_clock, next_body_clock));
+          smt::Term<ClockSort> next_body_clock(encoders.clock(body_event));
+          encoders.solver.add(encoders.happens_before(body_clock, next_body_clock));
           body_clock = next_body_clock;
         }
       }
@@ -257,14 +257,14 @@ private:
     for (const std::shared_ptr<Block>& inner_block_ptr :
       block_ptr->inner_block_ptrs()) {
 
-      z3::expr then_clock(internal_encode_spo(inner_block_ptr, inner_clock,
-        zone_relation, z3));
+      smt::Term<ClockSort> then_clock(internal_encode_spo(inner_block_ptr, inner_clock,
+        zone_relation, encoders));
       const std::shared_ptr<Block>& inner_else_block_ptr(
         inner_block_ptr->else_block_ptr());
       if (inner_else_block_ptr) {
-        z3::expr else_clock(internal_encode_spo(inner_else_block_ptr,
-          inner_clock, zone_relation, z3));
-        inner_clock = z3.join_clocks(then_clock, else_clock);
+        smt::Term<ClockSort> else_clock(internal_encode_spo(inner_else_block_ptr,
+          inner_clock, zone_relation, encoders));
+        inner_clock = encoders.join_clocks(then_clock, else_clock);
       } else {
         inner_clock = then_clock;
       }
@@ -370,15 +370,15 @@ public:
     begin_thread();
   }
 
-  /// Calls end_thread(Z3C0&) and then encode(Z3C0&)
+  /// Calls end_thread(Encoders&) and then encode(Encoders&)
 
   /// \pre begin_main_thread() must have been called previously
   ///
   /// \returns is there at least one error condition to check?
-  static bool end_main_thread(Z3C0& z3) {
+  static bool end_main_thread(Encoders& encoders) {
     assert(s_singleton.m_thread_stack.size() == 1);
     end_thread();
-    return encode(z3);
+    return encode(encoders);
   }
 
   /// Call before entering the `do { ... } while(slicer.next_slice())` loop
@@ -397,32 +397,30 @@ public:
   /// Symbolically encodes all sliced memory accesses between threads
 
   /// \returns is there at least one error condition to check?
-  static bool encode(Z3C0& z3) {
+  static bool encode(Encoders& encoders) {
     ZoneRelation<Event> zone_relation;
     const Z3OrderEncoderC0 order_encoder;
 
-    const z3::symbol epoch_symbol(z3.context.str_symbol("epoch"));
-    const z3::expr epoch_clock(z3.context.constant(epoch_symbol, z3.clock_sort()));
+    const smt::Term<ClockSort> epoch_clock(smt::any<ClockSort>("epoch"));
     for (SliceMap::const_reference slice_map_value : s_singleton.m_slice_map) {
       const std::shared_ptr<Block> most_outer_block_ptr =
         slice_map_value.second.most_outer_block_ptr();
-      internal_encode_spo(most_outer_block_ptr, epoch_clock, zone_relation, z3);
+      internal_encode_spo(most_outer_block_ptr, epoch_clock, zone_relation, encoders);
     }
-
-    z3.solver.add(order_encoder.rf_enc(zone_relation, z3));
-    z3.solver.add(order_encoder.fr_enc(zone_relation, z3));
-    z3.solver.add(order_encoder.ws_enc(zone_relation, z3));
 
     bool has_error_conditions = !s_singleton.m_error_exprs.empty();
     if (has_error_conditions) {
-      z3::expr some_error_expr(z3.context.bool_val(false));
-      for (const z3::expr& error_expr : s_singleton.m_error_exprs) {
+      smt::UnsafeTerm some_error_expr(smt::literal<smt::Bool>(false));
+      for (const smt::UnsafeTerm& error_expr : s_singleton.m_error_exprs) {
         some_error_expr = some_error_expr or error_expr;
       }
-      z3.solver.add(some_error_expr);
+      encoders.solver.unsafe_add(some_error_expr);
 
       s_singleton.m_error_exprs.clear();
     }
+
+    order_encoder.encode(zone_relation, encoders);
+
     return has_error_conditions;
   }
 
@@ -441,30 +439,30 @@ public:
   ///
   /// \warning Path conditions are ignored and an unsatisfiable error
   ///          condition renders any others unsatisfiable as well
-  static void internal_error(std::unique_ptr<ReadInstr<bool>> condition_ptr, Z3C0& z3) {
-    const Z3ValueEncoderC0 value_encoder;
-    const z3::expr condition_expr(value_encoder.encode_eq(
-      std::move(condition_ptr), z3));
+  static void internal_error(std::unique_ptr<ReadInstr<bool>> condition_ptr, Encoders& encoders) {
+    const ValueEncoder value_encoder;
+    const smt::UnsafeTerm condition_expr(value_encoder.encode_eq(
+      std::move(condition_ptr), encoders));
 
-    z3.solver.add(condition_expr);
+    encoders.solver.unsafe_add(condition_expr);
   }
 
   /// Assert condition with the current thread's path condition as antecedent
-  static void expect(std::unique_ptr<ReadInstr<bool>> condition_ptr, Z3C0& z3) {
+  static void expect(std::unique_ptr<ReadInstr<bool>> condition_ptr, Encoders& encoders) {
     slice_append_all(ThisThread::thread_id(), *condition_ptr);
 
-    const Z3ValueEncoderC0 value_encoder;
-    const z3::expr condition_expr(value_encoder.encode_eq(
-      std::move(condition_ptr), z3));
+    const ValueEncoder value_encoder;
+    const smt::UnsafeTerm condition_expr(value_encoder.encode_eq(
+      std::move(condition_ptr), encoders));
 
     const std::shared_ptr<ReadInstr<bool>> path_condition_ptr(
       ThisThread::path_condition_ptr());
     if (path_condition_ptr) {
-      const Z3ReadEncoderC0 read_encoder;
-      z3.solver.add(implies(path_condition_ptr->encode(read_encoder, z3),
+      const ReadInstrEncoder read_encoder;
+      encoders.solver.unsafe_add(implies(path_condition_ptr->encode(read_encoder, encoders),
         condition_expr));
     } else {
-      z3.solver.add(condition_expr);
+      encoders.solver.unsafe_add(condition_expr);
     }
   }
 
@@ -472,19 +470,19 @@ public:
 
   /// \remark The logical disjunction of all given error conditions allows
   ///         multiple of them to be checked simultaneously by the SAT solver
-  static void error(std::unique_ptr<ReadInstr<bool>> condition_ptr, Z3C0& z3) {
+  static void error(std::unique_ptr<ReadInstr<bool>> condition_ptr, Encoders& encoders) {
     slice_append_all(ThisThread::thread_id(), *condition_ptr);
 
-    const Z3ValueEncoderC0 value_encoder;
-    const z3::expr error_condition_expr(value_encoder.encode_eq(
-      std::move(condition_ptr), z3));
+    const ValueEncoder value_encoder;
+    const smt::UnsafeTerm error_condition_expr(value_encoder.encode_eq(
+      std::move(condition_ptr), encoders));
 
     const std::shared_ptr<ReadInstr<bool>> path_condition_ptr(
       ThisThread::path_condition_ptr());
     if (path_condition_ptr) {
-      const Z3ReadEncoderC0 read_encoder;
+      const ReadInstrEncoder read_encoder;
       s_singleton.m_error_exprs.push_front(error_condition_expr and
-        path_condition_ptr->encode(read_encoder, z3));
+        path_condition_ptr->encode(read_encoder, encoders));
     } else {
       s_singleton.m_error_exprs.push_front(error_condition_expr);
     }

@@ -14,12 +14,12 @@
 
 #include "concurrent/event.h"
 
-namespace z3 { class expr; }
+#include <smt>
 
 namespace se {
 
-class Z3C0;
-class Z3ReadEncoderC0;
+class Encoders;
+class ReadInstrEncoder;
 
 /// Non-copyable class that identifies a built-in memory read instruction
 
@@ -43,13 +43,13 @@ public:
   virtual ~ReadInstr() {}
 
   virtual void filter(std::forward_list<std::shared_ptr<Event>>&) const = 0;
-  virtual z3::expr encode(const Z3ReadEncoderC0& encoder, Z3C0& helper) const = 0;
+  virtual smt::UnsafeTerm encode(const ReadInstrEncoder& encoder, Encoders& helper) const = 0;
 
   virtual std::shared_ptr<ReadInstr<bool>> condition_ptr() const = 0;
 };
 
-#define DECL_READ_ENCODER_C0_FN \
-  z3::expr encode(const Z3ReadEncoderC0& encoder, Z3C0& helper) const;
+#define READ_ENCODER_FN_DECL \
+  smt::UnsafeTerm encode(const ReadInstrEncoder& encoder, Encoders& helper) const;
 
 template<typename T>
 class LiteralReadInstr : public ReadInstr<T> {
@@ -79,7 +79,7 @@ public:
 
   void filter(std::forward_list<std::shared_ptr<Event>>&) const { /* skip */ }
 
-  DECL_READ_ENCODER_C0_FN
+  READ_ENCODER_FN_DECL
 };
 
 /// Array filled with identical literals
@@ -107,7 +107,7 @@ public:
 
   void filter(std::forward_list<std::shared_ptr<Event>>&) const { /* skip */ }
 
-  DECL_READ_ENCODER_C0_FN
+  READ_ENCODER_FN_DECL
 };
 
 template<typename T>
@@ -139,7 +139,7 @@ public:
     event_ptrs.push_front(m_event_ptr);
   }
 
-  DECL_READ_ENCODER_C0_FN
+  READ_ENCODER_FN_DECL
 };
 
 template<Opcode opcode, typename U>
@@ -170,7 +170,7 @@ public:
     operand_ref().filter(event_ptrs);
   }
 
-  DECL_READ_ENCODER_C0_FN
+  READ_ENCODER_FN_DECL
 };
 
 template<Opcode opcode, typename U, typename V>
@@ -207,7 +207,7 @@ public:
     loperand_ref().filter(event_ptrs);
   }
 
-  DECL_READ_ENCODER_C0_FN
+  READ_ENCODER_FN_DECL
 };
 
 /// Commutative monoid read instruction
@@ -264,7 +264,7 @@ public:
     }
   }
 
-  DECL_READ_ENCODER_C0_FN
+  READ_ENCODER_FN_DECL
 };
 
 /// Load memory of type `T` at an offset of type `U`
@@ -295,7 +295,7 @@ public:
     offset_ref().filter(event_ptrs);
   }
 
-  DECL_READ_ENCODER_C0_FN
+  READ_ENCODER_FN_DECL
 };
 
 template<typename ...T> struct ReadInstrResult;

@@ -4,15 +4,15 @@
 
 using namespace se;
 
-/// Makes Mutex::unlock(Z3C0&) public
+/// Makes Mutex::unlock(Encoders&) public
 class InternalMutex : public Mutex {
 public:
   InternalMutex() : Mutex() {}
-  void unlock(Z3C0& z3) { return Mutex::unlock(z3); }
+  void unlock(Encoders& encoders) { return Mutex::unlock(encoders); }
 };
 
 TEST(MutexTest, SatMainThreadSingleWriter) {
-  Z3C0 z3;
+  Encoders encoders;
 
   Threads::reset();
   Threads::begin_main_thread();
@@ -20,13 +20,13 @@ TEST(MutexTest, SatMainThreadSingleWriter) {
 
   shared_var = 1;
 
-  Threads::end_main_thread(z3);
+  Threads::end_main_thread(encoders);
 
-  EXPECT_EQ(z3::sat, z3.solver.check());
+  EXPECT_EQ(smt::sat, encoders.solver.check());
 }
 
 TEST(MutexTest, SatSingleWriter) {
-  Z3C0 z3;
+  Encoders encoders;
 
   Threads::reset();
   Threads::begin_main_thread();
@@ -39,16 +39,16 @@ TEST(MutexTest, SatSingleWriter) {
   Threads::end_thread();
 
   Threads::begin_thread();
-  Threads::error(shared_var == 3, z3);
+  Threads::error(shared_var == 3, encoders);
   Threads::end_thread();
 
-  Threads::end_main_thread(z3);
+  Threads::end_main_thread(encoders);
 
-  EXPECT_EQ(z3::sat, z3.solver.check());
+  EXPECT_EQ(smt::sat, encoders.solver.check());
 }
 
 TEST(MutexTest, UnsatSingleWriter) {
-  Z3C0 z3;
+  Encoders encoders;
 
   Threads::reset();
   Threads::begin_main_thread();
@@ -60,22 +60,22 @@ TEST(MutexTest, UnsatSingleWriter) {
   mutex.lock();
   shared_var = shared_var + 3;
   shared_var = shared_var + 1;
-  mutex.unlock(z3);
+  mutex.unlock(encoders);
   Threads::end_thread();
 
   Threads::begin_thread();
   mutex.lock();
-  Threads::error(shared_var == 3, z3);
-  mutex.unlock(z3);
+  Threads::error(shared_var == 3, encoders);
+  mutex.unlock(encoders);
   Threads::end_thread();
 
-  Threads::end_main_thread(z3);
+  Threads::end_main_thread(encoders);
 
-  EXPECT_EQ(z3::unsat, z3.solver.check());
+  EXPECT_EQ(smt::unsat, encoders.solver.check());
 }
 
 TEST(MutexTest, Sat1MultipleWriters) {
-  Z3C0 z3;
+  Encoders encoders;
 
   Threads::reset();
   Threads::begin_main_thread();
@@ -96,7 +96,7 @@ TEST(MutexTest, Sat1MultipleWriters) {
   x = 'A';
   y = 'B';
   z = 'C';
-  mutex.unlock(z3);
+  mutex.unlock(encoders);
 
   Threads::end_thread();
 
@@ -106,7 +106,7 @@ TEST(MutexTest, Sat1MultipleWriters) {
   x = '\1';
   y = '\2';
   z = '\3';
-  mutex.unlock(z3);
+  mutex.unlock(encoders);
 
   Threads::end_thread();
 
@@ -118,25 +118,25 @@ TEST(MutexTest, Sat1MultipleWriters) {
   std::unique_ptr<ReadInstr<bool>> c0(a == 'A' && b == '\2' && c == 'C');
   std::unique_ptr<ReadInstr<bool>> c1(a == '\1' && b == 'B' && c == '\3');
 
-  Threads::end_main_thread(z3);
+  Threads::end_main_thread(encoders);
 
-  z3.solver.push();
+  encoders.solver.push();
 
-  Threads::internal_error(std::move(c0), z3);
-  EXPECT_EQ(z3::sat, z3.solver.check());
+  Threads::internal_error(std::move(c0), encoders);
+  EXPECT_EQ(smt::sat, encoders.solver.check());
 
-  z3.solver.pop();
+  encoders.solver.pop();
 
-  z3.solver.push();
+  encoders.solver.push();
 
-  Threads::internal_error(std::move(c1), z3);
-  EXPECT_EQ(z3::sat, z3.solver.check());
+  Threads::internal_error(std::move(c1), encoders);
+  EXPECT_EQ(smt::sat, encoders.solver.check());
 
-  z3.solver.pop();
+  encoders.solver.pop();
 }
 
 TEST(MutexTest, Sat2MultipleWriters) {
-  Z3C0 z3;
+  Encoders encoders;
 
   Threads::reset();
   Threads::begin_main_thread();
@@ -174,25 +174,25 @@ TEST(MutexTest, Sat2MultipleWriters) {
   std::unique_ptr<ReadInstr<bool>> c0(a == 'A' && b == '\2' && c == 'C');
   std::unique_ptr<ReadInstr<bool>> c1(a == '\1' && b == 'B' && c == '\3');
 
-  Threads::end_main_thread(z3);
+  Threads::end_main_thread(encoders);
 
-  z3.solver.push();
+  encoders.solver.push();
 
-  Threads::internal_error(std::move(c0), z3);
-  EXPECT_EQ(z3::sat, z3.solver.check());
+  Threads::internal_error(std::move(c0), encoders);
+  EXPECT_EQ(smt::sat, encoders.solver.check());
 
-  z3.solver.pop();
+  encoders.solver.pop();
 
-  z3.solver.push();
+  encoders.solver.push();
 
-  Threads::internal_error(std::move(c1), z3);
-  EXPECT_EQ(z3::sat, z3.solver.check());
+  Threads::internal_error(std::move(c1), encoders);
+  EXPECT_EQ(smt::sat, encoders.solver.check());
 
-  z3.solver.pop();
+  encoders.solver.pop();
 }
 
 TEST(MutexTest, UnsatMultipleWriters) {
-  Z3C0 z3;
+  Encoders encoders;
 
   Threads::reset();
   Threads::begin_main_thread();
@@ -213,7 +213,7 @@ TEST(MutexTest, UnsatMultipleWriters) {
   x = 'A';
   y = 'B';
   z = 'C';
-  mutex.unlock(z3);
+  mutex.unlock(encoders);
 
   Threads::end_thread();
 
@@ -223,44 +223,44 @@ TEST(MutexTest, UnsatMultipleWriters) {
   x = '\1';
   y = '\2';
   z = '\3';
-  mutex.unlock(z3);
+  mutex.unlock(encoders);
 
   Threads::end_thread();
 
   mutex.lock();
   a = x;
-  mutex.unlock(z3);
+  mutex.unlock(encoders);
 
   mutex.lock();
   b = y;
-  mutex.unlock(z3);
+  mutex.unlock(encoders);
 
   mutex.lock();
   c = z;
-  mutex.unlock(z3);
+  mutex.unlock(encoders);
 
   std::unique_ptr<ReadInstr<bool>> c0(a == 'A' && b == '\2' && c == 'C');
   std::unique_ptr<ReadInstr<bool>> c1(a == '\1' && b == 'B' && c == '\3');
 
-  Threads::end_main_thread(z3);
+  Threads::end_main_thread(encoders);
 
-  z3.solver.push();
+  encoders.solver.push();
 
-  Threads::internal_error(std::move(c0), z3);
-  EXPECT_EQ(z3::unsat, z3.solver.check());
+  Threads::internal_error(std::move(c0), encoders);
+  EXPECT_EQ(smt::unsat, encoders.solver.check());
 
-  z3.solver.pop();
+  encoders.solver.pop();
 
-  z3.solver.push();
+  encoders.solver.push();
 
-  Threads::internal_error(std::move(c1), z3);
-  EXPECT_EQ(z3::unsat, z3.solver.check());
+  Threads::internal_error(std::move(c1), encoders);
+  EXPECT_EQ(smt::unsat, encoders.solver.check());
 
-  z3.solver.pop();
+  encoders.solver.pop();
 }
 
 TEST(MutexTest, SatJoinMultipleWriters) {
-  Z3C0 z3;
+  Encoders encoders;
 
   std::shared_ptr<SendEvent> t1_send_event_ptr;
   std::shared_ptr<SendEvent> t2_send_event_ptr;
@@ -276,11 +276,11 @@ TEST(MutexTest, SatJoinMultipleWriters) {
 
   mutex.lock();
   x = x + 1;
-  mutex.unlock(z3);
+  mutex.unlock(encoders);
 
   mutex.lock();
   y = y + 1;
-  mutex.unlock(z3);
+  mutex.unlock(encoders);
 
   t1_send_event_ptr = Threads::end_thread();
 
@@ -288,25 +288,25 @@ TEST(MutexTest, SatJoinMultipleWriters) {
 
   mutex.lock();
   x = x + 5;
-  mutex.unlock(z3);
+  mutex.unlock(encoders);
 
   mutex.lock();
   y = y - 6;
-  mutex.unlock(z3);
+  mutex.unlock(encoders);
 
   t2_send_event_ptr = Threads::end_thread();
 
   Threads::join(t1_send_event_ptr);
   Threads::join(t2_send_event_ptr);
 
-  Threads::error(x == 16 && y == 5, z3);
-  Threads::end_main_thread(z3);
+  Threads::error(x == 16 && y == 5, encoders);
+  Threads::end_main_thread(encoders);
 
-  EXPECT_EQ(z3::sat, z3.solver.check());
+  EXPECT_EQ(smt::sat, encoders.solver.check());
 }
 
 TEST(MutexTest, UnsatJoinMultipleWriters) {
-  Z3C0 z3;
+  Encoders encoders;
 
   std::shared_ptr<SendEvent> t1_send_event_ptr;
   std::shared_ptr<SendEvent> t2_send_event_ptr;
@@ -322,11 +322,11 @@ TEST(MutexTest, UnsatJoinMultipleWriters) {
 
   mutex.lock();
   x = x + 1;
-  mutex.unlock(z3);
+  mutex.unlock(encoders);
 
   mutex.lock();
   y = y + 1;
-  mutex.unlock(z3);
+  mutex.unlock(encoders);
 
   t1_send_event_ptr = Threads::end_thread();
 
@@ -334,19 +334,19 @@ TEST(MutexTest, UnsatJoinMultipleWriters) {
 
   mutex.lock();
   x = x + 5;
-  mutex.unlock(z3);
+  mutex.unlock(encoders);
 
   mutex.lock();
   y = y - 6;
-  mutex.unlock(z3);
+  mutex.unlock(encoders);
 
   t2_send_event_ptr = Threads::end_thread();
 
   Threads::join(t1_send_event_ptr);
   Threads::join(t2_send_event_ptr);
 
-  Threads::error(!(x == 16) || !(y == 5), z3);
-  Threads::end_main_thread(z3);
+  Threads::error(!(x == 16) || !(y == 5), encoders);
+  Threads::end_main_thread(encoders);
 
-  EXPECT_EQ(z3::unsat, z3.solver.check());
+  EXPECT_EQ(smt::unsat, encoders.solver.check());
 }

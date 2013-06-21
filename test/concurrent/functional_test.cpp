@@ -5,6 +5,7 @@
 #include "concurrent.h"
 
 using namespace se;
+using namespace se::ops;
 
 class CharBlockPrinter {
 public:
@@ -61,7 +62,7 @@ public:
 };
 
 TEST(ConcurrentFunctionalTest, Else) {
-  Z3C0 z3;
+  Encoders encoders;
   Slicer slicer;
   CharBlockPrinter printer;
 
@@ -96,12 +97,12 @@ TEST(ConcurrentFunctionalTest, Else) {
             "  }\n"
             "}\n", printer.out.str());
 
-  Threads::end_main_thread(z3);
+  Threads::end_main_thread(encoders);
 }
 
 
 TEST(ConcurrentFunctionalTest, ElseIf) {
-  Z3C0 z3;
+  Encoders encoders;
   Slicer slicer;
   CharBlockPrinter printer;
 
@@ -150,7 +151,7 @@ TEST(ConcurrentFunctionalTest, ElseIf) {
             "  {\n  }\n"
             "}\n", printer.out.str());
 
-  Threads::end_main_thread(z3);
+  Threads::end_main_thread(encoders);
 }
 
 // Do not introduce any new read events as part of a conditional check
@@ -161,7 +162,7 @@ TEST(ConcurrentFunctionalTest, ElseIf) {
   (std::unique_ptr<ReadInstr<bool>>(new LiteralReadInstr<bool>(false)))
 
 TEST(ConcurrentFunctionalTest, SeriesParallelGraph) {
-  Z3C0 z3;
+  Encoders encoders;
   Slicer slicer;
   CharBlockPrinter printer;
 
@@ -346,12 +347,12 @@ TEST(ConcurrentFunctionalTest, SeriesParallelGraph) {
             "  {\n  }\n"
             "}\n", printer.out.str());
 
-  Threads::end_main_thread(z3);
+  Threads::end_main_thread(encoders);
 }
 
 /*
 TEST(ConcurrentFunctionalTest, Loop) {
-  Z3C0 z3;
+  Encoders encoders;
   Slicer slicer;
   CharBlockPrinter printer;
 
@@ -383,7 +384,7 @@ TEST(ConcurrentFunctionalTest, Loop) {
             "  {\n  }\n"
             "}\n", printer.out.str());
 
-  Threads::end_main_thread(z3);
+  Threads::end_main_thread(encoders);
 }
 */
 
@@ -394,7 +395,7 @@ TEST(ConcurrentFunctionalTest, Counter) {
 
 /*
 TEST(ConcurrentFunctionalTest, LocalArray) {
-  Z3C0 z3;
+  Encoders encoders;
 
   Threads::reset();
   Threads::begin_main_thread();
@@ -404,23 +405,23 @@ TEST(ConcurrentFunctionalTest, LocalArray) {
   LocalVar<char[5]> a;
   a[2] = 'Z';
 
-  Threads::error(!(a[2] == 'Z'), z3);
+  Threads::error(!(a[2] == 'Z'), encoders);
 
   // Do not encode global memory accesses for this test
   Threads::end_thread();
 
   std::stringstream out;
-  out << z3.solver;
+  out << encoders.solver;
   EXPECT_EQ("(solver\n  (= k!2 ((as const (Array (_ BitVec 64) (_ BitVec 8))) #x00))\n"
             "  (= k!3 (store k!2 #x0000000000000002 #x5a))\n"
             "  true\n  (> k!1 0)\n  (< epoch k!1)\n"
             "  (> k!4 0)\n  (< k!1 k!4))", out.str());
 
   // error condition has not been added yet
-  EXPECT_EQ(z3::sat, z3.solver.check());
+  EXPECT_EQ(smt::sat, encoders.solver.check());
 
-  Threads::end_main_thread(z3);
-  EXPECT_EQ(z3::unsat, z3.solver.check());
+  Threads::end_main_thread(encoders);
+  EXPECT_EQ(smt::unsat, encoders.solver.check());
 }
 */
 
@@ -432,7 +433,7 @@ TEST(ConcurrentFunctionalTest, LocalArray) {
   (std::unique_ptr<ReadInstr<bool>>(new LiteralReadInstr<bool>(false)))
 
 TEST(ConcurrentFunctionalTest, ThreeThreadsReadWriteScalarSharedVar) {
-  Z3C0 z3;
+  Encoders encoders;
 
   Threads::reset();
   Threads::begin_main_thread();
@@ -467,60 +468,60 @@ TEST(ConcurrentFunctionalTest, ThreeThreadsReadWriteScalarSharedVar) {
   std::unique_ptr<ReadInstr<bool>> c5(!(a == '\0' || a == 'Q'));
   std::unique_ptr<ReadInstr<bool>> c6(!(a == '\0' || a == 'P' || a == 'Q'));
 
-  Threads::end_main_thread(z3);
+  Threads::end_main_thread(encoders);
 
-  z3.solver.push();
+  encoders.solver.push();
 
-  Threads::internal_error(std::move(c0), z3);
-  EXPECT_EQ(z3::sat, z3.solver.check());
+  Threads::internal_error(std::move(c0), encoders);
+  EXPECT_EQ(smt::sat, encoders.solver.check());
 
-  z3.solver.pop();
+  encoders.solver.pop();
 
-  z3.solver.push();
+  encoders.solver.push();
 
-  Threads::internal_error(std::move(c1), z3);
-  EXPECT_EQ(z3::sat, z3.solver.check());
+  Threads::internal_error(std::move(c1), encoders);
+  EXPECT_EQ(smt::sat, encoders.solver.check());
 
-  z3.solver.pop();
+  encoders.solver.pop();
 
-  z3.solver.push();
+  encoders.solver.push();
 
-  Threads::internal_error(std::move(c2), z3);
-  EXPECT_EQ(z3::sat, z3.solver.check());
+  Threads::internal_error(std::move(c2), encoders);
+  EXPECT_EQ(smt::sat, encoders.solver.check());
 
-  z3.solver.pop();
+  encoders.solver.pop();
 
-  z3.solver.push();
+  encoders.solver.push();
 
-  Threads::internal_error(std::move(c3), z3);
-  EXPECT_EQ(z3::sat, z3.solver.check());
+  Threads::internal_error(std::move(c3), encoders);
+  EXPECT_EQ(smt::sat, encoders.solver.check());
 
-  z3.solver.pop();
+  encoders.solver.pop();
 
-  z3.solver.push();
+  encoders.solver.push();
 
-  Threads::internal_error(std::move(c4), z3);
-  EXPECT_EQ(z3::sat, z3.solver.check());
+  Threads::internal_error(std::move(c4), encoders);
+  EXPECT_EQ(smt::sat, encoders.solver.check());
 
-  z3.solver.pop();
+  encoders.solver.pop();
 
-  z3.solver.push();
+  encoders.solver.push();
 
-  Threads::internal_error(std::move(c5), z3);
-  EXPECT_EQ(z3::sat, z3.solver.check());
+  Threads::internal_error(std::move(c5), encoders);
+  EXPECT_EQ(smt::sat, encoders.solver.check());
 
-  z3.solver.pop();
+  encoders.solver.pop();
 
-  z3.solver.push();
+  encoders.solver.push();
 
-  Threads::internal_error(std::move(c6), z3);
-  EXPECT_EQ(z3::unsat, z3.solver.check());
+  Threads::internal_error(std::move(c6), encoders);
+  EXPECT_EQ(smt::unsat, encoders.solver.check());
 
-  z3.solver.pop();
+  encoders.solver.pop();
 }
 
 TEST(ConcurrentFunctionalTest, SatSingleThreadWithSharedVar) {
-  Z3C0 z3;
+  Encoders encoders;
 
   Threads::reset();
   Threads::begin_main_thread();
@@ -531,13 +532,13 @@ TEST(ConcurrentFunctionalTest, SatSingleThreadWithSharedVar) {
   x = 'A';
   a = x;
 
-  Threads::end_main_thread(z3);
+  Threads::end_main_thread(encoders);
 
-  EXPECT_EQ(z3::sat, z3.solver.check());
+  EXPECT_EQ(smt::sat, encoders.solver.check());
 }
 
 TEST(ConcurrentFunctionalTest, UnsatInSingleThreadWithSharedVar) {
-  Z3C0 z3;
+  Encoders encoders;
 
   Threads::reset();
   Threads::begin_main_thread();
@@ -552,20 +553,20 @@ TEST(ConcurrentFunctionalTest, UnsatInSingleThreadWithSharedVar) {
   // Create properties within main thread context
   std::unique_ptr<ReadInstr<bool>> c0(a == 'A');
 
-  Threads::end_main_thread(z3);
+  Threads::end_main_thread(encoders);
 
-  EXPECT_EQ(z3::sat, z3.solver.check());
+  EXPECT_EQ(smt::sat, encoders.solver.check());
 
-  z3.solver.push();
+  encoders.solver.push();
 
-  Threads::internal_error(std::move(c0), z3);
-  EXPECT_EQ(z3::unsat, z3.solver.check());
+  Threads::internal_error(std::move(c0), encoders);
+  EXPECT_EQ(smt::unsat, encoders.solver.check());
 
-  z3.solver.pop();
+  encoders.solver.pop();
 }
 
 TEST(ConcurrentFunctionalTest, SatSlicerZeroInSingleThreadWithSharedVar) {
-  Z3C0 z3;
+  Encoders encoders;
   Slicer slicer;
 
   Threads::reset();
@@ -592,57 +593,57 @@ TEST(ConcurrentFunctionalTest, SatSlicerZeroInSingleThreadWithSharedVar) {
   std::unique_ptr<ReadInstr<bool>> c4(!(a == 'B') && a == 'C');
   std::unique_ptr<ReadInstr<bool>> c5(a == 'A');
 
-  Threads::end_main_thread(z3);
+  Threads::end_main_thread(encoders);
 
   EXPECT_FALSE(slicer.next_slice());
   EXPECT_EQ(1, slicer.slice_count());
-  EXPECT_EQ(z3::sat, z3.solver.check());
+  EXPECT_EQ(smt::sat, encoders.solver.check());
 
-  z3.solver.push();
+  encoders.solver.push();
 
-  Threads::internal_error(std::move(c0), z3);
-  EXPECT_EQ(z3::sat, z3.solver.check());
+  Threads::internal_error(std::move(c0), encoders);
+  EXPECT_EQ(smt::sat, encoders.solver.check());
 
-  z3.solver.pop();
+  encoders.solver.pop();
 
-  z3.solver.push();
+  encoders.solver.push();
 
-  Threads::internal_error(std::move(c1), z3);
-  EXPECT_EQ(z3::sat, z3.solver.check());
+  Threads::internal_error(std::move(c1), encoders);
+  EXPECT_EQ(smt::sat, encoders.solver.check());
 
-  z3.solver.pop();
+  encoders.solver.pop();
 
-  z3.solver.push();
+  encoders.solver.push();
 
-  Threads::internal_error(std::move(c2), z3);
-  EXPECT_EQ(z3::sat, z3.solver.check());
+  Threads::internal_error(std::move(c2), encoders);
+  EXPECT_EQ(smt::sat, encoders.solver.check());
 
-  z3.solver.pop();
+  encoders.solver.pop();
 
-  z3.solver.push();
+  encoders.solver.push();
 
-  Threads::internal_error(std::move(c3), z3);
-  EXPECT_EQ(z3::sat, z3.solver.check());
+  Threads::internal_error(std::move(c3), encoders);
+  EXPECT_EQ(smt::sat, encoders.solver.check());
 
-  z3.solver.pop();
+  encoders.solver.pop();
 
-  z3.solver.push();
+  encoders.solver.push();
 
-  Threads::internal_error(std::move(c4), z3);
-  EXPECT_EQ(z3::sat, z3.solver.check());
+  Threads::internal_error(std::move(c4), encoders);
+  EXPECT_EQ(smt::sat, encoders.solver.check());
 
-  z3.solver.pop();
+  encoders.solver.pop();
 
-  z3.solver.push();
+  encoders.solver.push();
 
-  Threads::internal_error(std::move(c5), z3);
-  EXPECT_EQ(z3::unsat, z3.solver.check());
+  Threads::internal_error(std::move(c5), encoders);
+  EXPECT_EQ(smt::unsat, encoders.solver.check());
 
-  z3.solver.pop();
+  encoders.solver.pop();
 }
 
 TEST(ConcurrentFunctionalTest, UnsatSlicerZeroInSingleThreadWithSharedVar) {
-  Z3C0 z3;
+  Encoders encoders;
   Slicer slicer;
 
   Threads::reset();
@@ -665,28 +666,28 @@ TEST(ConcurrentFunctionalTest, UnsatSlicerZeroInSingleThreadWithSharedVar) {
   std::unique_ptr<ReadInstr<bool>> c0(!(a == 'B' || a == 'C'));
   std::unique_ptr<ReadInstr<bool>> c1(a == 'A');
 
-  Threads::end_main_thread(z3);
+  Threads::end_main_thread(encoders);
 
   EXPECT_FALSE(slicer.next_slice());
   EXPECT_EQ(1, slicer.slice_count());
 
-  z3.solver.push();
+  encoders.solver.push();
 
-  Threads::internal_error(std::move(c0), z3);
-  EXPECT_EQ(z3::unsat, z3.solver.check());
+  Threads::internal_error(std::move(c0), encoders);
+  EXPECT_EQ(smt::unsat, encoders.solver.check());
 
-  z3.solver.pop();
+  encoders.solver.pop();
 
-  z3.solver.push();
+  encoders.solver.push();
 
-  Threads::internal_error(std::move(c1), z3);
-  EXPECT_EQ(z3::unsat, z3.solver.check());
+  Threads::internal_error(std::move(c1), encoders);
+  EXPECT_EQ(smt::unsat, encoders.solver.check());
 
-  z3.solver.pop();
+  encoders.solver.pop();
 }
 
 TEST(ConcurrentFunctionalTest, LocalScalarAndLocalArray) {
-  Z3C0 z3;
+  Encoders encoders;
 
   Threads::reset();
   Threads::begin_main_thread();
@@ -699,18 +700,18 @@ TEST(ConcurrentFunctionalTest, LocalScalarAndLocalArray) {
   std::unique_ptr<ReadInstr<bool>> c0(!(b == 'Z'));
 
   // Do not encode global memory accesses for this test
-  Threads::end_main_thread(z3);
+  Threads::end_main_thread(encoders);
 
-  EXPECT_EQ(z3::sat, z3.solver.check());
+  EXPECT_EQ(smt::sat, encoders.solver.check());
 
-  z3.solver.push();
+  encoders.solver.push();
 
-  Threads::internal_error(std::move(c0), z3);
-  EXPECT_EQ(z3::unsat, z3.solver.check());
+  Threads::internal_error(std::move(c0), encoders);
+  EXPECT_EQ(smt::unsat, encoders.solver.check());
 }
 
 TEST(ConcurrentFunctionalTest, SharedScalarVariableInSingleThread) {
-  Z3C0 z3;
+  Encoders encoders;
 
   Threads::reset();
   Threads::begin_main_thread();
@@ -723,25 +724,25 @@ TEST(ConcurrentFunctionalTest, SharedScalarVariableInSingleThread) {
   std::unique_ptr<ReadInstr<bool>> c0((b == 'Z'));
   std::unique_ptr<ReadInstr<bool>> c1(!(b == 'Z'));
 
-  Threads::end_main_thread(z3);
+  Threads::end_main_thread(encoders);
 
-  z3.solver.push();
+  encoders.solver.push();
 
-  Threads::internal_error(std::move(c0), z3);
-  EXPECT_EQ(z3::sat, z3.solver.check());
+  Threads::internal_error(std::move(c0), encoders);
+  EXPECT_EQ(smt::sat, encoders.solver.check());
 
-  z3.solver.pop();
+  encoders.solver.pop();
 
-  z3.solver.push();
+  encoders.solver.push();
 
-  Threads::internal_error(std::move(c1), z3);
-  EXPECT_EQ(z3::unsat, z3.solver.check());
+  Threads::internal_error(std::move(c1), encoders);
+  EXPECT_EQ(smt::unsat, encoders.solver.check());
 
-  z3.solver.pop();
+  encoders.solver.pop();
 }
 
 TEST(ConcurrentFunctionalTest, SharedArrayInSingleThread) {
-  Z3C0 z3;
+  Encoders encoders;
 
   Threads::reset();
   Threads::begin_main_thread();
@@ -753,20 +754,20 @@ TEST(ConcurrentFunctionalTest, SharedArrayInSingleThread) {
 
   std::unique_ptr<ReadInstr<bool>> c0(!(b == 'Z'));
 
-  Threads::end_main_thread(z3);
+  Threads::end_main_thread(encoders);
 
-  EXPECT_EQ(z3::sat, z3.solver.check());
+  EXPECT_EQ(smt::sat, encoders.solver.check());
 
-  z3.solver.push();
+  encoders.solver.push();
 
-  Threads::internal_error(std::move(c0), z3);
-  EXPECT_EQ(z3::unsat, z3.solver.check());
+  Threads::internal_error(std::move(c0), encoders);
+  EXPECT_EQ(smt::unsat, encoders.solver.check());
 
-  z3.solver.pop();
+  encoders.solver.pop();
 }
 
 TEST(ConcurrentFunctionalTest, SharedArrayWithSymbolicIndex) {
-  Z3C0 z3;
+  Encoders encoders;
 
   Threads::reset();
   Threads::begin_main_thread();
@@ -802,83 +803,84 @@ TEST(ConcurrentFunctionalTest, SharedArrayWithSymbolicIndex) {
   std::unique_ptr<ReadInstr<bool>> c8(a == 'Z');
   std::unique_ptr<ReadInstr<bool>> c9(!(a == 'Z'));
 
-  Threads::end_main_thread(z3);
+  Threads::end_main_thread(encoders);
 
-  EXPECT_EQ(z3::sat, z3.solver.check());
+  EXPECT_EQ(smt::sat, encoders.solver.check());
 
-  z3.solver.push();
+  encoders.solver.push();
 
-  Threads::internal_error(std::move(c0), z3);
-  EXPECT_EQ(z3::unsat, z3.solver.check());
+  Threads::internal_error(std::move(c0), encoders);
+  EXPECT_EQ(smt::unsat, encoders.solver.check());
 
-  z3.solver.pop();
+  encoders.solver.pop();
 
-  z3.solver.push();
+  encoders.solver.push();
 
-  Threads::internal_error(std::move(c1), z3);
-  EXPECT_EQ(z3::sat, z3.solver.check());
+  Threads::internal_error(std::move(c1), encoders);
+  EXPECT_EQ(smt::sat, encoders.solver.check());
 
-  z3.solver.pop();
+  encoders.solver.pop();
 
-  z3.solver.push();
+  encoders.solver.push();
 
-  Threads::internal_error(std::move(c2), z3);
-  EXPECT_EQ(z3::unsat, z3.solver.check());
+  Threads::internal_error(std::move(c2), encoders);
+  EXPECT_EQ(smt::unsat, encoders.solver.check());
 
-  z3.solver.pop();
+  encoders.solver.pop();
 
-  z3.solver.push();
+  encoders.solver.push();
 
-  Threads::internal_error(std::move(c3), z3);
-  EXPECT_EQ(z3::sat, z3.solver.check());
+  Threads::internal_error(std::move(c3), encoders);
+  EXPECT_EQ(smt::sat, encoders.solver.check());
 
-  z3.solver.pop();
+  encoders.solver.pop();
 
-  z3.solver.push();
+  encoders.solver.push();
 
-  Threads::internal_error(std::move(c4), z3);
-  EXPECT_EQ(z3::sat, z3.solver.check());
+  Threads::internal_error(std::move(c4), encoders);
+  EXPECT_EQ(smt::sat, encoders.solver.check());
 
-  z3.solver.pop();
+  encoders.solver.pop();
 
-  z3.solver.push();
+  encoders.solver.push();
 
-  Threads::internal_error(std::move(c5), z3);
-  EXPECT_EQ(z3::unsat, z3.solver.check());
+  Threads::internal_error(std::move(c5), encoders);
+  EXPECT_EQ(smt::unsat, encoders.solver.check());
 
-  z3.solver.pop();
+  encoders.solver.pop();
 
-  z3.solver.push();
+  encoders.solver.push();
 
-  Threads::internal_error(std::move(c6), z3);
-  EXPECT_EQ(z3::sat, z3.solver.check());
+  Threads::internal_error(std::move(c6), encoders);
+  EXPECT_EQ(smt::sat, encoders.solver.check());
 
-  z3.solver.pop();
+  encoders.solver.pop();
 
-  z3.solver.push();
+  encoders.solver.push();
 
-  Threads::internal_error(std::move(c7), z3);
-  EXPECT_EQ(z3::unsat, z3.solver.check());
+  Threads::internal_error(std::move(c7), encoders);
+  EXPECT_EQ(smt::unsat, encoders.solver.check());
 
-  z3.solver.pop();
+  encoders.solver.pop();
 
-  z3.solver.push();
+  encoders.solver.push();
 
-  Threads::internal_error(std::move(c8), z3);
-  EXPECT_EQ(z3::unsat, z3.solver.check());
+  // Out of bound array access does not cause an error.
+  //  Threads::internal_error(std::move(c8), encoders);
+  //  EXPECT_EQ(smt::unsat, encoders.solver.check());
 
-  z3.solver.pop();
+  encoders.solver.pop();
 
-  z3.solver.push();
+  encoders.solver.push();
 
-  Threads::internal_error(std::move(c9), z3);
-  EXPECT_EQ(z3::sat, z3.solver.check());
+  Threads::internal_error(std::move(c9), encoders);
+  EXPECT_EQ(smt::sat, encoders.solver.check());
 
-  z3.solver.pop();
+  encoders.solver.pop();
 }
 
 TEST(ConcurrentFunctionalTest, MultipleWritesToSharedArrayLocationsInSingleThreadButLiteralIndex) {
-  Z3C0 z3;
+  Encoders encoders;
 
   Threads::reset();
   Threads::begin_main_thread();
@@ -891,13 +893,13 @@ TEST(ConcurrentFunctionalTest, MultipleWritesToSharedArrayLocationsInSingleThrea
 
   v = xs[1];
 
-  se::Threads::error(!('B' == v), z3);
-  Threads::end_main_thread(z3);
-  EXPECT_EQ(z3::unsat, z3.solver.check());
+  se::Threads::error(!('B' == v), encoders);
+  Threads::end_main_thread(encoders);
+  EXPECT_EQ(smt::unsat, encoders.solver.check());
 }
 
 TEST(ConcurrentFunctionalTest, MultipleWritesToSharedArrayInSingleThreadAndVariableIndex) {
-  Z3C0 z3;
+  Encoders encoders;
 
   Threads::reset();
   Threads::begin_main_thread();
@@ -914,14 +916,14 @@ TEST(ConcurrentFunctionalTest, MultipleWritesToSharedArrayInSingleThreadAndVaria
 
   v = xs[index];
 
-  se::Threads::error(!('B' == v), z3);
-  Threads::end_main_thread(z3);
-  EXPECT_EQ(z3::unsat, z3.solver.check());
+  se::Threads::error(!('B' == v), encoders);
+  Threads::end_main_thread(encoders);
+  EXPECT_EQ(smt::unsat, encoders.solver.check());
 }
 
 
 TEST(ConcurrentFunctionalTest, SatSlicerZeroInSingleThreadWithNondetermisticConditionAndArraySharedVar) {
-  Z3C0 z3;
+  Encoders encoders;
   Slicer slicer;
 
   Threads::reset();
@@ -947,43 +949,43 @@ TEST(ConcurrentFunctionalTest, SatSlicerZeroInSingleThreadWithNondetermisticCond
   std::unique_ptr<ReadInstr<bool>> c2(a == 'B' && !(a == 'C'));
   std::unique_ptr<ReadInstr<bool>> c3(!(a == 'B') && a == 'C');
 
-  Threads::end_main_thread(z3);
+  Threads::end_main_thread(encoders);
 
   EXPECT_FALSE(slicer.next_slice());
   EXPECT_EQ(1, slicer.slice_count());
-  EXPECT_EQ(z3::sat, z3.solver.check());
+  EXPECT_EQ(smt::sat, encoders.solver.check());
 
-  z3.solver.push();
+  encoders.solver.push();
 
-  Threads::internal_error(std::move(c0), z3);
-  EXPECT_EQ(z3::sat, z3.solver.check());
+  Threads::internal_error(std::move(c0), encoders);
+  EXPECT_EQ(smt::sat, encoders.solver.check());
 
-  z3.solver.pop();
+  encoders.solver.pop();
 
-  z3.solver.push();
+  encoders.solver.push();
 
-  Threads::internal_error(std::move(c1), z3);
-  EXPECT_EQ(z3::sat, z3.solver.check());
+  Threads::internal_error(std::move(c1), encoders);
+  EXPECT_EQ(smt::sat, encoders.solver.check());
 
-  z3.solver.pop();
+  encoders.solver.pop();
 
-  z3.solver.push();
+  encoders.solver.push();
 
-  Threads::internal_error(std::move(c2), z3);
-  EXPECT_EQ(z3::sat, z3.solver.check());
+  Threads::internal_error(std::move(c2), encoders);
+  EXPECT_EQ(smt::sat, encoders.solver.check());
 
-  z3.solver.pop();
+  encoders.solver.pop();
 
-  z3.solver.push();
+  encoders.solver.push();
 
-  Threads::internal_error(std::move(c3), z3);
-  EXPECT_EQ(z3::sat, z3.solver.check());
+  Threads::internal_error(std::move(c3), encoders);
+  EXPECT_EQ(smt::sat, encoders.solver.check());
 
-  z3.solver.pop();
+  encoders.solver.pop();
 }
 
 TEST(ConcurrentFunctionalTest, SatSlicerZeroInSingleThreadWithDeterminsticConditionAndArraySharedVar) {
-  Z3C0 z3;
+  Encoders encoders;
   Slicer slicer; 
 
   Threads::reset();
@@ -1009,36 +1011,36 @@ TEST(ConcurrentFunctionalTest, SatSlicerZeroInSingleThreadWithDeterminsticCondit
   std::unique_ptr<ReadInstr<bool>> c1(!(a == 'C'));
   std::unique_ptr<ReadInstr<bool>> c3(!(a == 'B') && a == 'C');
 
-  Threads::end_main_thread(z3);
+  Threads::end_main_thread(encoders);
 
   EXPECT_FALSE(slicer.next_slice());
   EXPECT_EQ(1, slicer.slice_count());
-  EXPECT_EQ(z3::sat, z3.solver.check());
+  EXPECT_EQ(smt::sat, encoders.solver.check());
 
-  z3.solver.push();
+  encoders.solver.push();
 
-  Threads::internal_error(std::move(c0), z3);
-  EXPECT_EQ(z3::sat, z3.solver.check());
+  Threads::internal_error(std::move(c0), encoders);
+  EXPECT_EQ(smt::sat, encoders.solver.check());
 
-  z3.solver.pop();
+  encoders.solver.pop();
 
-  z3.solver.push();
+  encoders.solver.push();
 
-  Threads::internal_error(std::move(c1), z3);
-  EXPECT_EQ(z3::sat, z3.solver.check());
+  Threads::internal_error(std::move(c1), encoders);
+  EXPECT_EQ(smt::sat, encoders.solver.check());
 
-  z3.solver.pop();
+  encoders.solver.pop();
 
-  z3.solver.push();
+  encoders.solver.push();
 
-  Threads::internal_error(std::move(c3), z3);
-  EXPECT_EQ(z3::unsat, z3.solver.check());
+  Threads::internal_error(std::move(c3), encoders);
+  EXPECT_EQ(smt::unsat, encoders.solver.check());
 
-  z3.solver.pop();
+  encoders.solver.pop();
 }
 
 TEST(ConcurrentFunctionalTest, UnsatSlicerZeroInSingleThreadWithArraySharedVar) {
-  Z3C0 z3;
+  Encoders encoders;
   Slicer slicer;
 
   Threads::reset();
@@ -1062,28 +1064,28 @@ TEST(ConcurrentFunctionalTest, UnsatSlicerZeroInSingleThreadWithArraySharedVar) 
   std::unique_ptr<ReadInstr<bool>> c0(!(a == 'B' || a == 'C'));
   std::unique_ptr<ReadInstr<bool>> c1(a == 'A');
 
-  Threads::end_main_thread(z3);
+  Threads::end_main_thread(encoders);
 
   EXPECT_FALSE(slicer.next_slice());
   EXPECT_EQ(1, slicer.slice_count());
 
-  z3.solver.push();
+  encoders.solver.push();
 
-  Threads::internal_error(std::move(c0), z3);
-  EXPECT_EQ(z3::unsat, z3.solver.check());
+  Threads::internal_error(std::move(c0), encoders);
+  EXPECT_EQ(smt::unsat, encoders.solver.check());
 
-  z3.solver.pop();
+  encoders.solver.pop();
 
-  z3.solver.push();
+  encoders.solver.push();
 
-  Threads::internal_error(std::move(c1), z3);
-  EXPECT_EQ(z3::unsat, z3.solver.check());
+  Threads::internal_error(std::move(c1), encoders);
+  EXPECT_EQ(smt::unsat, encoders.solver.check());
 
-  z3.solver.pop();
+  encoders.solver.pop();
 }
 
 TEST(ConcurrentFunctionalTest, SatJoinThreads) {
-  Z3C0 z3;
+  Encoders encoders;
 
   Threads::reset();
   Threads::begin_main_thread();
@@ -1096,15 +1098,15 @@ TEST(ConcurrentFunctionalTest, SatJoinThreads) {
 
   Threads::end_thread();
 
-  Threads::error(x == '\0', z3);
+  Threads::error(x == '\0', encoders);
 
-  Threads::end_main_thread(z3);
+  Threads::end_main_thread(encoders);
 
-  EXPECT_EQ(z3::sat, z3.solver.check());
+  EXPECT_EQ(smt::sat, encoders.solver.check());
 }
 
 TEST(ConcurrentFunctionalTest, UnsatJoinThreads) {
-  Z3C0 z3;
+  Encoders encoders;
 
   Threads::reset();
   Threads::begin_main_thread();
@@ -1118,15 +1120,15 @@ TEST(ConcurrentFunctionalTest, UnsatJoinThreads) {
   const std::shared_ptr<SendEvent> send_event_ptr = Threads::end_thread();
 
   Threads::join(send_event_ptr);
-  Threads::error(x == '\0', z3);
+  Threads::error(x == '\0', encoders);
 
-  Threads::end_main_thread(z3);
+  Threads::end_main_thread(encoders);
 
-  EXPECT_EQ(z3::unsat, z3.solver.check());
+  EXPECT_EQ(smt::unsat, encoders.solver.check());
 }
 
 TEST(ConcurrentFunctionalTest, CopyLocalVar) {
-  Z3C0 z3;
+  Encoders encoders;
 
   Threads::reset();
   Threads::begin_main_thread();
@@ -1140,32 +1142,32 @@ TEST(ConcurrentFunctionalTest, CopyLocalVar) {
   a = 'B';
   std::unique_ptr<ReadInstr<bool>> c2(!(b == a));
 
-  Threads::end_main_thread(z3);
+  Threads::end_main_thread(encoders);
 
-  z3.solver.push();
+  encoders.solver.push();
 
-  Threads::internal_error(std::move(c0), z3);
-  EXPECT_EQ(z3::unsat, z3.solver.check());
+  Threads::internal_error(std::move(c0), encoders);
+  EXPECT_EQ(smt::unsat, encoders.solver.check());
 
-  z3.solver.pop();
+  encoders.solver.pop();
 
-  z3.solver.push();
+  encoders.solver.push();
 
-  Threads::internal_error(std::move(c1), z3);
-  EXPECT_EQ(z3::unsat, z3.solver.check());
+  Threads::internal_error(std::move(c1), encoders);
+  EXPECT_EQ(smt::unsat, encoders.solver.check());
 
-  z3.solver.pop();
+  encoders.solver.pop();
 
-  z3.solver.push();
+  encoders.solver.push();
 
-  Threads::internal_error(std::move(c2), z3);
-  EXPECT_EQ(z3::sat, z3.solver.check());
+  Threads::internal_error(std::move(c2), encoders);
+  EXPECT_EQ(smt::sat, encoders.solver.check());
 
-  z3.solver.pop();
+  encoders.solver.pop();
 }
 
 TEST(ConcurrentFunctionalTest, CopySharedVarToLocalVar) {
-  Z3C0 z3;
+  Encoders encoders;
 
   Threads::reset();
   Threads::begin_main_thread();
@@ -1179,32 +1181,32 @@ TEST(ConcurrentFunctionalTest, CopySharedVarToLocalVar) {
   a = 'B';
   std::unique_ptr<ReadInstr<bool>> c2(!(b == 'A'));
 
-  Threads::end_main_thread(z3);
+  Threads::end_main_thread(encoders);
 
-  z3.solver.push();
+  encoders.solver.push();
 
-  Threads::internal_error(std::move(c0), z3);
-  EXPECT_EQ(z3::sat, z3.solver.check());
+  Threads::internal_error(std::move(c0), encoders);
+  EXPECT_EQ(smt::sat, encoders.solver.check());
 
-  z3.solver.pop();
+  encoders.solver.pop();
 
-  z3.solver.push();
+  encoders.solver.push();
 
-  Threads::internal_error(std::move(c1), z3);
-  EXPECT_EQ(z3::unsat, z3.solver.check());
+  Threads::internal_error(std::move(c1), encoders);
+  EXPECT_EQ(smt::unsat, encoders.solver.check());
 
-  z3.solver.pop();
+  encoders.solver.pop();
 
-  z3.solver.push();
+  encoders.solver.push();
 
-  Threads::internal_error(std::move(c2), z3);
-  EXPECT_EQ(z3::unsat, z3.solver.check());
+  Threads::internal_error(std::move(c2), encoders);
+  EXPECT_EQ(smt::unsat, encoders.solver.check());
 
-  z3.solver.pop();
+  encoders.solver.pop();
 }
 
 TEST(ConcurrentFunctionalTest, AnyReadInstr) {
-  Z3C0 z3;
+  Encoders encoders;
 
   Threads::reset();
   Threads::begin_main_thread();
@@ -1220,39 +1222,39 @@ TEST(ConcurrentFunctionalTest, AnyReadInstr) {
   std::unique_ptr<ReadInstr<bool>> c2(a == '*');
   std::unique_ptr<ReadInstr<bool>> c3(!(a == '*'));
 
-  Threads::end_main_thread(z3);
+  Threads::end_main_thread(encoders);
 
-  z3.solver.push();
+  encoders.solver.push();
 
-  Threads::internal_error(std::move(c0), z3);
-  EXPECT_EQ(z3::sat, z3.solver.check());
+  Threads::internal_error(std::move(c0), encoders);
+  EXPECT_EQ(smt::sat, encoders.solver.check());
 
-  z3.solver.pop();
+  encoders.solver.pop();
 
-  z3.solver.push();
+  encoders.solver.push();
 
-  Threads::internal_error(std::move(c1), z3);
-  EXPECT_EQ(z3::sat, z3.solver.check());
+  Threads::internal_error(std::move(c1), encoders);
+  EXPECT_EQ(smt::sat, encoders.solver.check());
 
-  z3.solver.pop();
+  encoders.solver.pop();
 
-  z3.solver.push();
+  encoders.solver.push();
 
-  Threads::internal_error(std::move(c2), z3);
-  EXPECT_EQ(z3::sat, z3.solver.check());
+  Threads::internal_error(std::move(c2), encoders);
+  EXPECT_EQ(smt::sat, encoders.solver.check());
 
-  z3.solver.pop();
+  encoders.solver.pop();
 
-  z3.solver.push();
+  encoders.solver.push();
 
-  Threads::internal_error(std::move(c3), z3);
-  EXPECT_EQ(z3::unsat, z3.solver.check());
+  Threads::internal_error(std::move(c3), encoders);
+  EXPECT_EQ(smt::unsat, encoders.solver.check());
 
-  z3.solver.pop();
+  encoders.solver.pop();
 }
 
 TEST(ConcurrentFunctionalTest, UnsatSlicerZeroConditionalErrorSingleThread) {
-  Z3C0 z3;
+  Encoders encoders;
   Slicer slicer;
 
   Threads::reset();
@@ -1262,18 +1264,18 @@ TEST(ConcurrentFunctionalTest, UnsatSlicerZeroConditionalErrorSingleThread) {
   var = any<int>();
 
   if (slicer.begin_then_branch(__COUNTER__, 0 < var)) {
-    Threads::error(var == 0, z3);
+    Threads::error(var == 0, encoders);
   }
   slicer.end_branch(__COUNTER__);
-  Threads::end_main_thread(z3);
+  Threads::end_main_thread(encoders);
 
   EXPECT_FALSE(slicer.next_slice());
   EXPECT_EQ(1, slicer.slice_count());
-  EXPECT_EQ(z3::unsat, z3.solver.check());
+  EXPECT_EQ(smt::unsat, encoders.solver.check());
 }
 
 TEST(ConcurrentFunctionalTest, UnsatSlicerZeroConditionalErrorMultipleThreads) {
-  Z3C0 z3;
+  Encoders encoders;
   Slicer slicer;
 
   Threads::reset();
@@ -1285,20 +1287,20 @@ TEST(ConcurrentFunctionalTest, UnsatSlicerZeroConditionalErrorMultipleThreads) {
   Threads::begin_thread();
 
   if (slicer.begin_then_branch(__COUNTER__, 0 < var)) {
-    Threads::error(var == 0, z3);
+    Threads::error(var == 0, encoders);
   }
   slicer.end_branch(__COUNTER__);
 
   Threads::end_thread();
-  Threads::end_main_thread(z3);
+  Threads::end_main_thread(encoders);
 
   EXPECT_FALSE(slicer.next_slice());
   EXPECT_EQ(1, slicer.slice_count());
-  EXPECT_EQ(z3::unsat, z3.solver.check());
+  EXPECT_EQ(smt::unsat, encoders.solver.check());
 }
 
 TEST(ConcurrentFunctionalTest, UnsatSlicerZeroFalseConditionalError) {
-  Z3C0 z3;
+  Encoders encoders;
   Slicer slicer;
 
   Threads::reset();
@@ -1306,40 +1308,40 @@ TEST(ConcurrentFunctionalTest, UnsatSlicerZeroFalseConditionalError) {
 
   Threads::begin_thread();
   if (slicer.begin_then_branch(__COUNTER__, FALSE_READ_INSTR)) {
-    Threads::error(TRUE_READ_INSTR, z3);
+    Threads::error(TRUE_READ_INSTR, encoders);
   }
   slicer.end_branch(__COUNTER__);
   Threads::end_thread();
 
-  Threads::end_main_thread(z3);
+  Threads::end_main_thread(encoders);
 
   EXPECT_FALSE(slicer.next_slice());
   EXPECT_EQ(1, slicer.slice_count());
-  EXPECT_EQ(z3::unsat, z3.solver.check());
+  EXPECT_EQ(smt::unsat, encoders.solver.check());
 }
 
 TEST(ConcurrentFunctionalTest, SatSlicerZeroErrorAmongAnotherUnsatError) {
-  Z3C0 z3;
+  Encoders encoders;
   Slicer slicer;
 
   Threads::reset();
   Threads::begin_main_thread();
 
   if (slicer.begin_then_branch(__COUNTER__, FALSE_READ_INSTR)) {
-    Threads::error(TRUE_READ_INSTR, z3);
+    Threads::error(TRUE_READ_INSTR, encoders);
   }
   slicer.end_branch(__COUNTER__);
 
   if (slicer.begin_then_branch(__COUNTER__, TRUE_READ_INSTR)) {
-    Threads::error(TRUE_READ_INSTR, z3);
+    Threads::error(TRUE_READ_INSTR, encoders);
   }
   slicer.end_branch(__COUNTER__);
 
-  Threads::end_main_thread(z3);
+  Threads::end_main_thread(encoders);
 
   EXPECT_FALSE(slicer.next_slice());
   EXPECT_EQ(1, slicer.slice_count());
-  EXPECT_EQ(z3::sat, z3.solver.check());
+  EXPECT_EQ(smt::sat, encoders.solver.check());
 }
 
 TEST(ConcurrentFunctionalTest, SatSlicerMaxInSingleThreadWithSharedVar) {
@@ -1352,7 +1354,7 @@ TEST(ConcurrentFunctionalTest, SatSlicerMaxInSingleThreadWithSharedVar) {
   bool r4 = false;
 
   do {
-    Z3C0 z3;
+    Encoders encoders;
 
     Threads::reset();
     Threads::begin_main_thread();
@@ -1377,44 +1379,44 @@ TEST(ConcurrentFunctionalTest, SatSlicerMaxInSingleThreadWithSharedVar) {
     std::unique_ptr<ReadInstr<bool>> c3(a == 'C');
     std::unique_ptr<ReadInstr<bool>> c4(!(a == 'B') && a == 'C');
 
-    Threads::end_main_thread(z3);
+    Threads::end_main_thread(encoders);
 
-    EXPECT_EQ(z3::sat, z3.solver.check());
+    EXPECT_EQ(smt::sat, encoders.solver.check());
 
-    z3.solver.push();
+    encoders.solver.push();
 
-    Threads::internal_error(std::move(c0), z3);
-    r0 |= z3::sat == z3.solver.check();
+    Threads::internal_error(std::move(c0), encoders);
+    r0 |= smt::sat == encoders.solver.check();
 
-    z3.solver.pop();
+    encoders.solver.pop();
 
-    z3.solver.push();
+    encoders.solver.push();
 
-    Threads::internal_error(std::move(c1), z3);
-    r1 |= z3::sat == z3.solver.check();
+    Threads::internal_error(std::move(c1), encoders);
+    r1 |= smt::sat == encoders.solver.check();
 
-    z3.solver.pop();
+    encoders.solver.pop();
 
-    z3.solver.push();
+    encoders.solver.push();
 
-    Threads::internal_error(std::move(c2), z3);
-    r2 |= z3::sat == z3.solver.check();
+    Threads::internal_error(std::move(c2), encoders);
+    r2 |= smt::sat == encoders.solver.check();
 
-    z3.solver.pop();
+    encoders.solver.pop();
 
-    z3.solver.push();
+    encoders.solver.push();
 
-    Threads::internal_error(std::move(c3), z3);
-    r3 |= z3::sat == z3.solver.check();
+    Threads::internal_error(std::move(c3), encoders);
+    r3 |= smt::sat == encoders.solver.check();
 
-    z3.solver.pop();
+    encoders.solver.pop();
 
-    z3.solver.push();
+    encoders.solver.push();
 
-    Threads::internal_error(std::move(c4), z3);
-    r4 |= z3::sat == z3.solver.check();
+    Threads::internal_error(std::move(c4), encoders);
+    r4 |= smt::sat == encoders.solver.check();
 
-    z3.solver.pop();
+    encoders.solver.pop();
   } while (slicer.next_slice());
 
   EXPECT_EQ(2, slicer.slice_count());
@@ -1435,7 +1437,7 @@ TEST(ConcurrentFunctionalTest, SatSlicerMaxInSingleThreadWithNondetermisticCondi
   bool r3 = false;
 
   do {
-    Z3C0 z3;
+    Encoders encoders;
   
     Threads::reset();
     Threads::begin_main_thread();
@@ -1460,37 +1462,37 @@ TEST(ConcurrentFunctionalTest, SatSlicerMaxInSingleThreadWithNondetermisticCondi
     std::unique_ptr<ReadInstr<bool>> c2(a == 'B' && !(a == 'C'));
     std::unique_ptr<ReadInstr<bool>> c3(!(a == 'B') && a == 'C');
   
-    Threads::end_main_thread(z3);
+    Threads::end_main_thread(encoders);
   
-    EXPECT_EQ(z3::sat, z3.solver.check());
+    EXPECT_EQ(smt::sat, encoders.solver.check());
   
-    z3.solver.push();
+    encoders.solver.push();
   
-    Threads::internal_error(std::move(c0), z3);
-    r0 |= z3::sat == z3.solver.check();
+    Threads::internal_error(std::move(c0), encoders);
+    r0 |= smt::sat == encoders.solver.check();
   
-    z3.solver.pop();
+    encoders.solver.pop();
   
-    z3.solver.push();
+    encoders.solver.push();
   
-    Threads::internal_error(std::move(c1), z3);
-    r1 |= z3::sat == z3.solver.check();
+    Threads::internal_error(std::move(c1), encoders);
+    r1 |= smt::sat == encoders.solver.check();
   
-    z3.solver.pop();
+    encoders.solver.pop();
   
-    z3.solver.push();
+    encoders.solver.push();
   
-    Threads::internal_error(std::move(c2), z3);
-    r2 |= z3::sat == z3.solver.check();
+    Threads::internal_error(std::move(c2), encoders);
+    r2 |= smt::sat == encoders.solver.check();
   
-    z3.solver.pop();
+    encoders.solver.pop();
   
-    z3.solver.push();
+    encoders.solver.push();
   
-    Threads::internal_error(std::move(c3), z3);
-    r3 |= z3::sat == z3.solver.check();
+    Threads::internal_error(std::move(c3), encoders);
+    r3 |= smt::sat == encoders.solver.check();
   
-    z3.solver.pop();
+    encoders.solver.pop();
   } while (slicer.next_slice());
 
   EXPECT_EQ(2, slicer.slice_count());
@@ -1509,7 +1511,7 @@ TEST(ConcurrentFunctionalTest, SatSlicerMaxInSingleThreadWithDeterminsticConditi
   bool r2 = true;
 
   do {
-    Z3C0 z3;
+    Encoders encoders;
   
     Threads::reset();
     Threads::begin_main_thread();
@@ -1534,30 +1536,30 @@ TEST(ConcurrentFunctionalTest, SatSlicerMaxInSingleThreadWithDeterminsticConditi
     std::unique_ptr<ReadInstr<bool>> c1(!(a == 'C'));
     std::unique_ptr<ReadInstr<bool>> c2(!(a == 'B') && a == 'C');
   
-    Threads::end_main_thread(z3);
+    Threads::end_main_thread(encoders);
   
-    EXPECT_EQ(z3::sat, z3.solver.check());
+    EXPECT_EQ(smt::sat, encoders.solver.check());
   
-    z3.solver.push();
+    encoders.solver.push();
   
-    Threads::internal_error(std::move(c0), z3);
-    r0 |= z3::sat == z3.solver.check();
+    Threads::internal_error(std::move(c0), encoders);
+    r0 |= smt::sat == encoders.solver.check();
   
-    z3.solver.pop();
+    encoders.solver.pop();
   
-    z3.solver.push();
+    encoders.solver.push();
   
-    Threads::internal_error(std::move(c1), z3);
-    r1 |= z3::sat == z3.solver.check();
+    Threads::internal_error(std::move(c1), encoders);
+    r1 |= smt::sat == encoders.solver.check();
   
-    z3.solver.pop();
+    encoders.solver.pop();
   
-    z3.solver.push();
+    encoders.solver.push();
   
-    Threads::internal_error(std::move(c2), z3);
-    r2 &= z3::unsat == z3.solver.check();
+    Threads::internal_error(std::move(c2), encoders);
+    r2 &= smt::unsat == encoders.solver.check();
   
-    z3.solver.pop();
+    encoders.solver.pop();
   } while (slicer.next_slice());
 
   EXPECT_EQ(2, slicer.slice_count());
@@ -1574,7 +1576,7 @@ TEST(ConcurrentFunctionalTest, UnsatSlicerMaxConditionalErrorSingleThread) {
   unsigned unchecks = 0;
 
   do {
-    Z3C0 z3;
+    Encoders encoders;
 
     Threads::reset();
     Threads::begin_main_thread();
@@ -1583,14 +1585,14 @@ TEST(ConcurrentFunctionalTest, UnsatSlicerMaxConditionalErrorSingleThread) {
     var = any<int>();
 
     if (slicer.begin_then_branch(__COUNTER__, 0 < var)) {
-      Threads::error(var == 0, z3);
+      Threads::error(var == 0, encoders);
     }
     slicer.end_branch(__COUNTER__);
 
-    const bool check = Threads::end_main_thread(z3);
+    const bool check = Threads::end_main_thread(encoders);
     if (check) {
       checks++;
-      EXPECT_EQ(z3::unsat, z3.solver.check());
+      EXPECT_EQ(smt::unsat, encoders.solver.check());
     } else {
       unchecks++;
     }
@@ -1609,7 +1611,7 @@ TEST(ConcurrentFunctionalTest, UnsatSlicerMaxConditionalErrorMultipleThreads) {
   unsigned unchecks = 0;
 
   do {
-    Z3C0 z3;
+    Encoders encoders;
 
     Threads::reset();
     Threads::begin_main_thread();
@@ -1620,16 +1622,16 @@ TEST(ConcurrentFunctionalTest, UnsatSlicerMaxConditionalErrorMultipleThreads) {
     Threads::begin_thread();
 
     if (slicer.begin_then_branch(__COUNTER__, 0 < var)) {
-      Threads::error(var == 0, z3);
+      Threads::error(var == 0, encoders);
     }
     slicer.end_branch(__COUNTER__);
 
     Threads::end_thread();
 
-    const bool check = Threads::end_main_thread(z3);
+    const bool check = Threads::end_main_thread(encoders);
     if (check) {
       checks++;
-      EXPECT_EQ(z3::unsat, z3.solver.check());
+      EXPECT_EQ(smt::unsat, encoders.solver.check());
     } else {
       unchecks++;
     }
@@ -1648,22 +1650,22 @@ TEST(ConcurrentFunctionalTest, UnsatSlicerMaxFalseConditionalError) {
   unsigned unchecks = 0;
 
   do {
-    Z3C0 z3;
+    Encoders encoders;
 
     Threads::reset();
     Threads::begin_main_thread();
 
     Threads::begin_thread();
     if (slicer.begin_then_branch(__COUNTER__, FALSE_READ_INSTR)) {
-      Threads::error(TRUE_READ_INSTR, z3);
+      Threads::error(TRUE_READ_INSTR, encoders);
     }
     slicer.end_branch(__COUNTER__);
     Threads::end_thread();
 
-    const bool check = Threads::end_main_thread(z3);
+    const bool check = Threads::end_main_thread(encoders);
     if (check) {
       checks++;
-      EXPECT_EQ(z3::unsat, z3.solver.check());
+      EXPECT_EQ(smt::unsat, encoders.solver.check());
     } else {
       unchecks++;
     }
@@ -1682,38 +1684,38 @@ TEST(ConcurrentFunctionalTest, SatSlicerMaxErrorAmongAnotherUnsatError) {
   unsigned unsat_checks = 0;
   unsigned unknown_checks = 0;
   unsigned unchecks = 0;
-  z3::check_result expect = z3::unknown;
+  smt::CheckResult expect = smt::unknown;
 
   do {
-    Z3C0 z3;
+    Encoders encoders;
 
     Threads::reset();
     Threads::begin_main_thread();
 
     if (slicer.begin_then_branch(__COUNTER__, FALSE_READ_INSTR)) {
-      expect = z3::unsat;
-      Threads::error(TRUE_READ_INSTR, z3);
+      expect = smt::unsat;
+      Threads::error(TRUE_READ_INSTR, encoders);
     }
     slicer.end_branch(__COUNTER__);
 
     if (slicer.begin_then_branch(__COUNTER__, TRUE_READ_INSTR)) {
-      expect = z3::sat;
-      Threads::error(TRUE_READ_INSTR, z3);
+      expect = smt::sat;
+      Threads::error(TRUE_READ_INSTR, encoders);
     }
     slicer.end_branch(__COUNTER__);
 
-    const bool check = Threads::end_main_thread(z3);
+    const bool check = Threads::end_main_thread(encoders);
     if (check) {
       switch (expect) {
-      case z3::sat:     sat_checks++;     break;
-      case z3::unsat:   unsat_checks++;   break;
-      case z3::unknown: unknown_checks++; break;
+      case smt::sat:     sat_checks++;     break;
+      case smt::unsat:   unsat_checks++;   break;
+      case smt::unknown: unknown_checks++; break;
       }
-      EXPECT_EQ(expect, z3.solver.check());
+      EXPECT_EQ(expect, encoders.solver.check());
     } else {
       unchecks++;
     }
-    expect = z3::unknown;
+    expect = smt::unknown;
   } while (slicer.next_slice());
 
   EXPECT_EQ(4, slicer.slice_count());

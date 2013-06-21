@@ -13,15 +13,18 @@
 
 #include "concurrent/zone.h"
 
-namespace z3 { class expr; }
+namespace smt
+{
+  class UnsafeTerm;
+}
 
 namespace se {
 
 template<typename T>
 class ReadInstr;
 
-class Z3C0;
-class Z3ValueEncoderC0;
+class Encoders;
+class ValueEncoder;
 
 // On 32-bit architectures, the maximal write event identifier is 2^30-1.
 // This upper limit stems from Z3 which aligns char pointers for symbol
@@ -118,15 +121,15 @@ public:
     return m_event_id == other.m_event_id;
   }
 
-  virtual z3::expr encode_eq(const Z3ValueEncoderC0& encoder, Z3C0& helper) const = 0;
-  virtual z3::expr constant(Z3C0& helper) const = 0;
+  virtual smt::UnsafeTerm encode_eq(const ValueEncoder& encoder, Encoders& helper) const = 0;
+  virtual smt::UnsafeTerm constant(Encoders& helper) const = 0;
 };
 
 #define DECL_VALUE_ENCODER_C0_FN \
-  z3::expr encode_eq(const Z3ValueEncoderC0& encoder, Z3C0& helper) const;
+  smt::UnsafeTerm encode_eq(const ValueEncoder& encoder, Encoders& helper) const;
 
 #define DECL_CONSTANT_ENCODER_C0_FN \
-  z3::expr constant(Z3C0& helper) const;
+  smt::UnsafeTerm constant(Encoders& helper) const;
 
 /// Event that writes to memory through a variable of type `T`
 template<typename T>

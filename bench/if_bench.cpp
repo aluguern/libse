@@ -1,12 +1,14 @@
 #include "libse.h"
 
+using namespace se::ops;
+
 se::Slicer slicer;
 se::SharedVar<char> x;
 
 int main(void) {
   slicer.begin_slice_loop();
   do {
-    se::Thread::z3().reset();
+    se::Thread::encoders().reset();
 
     se::LocalVar<char> a;
 
@@ -19,7 +21,7 @@ int main(void) {
 
     se::Thread::error(!(a == 'B' || a == 'A'));
 
-    if (se::Thread::encode() && z3::sat == se::Thread::z3().solver.check()) {
+    if (se::Thread::encode() && smt::sat == se::Thread::encoders().solver.check()) {
       return 1;
     }
   } while (slicer.next_slice());

@@ -4,6 +4,8 @@
 #include "libse.h"
 #include "concurrent/mutex.h"
 
+using namespace se::ops;
+
 #define N	(10)
 
 #define EMPTY	(1)
@@ -111,14 +113,14 @@ void f2() {
 int main(void) {
   slicer.begin_slice_loop();
   do {
-    se::Thread::z3().reset();
+    se::Thread::encoders().reset();
 
     init(&queue);
 
     se::Thread t1(f1);
     se::Thread t2(f2);
 
-    if (se::Thread::encode() && z3::sat == se::Thread::z3().solver.check()) {
+    if (se::Thread::encode() && smt::sat == se::Thread::encoders().solver.check()) {
       return 0;
     }
   } while (slicer.next_slice());

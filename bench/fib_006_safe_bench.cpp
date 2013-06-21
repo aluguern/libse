@@ -2,6 +2,9 @@
 //   https://svn.sosy-lab.org/software/sv-benchmarks/trunk/c/pthread/fib_bench_longer_safe.c
 
 #include "libse.h"
+#include <iostream>
+
+using namespace se::ops;
 
 #define N 6
 
@@ -25,7 +28,7 @@ void f1() {
 int main(void) {
   slicer.begin_slice_loop();
   do {
-    se::Thread::z3().reset();
+    se::Thread::encoders().reset();
 
     se::Thread t0(f0);
     se::Thread t1(f1);
@@ -35,7 +38,7 @@ int main(void) {
     t0.join();
     t1.join();
 
-    if (se::Thread::encode() && z3::sat == se::Thread::z3().solver.check()) {
+    if (se::Thread::encode() && smt::sat == se::Thread::encoders().solver.check()) {
       return 1;
     }
   } while (slicer.next_slice());

@@ -21,33 +21,33 @@
 namespace se {
 
 template<typename T>
-inline std::unique_ptr<ReadInstr<T>> alloc_read_instr(const LocalVar<T>& local_var) {
+std::unique_ptr<ReadInstr<T>> alloc_read_instr(const LocalVar<T>& local_var) {
   return std::unique_ptr<ReadInstr<T>>(new BasicReadInstr<T>(
     local_var.read_event_ptr()));
 }
 
 template<typename T>
-inline std::unique_ptr<ReadInstr<T>> alloc_read_instr(const SharedVar<T>& shared_var) {
+std::unique_ptr<ReadInstr<T>> alloc_read_instr(const SharedVar<T>& shared_var) {
   return std::unique_ptr<ReadInstr<T>>(new BasicReadInstr<T>(
     make_read_event<T>(shared_var.zone())));
 }
 
 template<typename Range, typename Domain, size_t N>
-inline std::unique_ptr<ReadInstr<Range>> alloc_read_instr(
+std::unique_ptr<ReadInstr<Range>> alloc_read_instr(
   SharedMemory<Range, Domain, N>&& shared_memory) {
 
   return std::move(shared_memory.deref_instr_ptr());
 }
 
 template<typename Range, typename Domain, size_t N>
-inline std::unique_ptr<ReadInstr<Range>> alloc_read_instr(
+std::unique_ptr<ReadInstr<Range>> alloc_read_instr(
   LocalMemory<Range, Domain, N>&& local_memory) {
 
   return std::move(local_memory.deref_instr_ptr());
 }
 
 template<typename T>
-inline std::unique_ptr<ReadInstr<typename
+std::unique_ptr<ReadInstr<typename
   std::enable_if<std::is_arithmetic<T>::value, T>::type>>
   alloc_read_instr(const T& literal) {
 
@@ -60,6 +60,9 @@ template<typename T> struct UnwrapType<SharedVar<T>> { typedef T base; };
 
 template<typename Range, typename Domain, size_t N>
 struct UnwrapType<LocalMemory<Range, Domain, N>> { typedef Range base; };
+
+namespace ops
+{
 
 #define CONCURRENT_UNARY_OP(op, opcode) \
   template<typename T>\
@@ -131,6 +134,8 @@ CONCURRENT_BINARY_OP(&&, LAND)
 CONCURRENT_BINARY_OP(||, LOR)
 CONCURRENT_BINARY_OP(==, EQL)
 CONCURRENT_BINARY_OP(<, LSS)
+
+}
 
 }
 

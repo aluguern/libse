@@ -7,9 +7,13 @@
 namespace se {
 
 Threads Threads::s_singleton;
-Z3C0 Thread::s_z3;
 ThreadId Thread::s_next_thread_id(0);
 const std::shared_ptr<ReadInstr<bool>> Thread::s_true_condition_ptr;
+
+Encoders& global_encoders() {
+  static Encoders s_encoders;
+  return s_encoders;
+}
 
 namespace ThisThread {
   ThreadId thread_id() {
@@ -42,12 +46,12 @@ namespace ThisThread {
 };
 
 bool Thread::encode() {
-  return Threads::encode(s_z3);
+  return Threads::encode(Thread::encoders());
 }
 
 /// A satisfiable condition exposes a (concurrency) bug
 void Thread::error(std::unique_ptr<ReadInstr<bool>> condition_ptr) {
-  Threads::error(std::move(condition_ptr), s_z3);
+  Threads::error(std::move(condition_ptr), Thread::encoders());
 }
 
 void Thread::begin_then(std::shared_ptr<ReadInstr<bool>> condition_ptr) {

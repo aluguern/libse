@@ -11,16 +11,12 @@ Libse is distributed under a [BSD-style license][bsd-license].
 
 ## Prerequisite
 
-You need to compile the [Z3 theorem prover][z3]. Its source code is available
-under the [Microsoft Research License Agreement][msr-la]:
-
-    $ git clone https://git01.codeplex.com/z3
-
-See the `z3/README` file for instructions on how to compile the Z3 source code
-with any of the following compilers: Visual Studio, g++ or clang++.
+You need to install [Z3][z3], [MathSAT5][msat] and [SMT Kit][smt-kit]. Installation
+instructions can be found in SMT Kit's `solvers` directory.
 
 [z3]: http://z3.codeplex.com/
-[msr-la]: http://z3.codeplex.com/license
+[msat]: http://mathsat.fbk.eu/
+[smt-kit]: https://github.com/ahorn/smt-kit
 
 ## Installation
 
