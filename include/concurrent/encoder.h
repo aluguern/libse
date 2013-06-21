@@ -17,8 +17,15 @@ class Event;
 typedef smt::Int ClockSort;
 
 class Encoders {
+public:
+  smt::Z3Solver solver;
+
 private:
-  const smt::Decl<smt::Func<ClockSort, ClockSort>> m_rf_func_decl;
+  const std::string m_rf_prefix;
+  const std::string m_sup_clock_prefix;
+  const std::string m_clock_prefix;
+  const std::string m_join_clock_prefix;
+  const std::string m_event_prefix;
   const smt::Term<ClockSort> m_epoch;
 
   friend class ValueEncoder;
@@ -33,7 +40,7 @@ private:
   unsigned m_join_id;
 
   std::string create_symbol(const Event& event) {
-    return std::string("Event_") + std::to_string(event.event_id());
+    return m_event_prefix + std::to_string(event.event_id());
   }
 
   template<typename T, size_t N>
@@ -61,11 +68,13 @@ private:
   }
 
 public:
-  smt::Z3Solver solver;
-
   Encoders()
   : solver(),
-    m_rf_func_decl("rf"),
+    m_rf_prefix("rf_"),
+    m_sup_clock_prefix("sup-clock_"),
+    m_clock_prefix("clock_"),
+    m_join_clock_prefix("join-clock_"),
+    m_event_prefix("event_"),
     m_epoch(smt::literal<ClockSort>(0)),
     m_join_id(0) {}
 
@@ -91,7 +100,7 @@ public:
     const smt::Term<ClockSort>& x,
     const smt::Term<ClockSort>& y)
   {
-    const std::string join_name = std::string("Join_") + std::to_string(m_join_id++);
+    const std::string join_name = m_join_clock_prefix + std::to_string(m_join_id++);
     const smt::Term<ClockSort> join_clock = smt::any<ClockSort>(join_name);
     solver.add(m_epoch < join_clock);
     solver.add(happens_before(x, join_clock) && happens_before(y, join_clock));
@@ -105,13 +114,15 @@ public:
     assert(write_event.is_write());
     assert(read_event.is_read());
 
-    return write_event.event_id() == smt::apply(m_rf_func_decl, read_event.event_id());
+    const smt::Term<ClockSort> rf_clock =
+      smt::any<ClockSort>(m_rf_prefix + create_symbol(read_event));
+    return write_event.event_id() == rf_clock;
   }
 
   /// Unique clock constraint for an event
   smt::Term<ClockSort> clock(const Event& event) {
     const smt::Term<ClockSort> clock =
-      smt::any<ClockSort>(std::string("Clock_") + create_symbol(event));
+      smt::any<ClockSort>(m_clock_prefix + create_symbol(event));
     solver.add(m_epoch < clock);
     return clock;
   }
@@ -139,7 +150,7 @@ public:
   smt::Term<ClockSort> sup_clock(const Event& read_event) {
     assert(read_event.is_read());
 
-    return smt::any<ClockSort>(std::string("SubClock_") + create_symbol(read_event));
+    return smt::any<ClockSort>(m_sup_clock_prefix + create_symbol(read_event));
   }
 };
 
