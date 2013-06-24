@@ -15,7 +15,6 @@ namespace se {
 
 /* Alex's */
 
-/*
 class Z3OrderEncoderC0 {
 private:
   const ReadInstrEncoder m_read_encoder;
@@ -111,7 +110,6 @@ public:
   }
 
 };
-*/
 
 
 
@@ -131,6 +129,7 @@ public:
 
 /* Michael's */
 
+/*
 class Z3OrderEncoderC0 {
 private:
   const ReadInstrEncoder m_read_encoder;
@@ -263,6 +262,7 @@ public:
     encoders.solver.unsafe_add(ws_enc(zone_relation, encoders));
   }
 };
+*/
 
 }
 

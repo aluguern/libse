@@ -38,6 +38,12 @@ bench: all
 	time -p bench/fib_005_unsafe
 	time -p bench/fib_006_safe
 	time -p bench/fib_006_unsafe
+	time -p bench/fib_007_safe
+	time -p bench/fib_007_unsafe
+	time -p bench/fib_008_safe
+	time -p bench/fib_008_unsafe
+	time -p bench/fib_009_safe
+	time -p bench/fib_009_unsafe
 	time -p bench/stateful01_safe
 	time -p bench/stateful01_unsafe
 	time -p bench/stack_007_slice_safe
@@ -144,7 +150,9 @@ test_se_SOURCES = \
   test/concurrent/functional_test.cpp
 
 test_se_CPPFLAGS = -std=c++0x -I$(srcdir)/include -I$(top_srcdir)/gtest/include
-test_se_LDADD = $(top_builddir)/gtest/lib/libgtest_main.la lib/libse.la
+test_se_LDADD = $(top_builddir)/gtest/lib/libgtest.la \
+  $(top_builddir)/gtest/lib/libgtest_main.la \
+  lib/libse.la
 
 # Benchmarks
 
@@ -165,6 +173,12 @@ bin_PROGRAMS = bench/sups_safe \
                bench/fib_005_unsafe \
                bench/fib_006_safe \
                bench/fib_006_unsafe \
+               bench/fib_007_safe \
+               bench/fib_007_unsafe \
+               bench/fib_008_safe \
+               bench/fib_008_unsafe \
+               bench/fib_009_safe \
+               bench/fib_009_unsafe \
                bench/stateful01_safe \
                bench/stateful01_unsafe \
                bench/stack_007_slice_safe \
@@ -204,6 +218,30 @@ bench_fib_006_safe_LDADD = lib/libse.la
 bench_fib_006_unsafe_SOURCES = bench/fib_006_unsafe_bench.cpp
 bench_fib_006_unsafe_CPPFLAGS = -std=c++0x -I$(srcdir)/include
 bench_fib_006_unsafe_LDADD = lib/libse.la
+
+bench_fib_007_safe_SOURCES = bench/fib_007_safe_bench.cpp
+bench_fib_007_safe_CPPFLAGS = -std=c++0x -I$(srcdir)/include
+bench_fib_007_safe_LDADD = lib/libse.la
+
+bench_fib_007_unsafe_SOURCES = bench/fib_007_unsafe_bench.cpp
+bench_fib_007_unsafe_CPPFLAGS = -std=c++0x -I$(srcdir)/include
+bench_fib_007_unsafe_LDADD = lib/libse.la
+
+bench_fib_008_safe_SOURCES = bench/fib_008_safe_bench.cpp
+bench_fib_008_safe_CPPFLAGS = -std=c++0x -I$(srcdir)/include
+bench_fib_008_safe_LDADD = lib/libse.la
+
+bench_fib_008_unsafe_SOURCES = bench/fib_008_unsafe_bench.cpp
+bench_fib_008_unsafe_CPPFLAGS = -std=c++0x -I$(srcdir)/include
+bench_fib_008_unsafe_LDADD = lib/libse.la
+
+bench_fib_009_safe_SOURCES = bench/fib_009_safe_bench.cpp
+bench_fib_009_safe_CPPFLAGS = -std=c++0x -I$(srcdir)/include
+bench_fib_009_safe_LDADD = lib/libse.la
+
+bench_fib_009_unsafe_SOURCES = bench/fib_009_unsafe_bench.cpp
+bench_fib_009_unsafe_CPPFLAGS = -std=c++0x -I$(srcdir)/include
+bench_fib_009_unsafe_LDADD = lib/libse.la
 
 bench_stateful01_safe_SOURCES = bench/stateful01_safe_bench.cpp
 bench_stateful01_safe_CPPFLAGS = -std=c++0x -I$(srcdir)/include
