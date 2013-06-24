@@ -13,6 +13,122 @@
 
 namespace se {
 
+/* Alex's */
+
+/*
+class Z3OrderEncoderC0 {
+private:
+  const ReadInstrEncoder m_read_encoder;
+
+  smt::UnsafeTerm event_condition(const Event& event, Encoders& encoders) const {
+    if (event.condition_ptr()) {
+      return event.condition_ptr()->encode(m_read_encoder, encoders);
+    }
+
+    return smt::literal<smt::Bool>(true);
+  }
+
+  typedef std::shared_ptr<Event> EventPtr;
+  typedef std::unordered_set<EventPtr> EventPtrSet;
+
+public:
+  Z3OrderEncoderC0() : m_read_encoder() {}
+
+  /// \internal \return RF axiom encoding
+  smt::UnsafeTerm rf_enc(const ZoneRelation<Event>& relation, Encoders& encoders) const {
+    smt::UnsafeTerm rf_expr(smt::literal<smt::Bool>(true));
+    for (const EventPtr& x_ptr : relation.event_ptrs()) {
+      if (x_ptr->is_write()) { continue; }
+      const Event& read_event = *x_ptr;
+
+      assert(!read_event.zone().is_bottom());
+
+      const smt::UnsafeTerm read_event_condition(event_condition(read_event, encoders));
+
+      smt::UnsafeTerm wr_schedules(smt::literal<smt::Bool>(false));
+      for (const EventPtr& y_ptr : relation.event_ptrs()) {
+        if (y_ptr->is_read()) { continue; }
+        const Event& write_event = *y_ptr;
+
+        assert(!write_event.zone().is_bottom());
+        if (read_event.zone().meet(write_event.zone()).is_bottom()) { continue; }
+
+        const smt::UnsafeTerm wr_order(encoders.clock(write_event) < encoders.clock(read_event));
+        const smt::UnsafeTerm wr_sup_clock(encoders.clock(write_event) ==
+          encoders.sup_clock(read_event));
+        const smt::UnsafeTerm wr_schedule(encoders.rf(write_event, read_event));
+        const smt::UnsafeTerm wr_equality(write_event.constant(encoders) ==
+          read_event.constant(encoders));
+        const smt::UnsafeTerm write_event_condition(event_condition(write_event, encoders));
+
+        wr_schedules = wr_schedules or wr_schedule;
+        rf_expr = rf_expr and smt::implies(wr_schedule, wr_order and wr_sup_clock and
+          write_event_condition and read_event_condition and wr_equality) and
+          smt::implies((wr_order or encoders.clock(write_event) == encoders.clock(read_event)) and write_event_condition,
+            encoders.clock(write_event) <= encoders.sup_clock(read_event));
+      }
+
+      rf_expr = rf_expr and smt::implies(read_event_condition, wr_schedules);
+    }
+
+    return rf_expr;
+  }
+
+  /// \internal \return WS axiom encoding
+  smt::UnsafeTerm ws_enc(const ZoneRelation<Event>& relation, Encoders& encoders) const {
+    const ZoneAtomSet& zone_atoms = relation.zone_atoms();
+
+    smt::UnsafeTerm ws_expr(smt::literal<smt::Bool>(true));
+    for (const Zone& zone : zone_atoms) {
+      const EventPtrSet write_event_ptrs = relation.find(zone,
+        WriteEventPredicate::predicate());
+
+      smt::UnsafeTerms ptrs;
+      ptrs.reserve(write_event_ptrs.size());
+
+      for (const EventPtr& write_event_ptr : write_event_ptrs) {
+        const Event& write_event = *write_event_ptr;
+        ptrs.push_back(encoders.clock(write_event));
+      }
+
+      const smt::UnsafeTerm zone_ws_expr(smt::distinct(std::move(ptrs)));
+
+      ws_expr = ws_expr and zone_ws_expr;
+    }
+
+    return ws_expr;
+  }
+
+  void encode_without_ws(const ZoneRelation<Event>& zone_relation, Encoders& encoders) const
+  {
+    encoders.solver.unsafe_add(rf_enc(zone_relation, encoders));
+  }
+
+  void encode(const ZoneRelation<Event>& zone_relation, Encoders& encoders) const
+  {
+    encode_without_ws(zone_relation, encoders);
+    encoders.solver.unsafe_add(ws_enc(zone_relation, encoders));
+  }
+
+};
+*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /* Michael's */
 
 class Z3OrderEncoderC0 {

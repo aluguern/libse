@@ -26,9 +26,13 @@ TEST(EncoderC0Test, Z3BvLiteral) {
   const short literal = 3;
   const LiteralReadInstr<short> instr(literal);
 
+#ifdef __USE_BV__
   EXPECT_TRUE(encoders.literal(instr).sort().is_bv());
   EXPECT_EQ(TypeInfo<short>::s_type.bv_size(),
     encoders.literal(instr).sort().bv_size());
+#else
+  EXPECT_TRUE(encoders.literal(instr).sort().is_int());
+#endif
 
   encoders.solver.push();
 
@@ -49,9 +53,13 @@ TEST(EncoderC0Test, Z3BvConstant) {
   const Zone zone = Zone::unique_atom();
   const ReadEvent<int> event(thread_id, zone);
 
+#ifdef __USE_BV__
   EXPECT_TRUE(event.constant(encoders).sort().is_bv());
   EXPECT_EQ(TypeInfo<int>::s_type.bv_size(),
     event.constant(encoders).sort().bv_size());
+#else
+  EXPECT_TRUE(event.constant(encoders).sort().is_int());
+#endif
 
   encoders.solver.unsafe_add(event.constant(encoders) != event.constant(encoders));
 
@@ -84,6 +92,7 @@ TEST(EncoderC0Test, Z3ArrayConstant) {
   const smt::UnsafeTerm event_expr(read_event.constant(encoders));
   EXPECT_TRUE(event_expr.sort().is_array());
 
+#ifdef __USE_BV__
   EXPECT_TRUE(event_expr.sort().sorts(0).is_bv());
   EXPECT_EQ(TypeInfo<size_t>::s_type.bv_size(),
     event_expr.sort().sorts(0).bv_size());
@@ -91,6 +100,10 @@ TEST(EncoderC0Test, Z3ArrayConstant) {
   EXPECT_TRUE(event_expr.sort().sorts(1).is_bv());
   EXPECT_EQ(TypeInfo<int>::s_type.bv_size(),
     event_expr.sort().sorts(1).bv_size());
+#else
+  EXPECT_TRUE(event_expr.sort().sorts(0).is_int());
+  EXPECT_TRUE(event_expr.sort().sorts(1).is_int());
+#endif
 
   encoders.solver.push();
 
@@ -114,9 +127,15 @@ TEST(EncoderC0Test, Z3ArrayConstant) {
   // 2:
   encoders.solver.push();
 
+#ifdef __USE_BV__
   const smt::UnsafeTerm index = smt::literal<size_t>(3);
   const smt::UnsafeTerm value_a = smt::literal<int>(7);
   const smt::UnsafeTerm value_b = smt::literal<int>(8);
+#else
+  const smt::UnsafeTerm index = smt::literal<smt::Int>(3);
+  const smt::UnsafeTerm value_a = smt::literal<smt::Int>(7);
+  const smt::UnsafeTerm value_b = smt::literal<smt::Int>(8);
+#endif
   smt::UnsafeTerm array_a(smt::store(event_expr, index, value_a));
   smt::UnsafeTerm array_b(smt::store(read_event.constant(encoders), index, value_b));
 
@@ -177,6 +196,7 @@ TEST(EncoderC0Test, Z3IndirectWriteEventConstant) {
   const smt::UnsafeTerm event_expr(write_event.constant(encoders));
   EXPECT_TRUE(event_expr.sort().is_array());
 
+#ifdef __USE_BV__
   EXPECT_TRUE(event_expr.sort().sorts(0).is_bv());
   EXPECT_EQ(TypeInfo<size_t>::s_type.bv_size(),
     event_expr.sort().sorts(0).bv_size());
@@ -184,6 +204,10 @@ TEST(EncoderC0Test, Z3IndirectWriteEventConstant) {
   EXPECT_TRUE(event_expr.sort().sorts(1).is_bv());
   EXPECT_EQ(TypeInfo<char>::s_type.bv_size(),
     event_expr.sort().sorts(1).bv_size());
+#else
+  EXPECT_TRUE(event_expr.sort().sorts(0).is_int());
+  EXPECT_TRUE(event_expr.sort().sorts(1).is_int());
+#endif
 }
 
 TEST(EncoderC0Test, Z3ReadClock) {
@@ -282,6 +306,7 @@ TEST(EncoderC0Test, ReadInstrEncoderForBasicReadInstrAsArray) {
 
   EXPECT_TRUE(expr.sort().is_array());
 
+#ifdef __USE_BV__
   EXPECT_TRUE(expr.sort().sorts(0).is_bv());
   EXPECT_EQ(TypeInfo<size_t>::s_type.bv_size(),
     expr.sort().sorts(0).bv_size());
@@ -289,6 +314,10 @@ TEST(EncoderC0Test, ReadInstrEncoderForBasicReadInstrAsArray) {
   EXPECT_TRUE(expr.sort().sorts(1).is_bv());
   EXPECT_EQ(TypeInfo<char>::s_type.bv_size(),
     expr.sort().sorts(1).bv_size());
+#else
+  EXPECT_TRUE(expr.sort().sorts(0).is_int());
+  EXPECT_TRUE(expr.sort().sorts(1).is_int());
+#endif
 }
 
 TEST(EncoderC0Test, ReadInstrEncoderForUnaryReadInstrAsLiteralBool) {
@@ -314,12 +343,17 @@ TEST(EncoderC0Test, ReadInstrEncoderForUnaryReadInstrAsLiteralInteger) {
   std::unique_ptr<ReadInstr<short>> instr_ptr(new LiteralReadInstr<short>(7));
   const UnaryReadInstr<SUB, short> instr(std::move(instr_ptr));
 
+#ifdef __USE_BV__
   EXPECT_TRUE(encoder.encode(instr, encoders).sort().is_bv());
+#else
+  EXPECT_TRUE(encoder.encode(instr, encoders).sort().is_int());
+#endif
   encoders.solver.unsafe_add(encoder.encode(instr, encoders) != -7);
 
   EXPECT_EQ(smt::unsat, encoders.solver.check());
 }
 
+#ifdef __USE_BV__
 TEST(EncoderC0Test, ReadInstrEncoderForUnaryReadInstrAsInteger) {
   const ReadInstrEncoder encoder;
   Encoders encoders;
@@ -349,6 +383,7 @@ TEST(EncoderC0Test, ReadInstrEncoderForUnaryReadInstrAsInteger) {
   encoders.solver.unsafe_add(instr.operand_ref().encode(encoder, encoders) > std::numeric_limits<short>::min());
   EXPECT_EQ(smt::unsat, encoders.solver.check());
 }
+#endif
 
 TEST(EncoderC0Test, ReadInstrEncoderForBinaryReadInstrAsBool) {
   const ReadInstrEncoder encoder;
@@ -373,6 +408,7 @@ TEST(EncoderC0Test, ReadInstrEncoderForBinaryReadInstrAsBool) {
   EXPECT_EQ(smt::unsat, encoders.solver.check());
 }
 
+#ifdef __USE_BV__
 TEST(EncoderC0Test, ReadInstrEncoderForBinaryReadInstrAsInteger) {
   const ReadInstrEncoder encoder;
   Encoders encoders;
@@ -399,6 +435,7 @@ TEST(EncoderC0Test, ReadInstrEncoderForBinaryReadInstrAsInteger) {
   // Since we prevent overflows, the assertions are now unsatisfiable.
   EXPECT_EQ(smt::unsat, encoders.solver.check());
 }
+#endif
 
 TEST(EncoderC0Test, ReadInstrEncoderForDerefReadInstrAsInteger) {
   const ReadInstrEncoder encoder;
@@ -436,7 +473,11 @@ TEST(EncoderC0Test, ValueEncoderDirectWriteEvent) {
 
   EXPECT_EQ(smt::sat, encoders.solver.check());
 
+#ifdef __USE_BV__
   smt::UnsafeTerm literal = smt::literal<long>(42);
+#else
+  smt::UnsafeTerm literal = smt::literal<smt::Int>(42);
+#endif
   smt::UnsafeTerm disequality(write_event.constant(encoders) != literal);
   encoders.solver.unsafe_add(disequality);
   EXPECT_EQ(smt::unsat, encoders.solver.check());
@@ -459,7 +500,11 @@ TEST(EncoderC0Test, ValueEncoderDirectWriteEventThroughDispatch) {
 
   EXPECT_EQ(smt::sat, encoders.solver.check());
   
+#ifdef __USE_BV__
   smt::UnsafeTerm literal = smt::literal<long>(42);
+#else
+  smt::UnsafeTerm literal = smt::literal<smt::Int>(42);
+#endif
   smt::UnsafeTerm disequality(write_event.constant(encoders) != literal);
   encoders.solver.unsafe_add(disequality);
   EXPECT_EQ(smt::unsat, encoders.solver.check());
@@ -493,8 +538,13 @@ TEST(EncoderC0Test, ValueEncoderIndirectWriteEvent) {
 
   encoders.solver.push();
 
+#ifdef __USE_BV__
   smt::UnsafeTerm literal = smt::literal<char>('X');
   smt::UnsafeTerm index_6 = smt::literal<size_t>(6);
+#else
+  smt::UnsafeTerm literal = smt::literal<smt::Int>('X');
+  smt::UnsafeTerm index_6 = smt::literal<smt::Int>(6);
+#endif
   encoders.solver.unsafe_add(smt::select(new_array, index_6) != literal);
   EXPECT_EQ(smt::sat, encoders.solver.check());
 
@@ -502,7 +552,11 @@ TEST(EncoderC0Test, ValueEncoderIndirectWriteEvent) {
 
   encoders.solver.push();
 
+#ifdef __USE_BV__
   smt::UnsafeTerm index_7 = smt::literal<size_t>(7);
+#else
+  smt::UnsafeTerm index_7 = smt::literal<smt::Int>(7);
+#endif
   encoders.solver.unsafe_add(smt::select(new_array, index_7) != literal);
   EXPECT_EQ(smt::unsat, encoders.solver.check());
 
@@ -539,8 +593,13 @@ TEST(EncoderC0Test, ValueEncoderIndirectWriteEventThroughDispatch) {
 
   encoders.solver.push();
 
+#ifdef __USE_BV__
   smt::UnsafeTerm literal = smt::literal<char>('X');
   smt::UnsafeTerm index_6 = smt::literal<size_t>(6);
+#else
+  smt::UnsafeTerm literal = smt::literal<smt::Int>('X');
+  smt::UnsafeTerm index_6 = smt::literal<smt::Int>(6);
+#endif
   encoders.solver.unsafe_add(smt::select(new_array, index_6) != literal);
   EXPECT_EQ(smt::sat, encoders.solver.check());
 
@@ -548,7 +607,11 @@ TEST(EncoderC0Test, ValueEncoderIndirectWriteEventThroughDispatch) {
 
   encoders.solver.push();
 
+#ifdef __USE_BV__
   smt::UnsafeTerm index_7 = smt::literal<size_t>(7);
+#else
+  smt::UnsafeTerm index_7 = smt::literal<smt::Int>(7);
+#endif
   encoders.solver.unsafe_add(smt::select(new_array, index_7) != literal);
   EXPECT_EQ(smt::unsat, encoders.solver.check());
 
@@ -608,7 +671,11 @@ TEST(EncoderC0Test, Z3OrderEncoderC0ForRfWithoutCondition) {
   encoders.solver.unsafe_add(encoder.rf_enc(relation, encoders));
   EXPECT_EQ(smt::sat, encoders.solver.check());
 
+#ifdef __USE_BV__
   smt::UnsafeTerm v_3 = smt::literal<short>(3);
+#else
+  smt::UnsafeTerm v_3 = smt::literal<smt::Int>(3);
+#endif
   encoders.solver.unsafe_add(read_event_ptr->constant(encoders) == v_3);
   EXPECT_EQ(smt::sat, encoders.solver.check());
 
@@ -680,7 +747,11 @@ TEST(EncoderC0Test, Z3OrderEncoderC0ForFrWithoutCondition) {
   encoders.solver.push();
 
   encoders.solver.unsafe_add(encoders.rf(*major_write_event_ptr, *read_event_ptr));
+#ifdef __USE_BV__
   smt::UnsafeTerm v_5 = smt::literal<short>(5);
+#else
+  smt::UnsafeTerm v_5 = smt::literal<smt::Int>(5);
+#endif
   encoders.solver.unsafe_add(read_event_ptr->constant(encoders) == v_5);
   EXPECT_EQ(smt::sat, encoders.solver.check());
 
@@ -689,7 +760,11 @@ TEST(EncoderC0Test, Z3OrderEncoderC0ForFrWithoutCondition) {
   encoders.solver.push();
 
   encoders.solver.unsafe_add(encoders.rf(*major_write_event_ptr, *read_event_ptr));
+#ifdef __USE_BV__
   smt::UnsafeTerm v_7 = smt::literal<short>(7);
+#else
+  smt::UnsafeTerm v_7 = smt::literal<smt::Int>(7);
+#endif
   encoders.solver.unsafe_add(read_event_ptr->constant(encoders) == v_7);
   EXPECT_EQ(smt::unsat, encoders.solver.check());
 

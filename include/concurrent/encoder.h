@@ -10,18 +10,26 @@
 
 #include <smt>
 
+//#define __USE_BV__ 1
+
 namespace se {
 
 class Event;
 
+#ifdef __USE_BV__
+typedef unsigned short ClockSort;
+#else
 typedef smt::Int ClockSort;
+#endif
 
 class Encoders {
 public:
+  // logic must support uninterpreted functions and
+  // uses bit vectors only if __USE_BV__ is defined
   smt::Z3Solver solver;
 
 private:
-  const std::string m_rf_prefix;
+  const smt::Decl<smt::Func<ClockSort, ClockSort>> m_rf_func_decl;
   const std::string m_sup_clock_prefix;
   const std::string m_clock_prefix;
   const std::string m_join_clock_prefix;
@@ -45,7 +53,11 @@ private:
 
   template<typename T, size_t N>
   smt::UnsafeTerm create_array_constant(const Event& event) {
+#ifdef __USE_BV__
     return smt::any<smt::Array<size_t, T>>(create_symbol(event));
+#else
+    return smt::any<smt::Array<smt::Int, smt::Int>>(create_symbol(event));
+#endif
   }
 
   smt::UnsafeTerm constant(const ReadEvent<bool>& event) {
@@ -69,8 +81,12 @@ private:
 
 public:
   Encoders()
-  : solver(),
-    m_rf_prefix("rf_"),
+#ifdef __USE_BV__
+  : solver(smt::QF_AUFBV_LOGIC),
+#else
+  : solver(smt::QF_AUFLIA_LOGIC),
+#endif
+    m_rf_func_decl("rf"),
     m_sup_clock_prefix("sup-clock_"),
     m_clock_prefix("clock_"),
     m_join_clock_prefix("join-clock_"),
@@ -84,8 +100,12 @@ public:
 
   /// Creates a Z3 constant according to the event's \ref Event::type() "type"
   smt::UnsafeTerm constant(const Event& event) {
+#ifdef __USE_BV__
     const smt::Sort& sort = smt::bv_sort(event.type().is_signed(), event.type().bv_size());
     const smt::UnsafeDecl decl(create_symbol(event), sort);
+#else
+    const smt::UnsafeDecl decl(create_symbol(event), smt::internal::sort<smt::Int>());
+#endif
     return smt::constant(decl);
   }
 
@@ -114,9 +134,7 @@ public:
     assert(write_event.is_write());
     assert(read_event.is_read());
 
-    const smt::Term<ClockSort> rf_clock =
-      smt::any<ClockSort>(m_rf_prefix + create_symbol(read_event));
-    return write_event.event_id() == rf_clock;
+    return write_event.event_id() == smt::apply(m_rf_func_decl, read_event.event_id());
   }
 
   /// Unique clock constraint for an event
@@ -143,7 +161,11 @@ public:
   template<typename T, class = typename std::enable_if<
     std::is_arithmetic<T>::value>::type>
   smt::UnsafeTerm literal(const LiteralReadInstr<T>& instr) {
+#if __USE_BV__
     return smt::literal<T>(instr.literal());
+#else
+    return smt::literal<smt::Int>(instr.literal());
+#endif
   }
 
   /// Find upper bound of `{clock(e) | e in E and clock(e) < clock(r)}`
@@ -273,7 +295,11 @@ public:
     smt::UnsafeTerm init_expr(event.instr_ref().encode(m_read_encoder, helper));
     smt::UnsafeTerm and_expr(smt::literal<smt::Bool>(true));
     for (size_t i = 0; i < N; i++) {
+#if __USE_BV__
       and_expr = and_expr && (smt::select(lhs_expr, smt::literal<size_t>(i)) == init_expr);
+#else
+      and_expr = and_expr && (smt::select(lhs_expr, smt::literal<smt::Int>(i)) == init_expr);
+#endif
     }
     return and_expr;
   }
