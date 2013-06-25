@@ -52,9 +52,10 @@ public:
         assert(!write_event.zone().is_bottom());
         if (read_event.zone().meet(write_event.zone()).is_bottom()) { continue; }
 
-        const smt::UnsafeTerm wr_order(encoders.clock(write_event) < encoders.clock(read_event));
-        const smt::UnsafeTerm wr_sup_clock(encoders.clock(write_event) ==
-          encoders.sup_clock(read_event));
+        const smt::UnsafeTerm wr_order(encoders.clock(write_event).simultaneous_or_happens_before(
+          encoders.clock(read_event)));
+        const smt::UnsafeTerm wr_sup_clock(encoders.clock(write_event).simultaneous(
+          encoders.sup_clock(read_event)));
         const smt::UnsafeTerm wr_schedule(encoders.rf(write_event, read_event));
         const smt::UnsafeTerm wr_equality(write_event.constant(encoders) ==
           read_event.constant(encoders));
@@ -63,12 +64,15 @@ public:
         wr_schedules = wr_schedules or wr_schedule;
         rf_expr = rf_expr and smt::implies(wr_schedule, wr_order and wr_sup_clock and
           write_event_condition and read_event_condition and wr_equality) and
-          smt::implies((wr_order or encoders.clock(write_event) == encoders.clock(read_event)) and write_event_condition,
-            encoders.clock(write_event) <= encoders.sup_clock(read_event));
+          smt::implies(encoders.clock(write_event).simultaneous_or_happens_before(
+              encoders.clock(read_event)) and write_event_condition,
+            encoders.clock(write_event).simultaneous_or_happens_before(encoders.sup_clock(read_event)));
       }
 
       rf_expr = rf_expr and smt::implies(read_event_condition, wr_schedules);
     }
+
+    encoders.transitivity(relation.event_ptrs());
 
     return rf_expr;
   }
@@ -87,7 +91,7 @@ public:
 
       for (const EventPtr& write_event_ptr : write_event_ptrs) {
         const Event& write_event = *write_event_ptr;
-        ptrs.push_back(encoders.clock(write_event));
+        ptrs.push_back(encoders.clock(write_event).term());
       }
 
       const smt::UnsafeTerm zone_ws_expr(smt::distinct(std::move(ptrs)));
@@ -110,8 +114,6 @@ public:
   }
 
 };
-
-
 
 
 
@@ -167,7 +169,7 @@ public:
         if (read_event.zone().meet(write_event.zone()).is_bottom()) { continue; }
 
         const smt::UnsafeTerm wr_order(
-          encoders.happens_before(encoders.clock(write_event), encoders.clock(read_event)));
+          encoders.clock(write_event).happens_before(encoders.clock(read_event)));
 
         const smt::UnsafeTerm wr_schedule(encoders.rf(write_event, read_event));
         const smt::UnsafeTerm wr_equality(write_event.constant(encoders) ==
@@ -198,7 +200,7 @@ public:
 
       for (const EventPtr& write_event_ptr : write_event_ptrs) {
         const Event& write_event = *write_event_ptr;
-        ptrs.push_back(encoders.clock(write_event));
+        ptrs.push_back(encoders.clock(write_event).term());
       }
 
       const smt::UnsafeTerm zone_ws_expr(smt::distinct(std::move(ptrs)));
@@ -236,8 +238,8 @@ public:
             assert(!read_event.zone().is_bottom());
 
             const smt::UnsafeTerm xr_schedule(encoders.rf(write_event_x, read_event));
-            const smt::UnsafeTerm xy_order(encoders.happens_before(encoders.clock(write_event_x), encoders.clock(write_event_y)));
-            const smt::UnsafeTerm ry_order(encoders.happens_before(encoders.clock(read_event), encoders.clock(write_event_y)));
+            const smt::UnsafeTerm xy_order(encoders.clock(write_event_x).happens_before(encoders.clock(write_event_y)));
+            const smt::UnsafeTerm ry_order(encoders.clock(read_event).happens_before(encoders.clock(write_event_y)));
             const smt::UnsafeTerm y_condition(event_condition(write_event_y, encoders));
 
             fr_expr = fr_expr and

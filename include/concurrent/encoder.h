@@ -5,6 +5,8 @@
 #ifndef LIBSE_CONCURRENT_ENCODER_H_
 #define LIBSE_CONCURRENT_ENCODER_H_
 
+#include <unordered_set>
+
 #include "core/op.h"
 #include "concurrent/instr.h"
 
@@ -22,6 +24,51 @@ typedef unsigned short ClockSort;
 typedef smt::Int ClockSort;
 #endif
 
+class Clock
+{
+private:
+  smt::Term<ClockSort> m_term;
+
+public:
+  Clock(const smt::Term<ClockSort>& term)
+  : m_term(term) {}
+
+  Clock(const Clock& other)
+  : m_term(other.m_term) {}
+
+  Clock(Clock&& other)
+  : m_term(std::move(other.m_term)) {}
+
+  smt::Term<smt::Bool> happens_before(
+    const Clock& y) const
+  {
+    return m_term < y.m_term;
+  }
+
+  smt::Term<smt::Bool> simultaneous(
+    const Clock& y) const
+  {
+    return m_term == y.m_term;
+  }
+
+  smt::Term<smt::Bool> simultaneous_or_happens_before(
+    const Clock& y) const
+  {
+    return m_term <= y.m_term;
+  }
+
+  const smt::Term<ClockSort>& term() const
+  {
+    return m_term;
+  }
+
+  Clock& operator=(const Clock& other)
+  {
+    m_term = other.m_term;
+    return *this;
+  }
+};
+
 class Encoders {
 public:
   // logic must support uninterpreted functions and
@@ -29,12 +76,12 @@ public:
   smt::Z3Solver solver;
 
 private:
-  const smt::Decl<smt::Func<ClockSort, ClockSort>> m_rf_func_decl;
+  const std::string m_rf_prefix;
   const std::string m_sup_clock_prefix;
   const std::string m_clock_prefix;
   const std::string m_join_clock_prefix;
   const std::string m_event_prefix;
-  const smt::Term<ClockSort> m_epoch;
+  const Clock m_epoch;
 
   friend class ValueEncoder;
   friend class ReadInstrEncoder;
@@ -84,14 +131,16 @@ public:
 #ifdef __USE_BV__
   : solver(smt::QF_AUFBV_LOGIC),
 #else
-  : solver(smt::QF_AUFLIA_LOGIC),
+  : solver(smt::QF_LIA_LOGIC),
 #endif
-    m_rf_func_decl("rf"),
+    m_rf_prefix("rf_"),
     m_sup_clock_prefix("sup-clock_"),
     m_clock_prefix("clock_"),
     m_join_clock_prefix("join-clock_"),
     m_event_prefix("event_"),
+#ifndef __USE_MATRIX
     m_epoch(smt::literal<ClockSort>(0)),
+#endif
     m_join_id(0) {}
 
   void reset() {
@@ -109,22 +158,17 @@ public:
     return smt::constant(decl);
   }
 
-  smt::Term<smt::Bool> happens_before(
-    const smt::Term<ClockSort>& x,
-    const smt::Term<ClockSort>& y)
+  Clock join_clocks(
+    const Clock& x,
+    const Clock& y)
   {
-    return x < y;
-  }
-
-  smt::Term<ClockSort> join_clocks(
-    const smt::Term<ClockSort>& x,
-    const smt::Term<ClockSort>& y)
-  {
+#ifndef __USE_MATRIX__
     const std::string join_name = m_join_clock_prefix + std::to_string(m_join_id++);
-    const smt::Term<ClockSort> join_clock = smt::any<ClockSort>(join_name);
-    solver.add(m_epoch < join_clock);
-    solver.add(happens_before(x, join_clock) && happens_before(y, join_clock));
+    const Clock join_clock(smt::any<ClockSort>(join_name));
+    solver.add(m_epoch.happens_before(join_clock));
+    solver.add(x.happens_before(join_clock) && y.happens_before(join_clock));
     return join_clock;
+#endif
   }
 
   /// Equality between write event and read event applied to function `rf`
@@ -134,15 +178,31 @@ public:
     assert(write_event.is_write());
     assert(read_event.is_read());
 
-    return write_event.event_id() == smt::apply(m_rf_func_decl, read_event.event_id());
+    const smt::Term<ClockSort> rf_clock =
+      smt::any<ClockSort>(m_rf_prefix + create_symbol(read_event));
+    return write_event.event_id() == rf_clock;
   }
 
   /// Unique clock constraint for an event
-  smt::Term<ClockSort> clock(const Event& event) {
-    const smt::Term<ClockSort> clock =
-      smt::any<ClockSort>(m_clock_prefix + create_symbol(event));
-    solver.add(m_epoch < clock);
+  Clock clock(const Event& event) {
+#ifndef __USE_MATRIX__
+    const Clock clock(smt::any<ClockSort>(m_clock_prefix + create_symbol(event)));
+    solver.add(m_epoch.happens_before(clock));
     return clock;
+#endif
+  }
+
+  void transitivity(const std::unordered_set<std::shared_ptr<Event>>& event_ptrs)
+  {
+/*    for (const std::shared_ptr<Event>& x : event_ptrs) {
+      for (const std::shared_ptr<Event>& y : event_ptrs) {
+        for (const std::shared_ptr<Event>& z : event_ptrs) {
+          solver.add(smt::implies(clock(*x) <= clock(*y) and clock(*y) <= clock(*z),
+            clock(*x) <= clock(*z)));
+        }
+      }
+    }
+*/
   }
 
   /// Individual array element literal
@@ -169,10 +229,10 @@ public:
   }
 
   /// Find upper bound of `{clock(e) | e in E and clock(e) < clock(r)}`
-  smt::Term<ClockSort> sup_clock(const Event& read_event) {
+  Clock sup_clock(const Event& read_event) {
     assert(read_event.is_read());
 
-    return smt::any<ClockSort>(m_sup_clock_prefix + create_symbol(read_event));
+    return Clock(smt::any<ClockSort>(m_sup_clock_prefix + create_symbol(read_event)));
   }
 };
 

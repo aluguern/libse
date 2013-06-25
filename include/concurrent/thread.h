@@ -220,20 +220,20 @@ private:
     s_singleton.m_current_thread_ptr = thread_ptr;
   }
 
-  static smt::Term<ClockSort> internal_encode_spo(const std::shared_ptr<Block>& block_ptr,
-    const smt::Term<ClockSort>& earlier_clock,
+  static Clock internal_encode_spo(const std::shared_ptr<Block>& block_ptr,
+    const Clock& earlier_clock,
     ZoneRelation<Event>& zone_relation,
     Encoders& encoders) {
 
     const ValueEncoder value_encoder;
 
-    smt::Term<ClockSort> inner_clock(earlier_clock);
+    Clock inner_clock(earlier_clock);
     if (!block_ptr->body().empty()) {
       // Consider changing Block::body() to return an ordered set if it would
       // simplify the treatment of local events (below, currently excluded).
       const std::forward_list<std::shared_ptr<Event>>& body = block_ptr->body();
 
-      smt::Term<ClockSort> body_clock(inner_clock);
+      Clock body_clock(inner_clock);
       for (const std::shared_ptr<Event>& body_event_ptr : body) {
         const Event& body_event = *body_event_ptr;
 
@@ -245,8 +245,8 @@ private:
         if (!body_event.zone().is_bottom()) {
           zone_relation.relate(body_event_ptr);
 
-          smt::Term<ClockSort> next_body_clock(encoders.clock(body_event));
-          encoders.solver.add(encoders.happens_before(body_clock, next_body_clock));
+          Clock next_body_clock(encoders.clock(body_event));
+          encoders.solver.add(body_clock.happens_before(next_body_clock));
           body_clock = next_body_clock;
         }
       }
@@ -257,12 +257,12 @@ private:
     for (const std::shared_ptr<Block>& inner_block_ptr :
       block_ptr->inner_block_ptrs()) {
 
-      smt::Term<ClockSort> then_clock(internal_encode_spo(inner_block_ptr, inner_clock,
+      Clock then_clock(internal_encode_spo(inner_block_ptr, inner_clock,
         zone_relation, encoders));
       const std::shared_ptr<Block>& inner_else_block_ptr(
         inner_block_ptr->else_block_ptr());
       if (inner_else_block_ptr) {
-        smt::Term<ClockSort> else_clock(internal_encode_spo(inner_else_block_ptr,
+        Clock else_clock(internal_encode_spo(inner_else_block_ptr,
           inner_clock, zone_relation, encoders));
         inner_clock = encoders.join_clocks(then_clock, else_clock);
       } else {
@@ -401,7 +401,11 @@ public:
     ZoneRelation<Event> zone_relation;
     const Z3OrderEncoderC0 order_encoder;
 
-    const smt::Term<ClockSort> epoch_clock(smt::any<ClockSort>("epoch"));
+#ifdef __USE_MATRIX__
+    const Clock epoch_clock("epoch");
+#else
+    const Clock epoch_clock(smt::any<ClockSort>("epoch"));
+#endif
     for (SliceMap::const_reference slice_map_value : s_singleton.m_slice_map) {
       const std::shared_ptr<Block> most_outer_block_ptr =
         slice_map_value.second.most_outer_block_ptr();

@@ -218,15 +218,21 @@ TEST(EncoderC0Test, Z3ReadClock) {
   const ReadEvent<int> event(thread_id, zone);
 
   encoders.solver.push();
-  encoders.solver.unsafe_add(encoders.clock(event) <= 0);
+#ifdef __USE_MATRIX__
+  encoders.solver.unsafe_add(encoders.clock(event).simultaneous_or_happens_before(Clock("epoch"));
+#else
+  encoders.solver.unsafe_add(encoders.clock(event).term() <= 0);
+#endif
 
   // Proves that clock values are natural numbers
   EXPECT_EQ(smt::unsat, encoders.solver.check());
 
   // Sanity check a satisfiable formula
   encoders.solver.pop();
-  encoders.solver.unsafe_add(encoders.clock(event) <= 1);
+#ifndef __USE_MATRIX__
+  encoders.solver.unsafe_add(encoders.clock(event).term() <= 1);
   EXPECT_EQ(smt::sat, encoders.solver.check());
+#endif
 }
 
 TEST(EncoderC0Test, Z3WriteClock) {
@@ -238,15 +244,21 @@ TEST(EncoderC0Test, Z3WriteClock) {
     std::unique_ptr<ReadInstr<int>>(new LiteralReadInstr<int>(42)));
 
   encoders.solver.push();
-  encoders.solver.unsafe_add(encoders.clock(event) <= 0);
+#ifdef __USE_MATRIX__
+  encoders.solver.unsafe_add(encoders.clock(event).simultaneous_or_happens_before(Clock("epoch"));
+#else
+  encoders.solver.unsafe_add(encoders.clock(event).term() <= 0);
+#endif
 
   // Proves that clock values are natural numbers
   EXPECT_EQ(smt::unsat, encoders.solver.check());
 
   // Sanity check a satisfiable formula
   encoders.solver.pop();
-  encoders.solver.unsafe_add(encoders.clock(event) <= 1);
+#ifndef __USE_MATRIX__
+  encoders.solver.unsafe_add(encoders.clock(event).term() <= 1);
   EXPECT_EQ(smt::sat, encoders.solver.check());
+#endif
 }
 
 TEST(EncoderC0Test, ReadInstrEncoderForLiteralReadInstr) {
@@ -707,7 +719,7 @@ TEST(EncoderC0Test, Z3OrderEncoderC0ForWsWithoutCondition) {
   encoders.solver.unsafe_add(encoder.ws_enc(relation, encoders));
   EXPECT_EQ(smt::sat, encoders.solver.check());
 
-  encoders.solver.unsafe_add(encoders.clock(*major_write_event_ptr) == encoders.clock(*minor_write_event_ptr));
+  encoders.solver.unsafe_add(encoders.clock(*major_write_event_ptr).simultaneous(encoders.clock(*minor_write_event_ptr)));
   EXPECT_EQ(smt::unsat, encoders.solver.check());
 }
 
