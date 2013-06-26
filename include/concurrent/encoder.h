@@ -131,7 +131,7 @@ public:
 #ifdef __USE_BV__
   : solver(smt::QF_AUFBV_LOGIC),
 #else
-  : solver(smt::QF_LIA_LOGIC),
+  : solver(smt::QF_AUFLIA_LOGIC),
 #endif
     m_rf_prefix("rf_"),
     m_sup_clock_prefix("sup-clock_"),
