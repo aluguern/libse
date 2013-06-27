@@ -1,8 +1,8 @@
-#include "gtest/gtest.h"
-
 #include "concurrent/event.h"
 #include "concurrent/instr.h"
 #include "concurrent/encoder_c0.h"
+
+#include "gtest/gtest.h"
 
 using namespace se;
 

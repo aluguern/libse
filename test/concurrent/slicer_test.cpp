@@ -1,6 +1,5 @@
-#include "gtest/gtest.h"
-
 #include "concurrent/slicer.h"
+#include "gtest/gtest.h"
 
 using namespace se;
 

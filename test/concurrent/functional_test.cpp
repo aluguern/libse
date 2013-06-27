@@ -1,8 +1,7 @@
-#include "gtest/gtest.h"
-
 #include <sstream>
 
 #include "concurrent.h"
+#include "gtest/gtest.h"
 
 using namespace se;
 using namespace se::ops;

@@ -73,7 +73,7 @@ class Encoders {
 public:
   // logic must support uninterpreted functions and
   // uses bit vectors only if __USE_BV__ is defined
-  smt::Z3Solver solver;
+  smt::CVC4Solver solver;
 
 private:
   const std::string m_rf_prefix;

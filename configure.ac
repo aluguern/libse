@@ -43,11 +43,12 @@ AS_IF([test x$CLANG = xyes], [CXXFLAGS="$CXXFLAGS -stdlib=libc++"])
 SMT_KIT_DIR="smt-kit"
 Z3_DIR="solvers/z3"
 MSAT_DIR="solvers/msat"
+CVC4_DIR="solvers/CVC4"
 GMP_DIR="/opt/local"
 
 # Search for SMT and SAT solver libraries
-CXXFLAGS="$CXXFLAGS -I$Z3_DIR/src/api -I$Z3_DIR/src/api/c++ -I$MSAT_DIR/include -I$SMT_KIT_DIR/include"
-LDFLAGS="$LDFLAGS -L$Z3_DIR/build -L$MSAT_DIR/lib -L$GMP_DIR/lib"
+CXXFLAGS="$CXXFLAGS -I$Z3_DIR/src/api -I$Z3_DIR/src/api/c++ -I$MSAT_DIR/include -I$CVC4_DIR/target/include -I$SMT_KIT_DIR/include"
+LDFLAGS="$LDFLAGS -L$Z3_DIR/build -L$MSAT_DIR/lib -L$CVC4_DIR/target/lib -L$GMP_DIR/lib -lcvc4"
 
 AC_SEARCH_LIBS([Z3_mk_config], [z3], , AC_MSG_ERROR([Unable to find Z3 theorem prover]))
 

@@ -1,9 +1,9 @@
-#include "gtest/gtest.h"
-
 #include <sstream>
 
 #include "concurrent/instr.h"
 #include "concurrent/encoder_c0.h"
+
+#include "gtest/gtest.h"
 
 using namespace se;
 

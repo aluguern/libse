@@ -1,6 +1,5 @@
-#include "gtest/gtest.h"
-
 #include "concurrent/zone.h"
+#include "gtest/gtest.h"
 
 using namespace se;
 

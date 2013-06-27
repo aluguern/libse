@@ -85,6 +85,7 @@ pkginclude_HEADERS = \
   smt-kit/include/smt.h \
   smt-kit/include/smt_z3.h \
   smt-kit/include/smt_msat.h \
+  smt-kit/include/smt_cvc4.h \
   include/core/op.h \
   include/core/eval.h \
   include/core/type.h \
@@ -131,6 +132,7 @@ test_se_SOURCES = \
   smt-kit/test/smt_functional_test.cpp \
   smt-kit/test/smt_z3_test.cpp \
   smt-kit/test/smt_msat_test.cpp \
+  smt-kit/test/smt_cvc4_test.cpp \
   test/core/op_test.cpp \
   test/core/eval_test.cpp \
   test/core/type_test.cpp \

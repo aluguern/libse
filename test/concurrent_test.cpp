@@ -1,7 +1,7 @@
-#include "gtest/gtest.h"
-
 #include "concurrent.h"
 #include "concurrent/zone.h"
+
+#include "gtest/gtest.h"
 
 using namespace se;
 using namespace se::ops;

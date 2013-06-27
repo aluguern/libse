@@ -1,8 +1,7 @@
-#include "gtest/gtest.h"
-
 #include <limits>
 
 #include "concurrent/encoder_c0.h"
+#include "gtest/gtest.h"
 
 using namespace se;
 
