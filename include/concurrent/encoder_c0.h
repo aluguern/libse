@@ -206,9 +206,8 @@ public:
 
       if (1 < ptrs.size()) {
         const smt::UnsafeTerm zone_ws_expr(smt::distinct(std::move(ptrs)));
+        ws_expr = ws_expr and zone_ws_expr;
       }
-
-      ws_expr = ws_expr and zone_ws_expr;
     }
 
     return ws_expr;

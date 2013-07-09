@@ -127,9 +127,9 @@ TEST(EncoderC0Test, Z3ArrayConstant) {
   encoders.solver.push();
 
 #ifdef __USE_BV__
-  const smt::UnsafeTerm index = smt::literal<size_t>(3);
-  const smt::UnsafeTerm value_a = smt::literal<int>(7);
-  const smt::UnsafeTerm value_b = smt::literal<int>(8);
+  const smt::UnsafeTerm index = smt::literal<smt::Bv<size_t>>(3);
+  const smt::UnsafeTerm value_a = smt::literal<smt::Bv<int>>(7);
+  const smt::UnsafeTerm value_b = smt::literal<smt::Bv<int>>(8);
 #else
   const smt::UnsafeTerm index = smt::literal<smt::Int>(3);
   const smt::UnsafeTerm value_a = smt::literal<smt::Int>(7);
@@ -440,7 +440,7 @@ TEST(EncoderC0Test, ReadInstrEncoderForBinaryReadInstrAsInteger) {
   EXPECT_EQ(smt::sat, encoders.solver.check());
 
   const short upper_bound = std::numeric_limits<short>::max() - 6;
-  smt::UnsafeTerm v_upper_bound = smt::literal<short>(upper_bound);
+  smt::UnsafeTerm v_upper_bound = smt::literal<smt::Bv<short>>(upper_bound);
   encoders.solver.unsafe_add(instr.loperand_ref().encode(encoder, encoders) < v_upper_bound);
 
   // Since we prevent overflows, the assertions are now unsatisfiable.
@@ -485,7 +485,7 @@ TEST(EncoderC0Test, ValueEncoderDirectWriteEvent) {
   EXPECT_EQ(smt::sat, encoders.solver.check());
 
 #ifdef __USE_BV__
-  smt::UnsafeTerm literal = smt::literal<long>(42);
+  smt::UnsafeTerm literal = smt::literal<smt::Bv<long>>(42);
 #else
   smt::UnsafeTerm literal = smt::literal<smt::Int>(42);
 #endif
@@ -512,7 +512,7 @@ TEST(EncoderC0Test, ValueEncoderDirectWriteEventThroughDispatch) {
   EXPECT_EQ(smt::sat, encoders.solver.check());
   
 #ifdef __USE_BV__
-  smt::UnsafeTerm literal = smt::literal<long>(42);
+  smt::UnsafeTerm literal = smt::literal<smt::Bv<long>>(42);
 #else
   smt::UnsafeTerm literal = smt::literal<smt::Int>(42);
 #endif
@@ -550,8 +550,8 @@ TEST(EncoderC0Test, ValueEncoderIndirectWriteEvent) {
   encoders.solver.push();
 
 #ifdef __USE_BV__
-  smt::UnsafeTerm literal = smt::literal<char>('X');
-  smt::UnsafeTerm index_6 = smt::literal<size_t>(6);
+  smt::UnsafeTerm literal = smt::literal<smt::Bv<char>>('X');
+  smt::UnsafeTerm index_6 = smt::literal<smt::Bv<size_t>>(6);
 #else
   smt::UnsafeTerm literal = smt::literal<smt::Int>('X');
   smt::UnsafeTerm index_6 = smt::literal<smt::Int>(6);
@@ -564,7 +564,7 @@ TEST(EncoderC0Test, ValueEncoderIndirectWriteEvent) {
   encoders.solver.push();
 
 #ifdef __USE_BV__
-  smt::UnsafeTerm index_7 = smt::literal<size_t>(7);
+  smt::UnsafeTerm index_7 = smt::literal<smt::Bv<size_t>>(7);
 #else
   smt::UnsafeTerm index_7 = smt::literal<smt::Int>(7);
 #endif
@@ -605,8 +605,8 @@ TEST(EncoderC0Test, ValueEncoderIndirectWriteEventThroughDispatch) {
   encoders.solver.push();
 
 #ifdef __USE_BV__
-  smt::UnsafeTerm literal = smt::literal<char>('X');
-  smt::UnsafeTerm index_6 = smt::literal<size_t>(6);
+  smt::UnsafeTerm literal = smt::literal<smt::Bv<char>>('X');
+  smt::UnsafeTerm index_6 = smt::literal<smt::Bv<size_t>>(6);
 #else
   smt::UnsafeTerm literal = smt::literal<smt::Int>('X');
   smt::UnsafeTerm index_6 = smt::literal<smt::Int>(6);
@@ -619,7 +619,7 @@ TEST(EncoderC0Test, ValueEncoderIndirectWriteEventThroughDispatch) {
   encoders.solver.push();
 
 #ifdef __USE_BV__
-  smt::UnsafeTerm index_7 = smt::literal<size_t>(7);
+  smt::UnsafeTerm index_7 = smt::literal<smt::Bv<size_t>>(7);
 #else
   smt::UnsafeTerm index_7 = smt::literal<smt::Int>(7);
 #endif
@@ -683,7 +683,7 @@ TEST(EncoderC0Test, Z3OrderEncoderC0ForRfWithoutCondition) {
   EXPECT_EQ(smt::sat, encoders.solver.check());
 
 #ifdef __USE_BV__
-  smt::UnsafeTerm v_3 = smt::literal<short>(3);
+  smt::UnsafeTerm v_3 = smt::literal<smt::Bv<short>>(3);
 #else
   smt::UnsafeTerm v_3 = smt::literal<smt::Int>(3);
 #endif
@@ -759,7 +759,7 @@ TEST(EncoderC0Test, Z3OrderEncoderC0ForFrWithoutCondition) {
 
   encoders.solver.unsafe_add(encoders.rf(*major_write_event_ptr, *read_event_ptr));
 #ifdef __USE_BV__
-  smt::UnsafeTerm v_5 = smt::literal<short>(5);
+  smt::UnsafeTerm v_5 = smt::literal<smt::Bv<short>>(5);
 #else
   smt::UnsafeTerm v_5 = smt::literal<smt::Int>(5);
 #endif
@@ -772,7 +772,7 @@ TEST(EncoderC0Test, Z3OrderEncoderC0ForFrWithoutCondition) {
 
   encoders.solver.unsafe_add(encoders.rf(*major_write_event_ptr, *read_event_ptr));
 #ifdef __USE_BV__
-  smt::UnsafeTerm v_7 = smt::literal<short>(7);
+  smt::UnsafeTerm v_7 = smt::literal<smt::Bv<short>>(7);
 #else
   smt::UnsafeTerm v_7 = smt::literal<smt::Int>(7);
 #endif

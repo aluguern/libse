@@ -19,7 +19,7 @@ namespace se {
 class Event;
 
 #ifdef __USE_BV__
-typedef unsigned short ClockSort;
+typedef smt::Bv<unsigned short> ClockSort;
 #else
 typedef smt::Int ClockSort;
 #endif
@@ -27,10 +27,10 @@ typedef smt::Int ClockSort;
 class Clock
 {
 private:
-  smt::Term<ClockSort> m_term;
+  ClockSort m_term;
 
 public:
-  Clock(const smt::Term<ClockSort>& term)
+  Clock(const ClockSort& term)
   : m_term(term) {}
 
   Clock(const Clock& other)
@@ -39,25 +39,25 @@ public:
   Clock(Clock&& other)
   : m_term(std::move(other.m_term)) {}
 
-  smt::Term<smt::Bool> happens_before(
+  smt::Bool happens_before(
     const Clock& y) const
   {
     return m_term < y.m_term;
   }
 
-  smt::Term<smt::Bool> simultaneous(
+  smt::Bool simultaneous(
     const Clock& y) const
   {
     return m_term == y.m_term;
   }
 
-  smt::Term<smt::Bool> simultaneous_or_happens_before(
+  smt::Bool simultaneous_or_happens_before(
     const Clock& y) const
   {
     return m_term <= y.m_term;
   }
 
-  const smt::Term<ClockSort>& term() const
+  const ClockSort& term() const
   {
     return m_term;
   }
@@ -73,7 +73,7 @@ class Encoders {
 public:
   // logic must support uninterpreted functions and
   // uses bit vectors only if __USE_BV__ is defined
-  smt::CVC4Solver solver;
+  smt::Z3Solver solver;
 
 private:
   const std::string m_rf_prefix;
@@ -101,7 +101,7 @@ private:
   template<typename T, size_t N>
   smt::UnsafeTerm create_array_constant(const Event& event) {
 #ifdef __USE_BV__
-    return smt::any<smt::Array<size_t, T>>(create_symbol(event));
+    return smt::any<smt::Array<smt::Bv<size_t>, smt::Bv<T>>>(create_symbol(event));
 #else
     return smt::any<smt::Array<smt::Int, smt::Int>>(create_symbol(event));
 #endif
@@ -178,7 +178,7 @@ public:
     assert(write_event.is_write());
     assert(read_event.is_read());
 
-    const smt::Term<ClockSort> rf_clock =
+    const ClockSort rf_clock =
       smt::any<ClockSort>(m_rf_prefix + create_symbol(read_event));
     return write_event.event_id() == rf_clock;
   }
@@ -222,7 +222,7 @@ public:
     std::is_arithmetic<T>::value>::type>
   smt::UnsafeTerm literal(const LiteralReadInstr<T>& instr) {
 #if __USE_BV__
-    return smt::literal<T>(instr.literal());
+    return smt::literal<smt::Bv<T>>(instr.literal());
 #else
     return smt::literal<smt::Int>(instr.literal());
 #endif
@@ -356,7 +356,7 @@ public:
     smt::UnsafeTerm and_expr(smt::literal<smt::Bool>(true));
     for (size_t i = 0; i < N; i++) {
 #if __USE_BV__
-      and_expr = and_expr && (smt::select(lhs_expr, smt::literal<size_t>(i)) == init_expr);
+      and_expr = and_expr && (smt::select(lhs_expr, smt::literal<smt::Bv<size_t>>(i)) == init_expr);
 #else
       and_expr = and_expr && (smt::select(lhs_expr, smt::literal<smt::Int>(i)) == init_expr);
 #endif
