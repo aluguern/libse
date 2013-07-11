@@ -119,7 +119,7 @@ Index: goto-symex/memory_model.cpp
        exprt::operandst rf_some_operands;
        rf_some_operands.reserve(a_rec.writes.size());
  
-@@ -191,11 +199,29 @@
+@@ -191,11 +199,30 @@
          choice_symbols[
            std::make_pair(*r_it, *w_it)]=s;
  
@@ -133,7 +133,8 @@ Index: goto-symex/memory_model.cpp
 +                partial_order_concurrencyt::equal(clock(w), sup_clock_symbol)));
 +
 +        implies_exprt sup_clock_implication(
-+          partial_order_concurrencyt::before_clock(clock(w), clock(r)),
++          and_exprt(partial_order_concurrencyt::before_clock(clock(w), clock(r)),
++            (is_rfi ? true_exprt() : w->guard)),
 +          or_exprt(partial_order_concurrencyt::equal(clock(w), sup_clock_symbol),
 +            partial_order_concurrencyt::before_clock(clock(w), sup_clock_symbol)));
 +
