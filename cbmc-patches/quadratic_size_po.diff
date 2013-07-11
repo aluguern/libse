@@ -1,6 +1,6 @@
 Index: goto-symex/partial_order_concurrency.cpp
 ===================================================================
---- goto-symex/partial_order_concurrency.cpp	(revision 2767)
+--- goto-symex/partial_order_concurrency.cpp	(revision 2777)
 +++ goto-symex/partial_order_concurrency.cpp	(working copy)
 @@ -240,3 +240,62 @@
      return binary_relation_exprt(clock(e1), ID_lt, clock(e2));
@@ -44,7 +44,7 @@ Index: goto-symex/partial_order_concurrency.cpp
 +exprt partial_order_concurrencyt::before_clock(
 +  symbol_exprt c1, symbol_exprt c2)
 +{
-+  return binary_relation_exprt(c1, ID_le, c2);
++  return binary_relation_exprt(c1, ID_lt, c2);
 +}
 +
 +/*******************************************************************\
@@ -67,7 +67,7 @@ Index: goto-symex/partial_order_concurrency.cpp
 +#endif
 Index: goto-symex/memory_model_sc.cpp
 ===================================================================
---- goto-symex/memory_model_sc.cpp	(revision 2767)
+--- goto-symex/memory_model_sc.cpp	(revision 2777)
 +++ goto-symex/memory_model_sc.cpp	(working copy)
 @@ -34,7 +34,9 @@
    write_serialization_internal(equation);
@@ -95,7 +95,7 @@ Index: goto-symex/memory_model_sc.cpp
  
 Index: goto-symex/memory_model.cpp
 ===================================================================
---- goto-symex/memory_model.cpp	(revision 2767)
+--- goto-symex/memory_model.cpp	(revision 2777)
 +++ goto-symex/memory_model.cpp	(working copy)
 @@ -26,6 +26,9 @@
  memory_model_baset::memory_model_baset(const namespacet &_ns):
@@ -119,7 +119,7 @@ Index: goto-symex/memory_model.cpp
        exprt::operandst rf_some_operands;
        rf_some_operands.reserve(a_rec.writes.size());
  
-@@ -191,11 +199,28 @@
+@@ -191,11 +199,29 @@
          choice_symbols[
            std::make_pair(*r_it, *w_it)]=s;
  
@@ -133,8 +133,9 @@ Index: goto-symex/memory_model.cpp
 +                partial_order_concurrencyt::equal(clock(w), sup_clock_symbol)));
 +
 +        implies_exprt sup_clock_implication(
-+          and_exprt(partial_order_concurrencyt::before_clock(clock(w), clock(r)), w->guard),
-+          partial_order_concurrencyt::before_clock(clock(w), sup_clock_symbol));
++          partial_order_concurrencyt::before_clock(clock(w), clock(r)),
++          or_exprt(partial_order_concurrencyt::equal(a,b),
++            partial_order_concurrencyt::before_clock(clock(w), sup_clock_symbol)));
 +
 +        equation.constraint(
 +          true_exprt(), sup_clock_implication, "sup-clock", r->source);
@@ -150,7 +151,7 @@ Index: goto-symex/memory_model.cpp
            true_exprt(), read_from, is_rfi?"rfi":"rf", r->source);
 Index: goto-symex/partial_order_concurrency.h
 ===================================================================
---- goto-symex/partial_order_concurrency.h	(revision 2767)
+--- goto-symex/partial_order_concurrency.h	(revision 2777)
 +++ goto-symex/partial_order_concurrency.h	(working copy)
 @@ -13,6 +13,8 @@
  
@@ -181,7 +182,7 @@ Index: goto-symex/partial_order_concurrency.h
  
 Index: goto-symex/memory_model_sc.h
 ===================================================================
---- goto-symex/memory_model_sc.h	(revision 2767)
+--- goto-symex/memory_model_sc.h	(revision 2777)
 +++ goto-symex/memory_model_sc.h	(working copy)
 @@ -23,7 +23,9 @@
    
@@ -195,7 +196,7 @@ Index: goto-symex/memory_model_sc.h
  };
 Index: goto-symex/memory_model.h
 ===================================================================
---- goto-symex/memory_model.h	(revision 2767)
+--- goto-symex/memory_model.h	(revision 2777)
 +++ goto-symex/memory_model.h	(working copy)
 @@ -33,6 +33,16 @@
      std::pair<event_it, event_it>, symbol_exprt> choice_symbolst;
