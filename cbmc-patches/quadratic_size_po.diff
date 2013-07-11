@@ -1,0 +1,216 @@
+Index: goto-symex/partial_order_concurrency.cpp
+===================================================================
+--- goto-symex/partial_order_concurrency.cpp	(revision 2767)
++++ goto-symex/partial_order_concurrency.cpp	(working copy)
+@@ -240,3 +240,62 @@
+     return binary_relation_exprt(clock(e1), ID_lt, clock(e2));
+ }
+ 
++#ifdef CPROVER_MEMORY_MODEL_SUP_CLOCK
++/*******************************************************************\
++
++Function: partial_order_concurrencyt::sup_clock
++
++  Inputs: Read event
++
++ Outputs: Clock symbol
++
++ Purpose: Find the supremum of various clock values
++
++\*******************************************************************/
++
++symbol_exprt partial_order_concurrencyt::sup_clock(event_it event)
++{
++  irep_idt identifier;
++  assert(!numbering.empty());
++
++  assert(is_shared_read(event));
++  identifier = id2string(id(event))+"$supclk";
++  return symbol_exprt(identifier, clock_type);
++}
++
++/*******************************************************************\
++
++Function: partial_order_concurrencyt::before_clock
++
++  Inputs: Two clocks
++
++ Outputs: Strict inequality between clocks
++
++ Purpose:
++
++\*******************************************************************/
++
++exprt partial_order_concurrencyt::before_clock(
++  symbol_exprt c1, symbol_exprt c2)
++{
++  return binary_relation_exprt(c1, ID_le, c2);
++}
++
++/*******************************************************************\
++
++Function: partial_order_concurrencyt::equal
++
++  Inputs: Two clocks
++
++ Outputs: Equality between clocks
++
++ Purpose:
++
++\*******************************************************************/
++
++exprt partial_order_concurrencyt::equal(
++  symbol_exprt c1, symbol_exprt c2)
++{
++  return equal_exprt(c1, c2);
++}
++#endif
+Index: goto-symex/memory_model_sc.cpp
+===================================================================
+--- goto-symex/memory_model_sc.cpp	(revision 2767)
++++ goto-symex/memory_model_sc.cpp	(working copy)
+@@ -34,7 +34,9 @@
+   write_serialization_internal(equation);
+   write_serialization_external(equation);
+   program_order(equation);
++#ifndef CPROVER_MEMORY_MODEL_SUP_CLOCK
+   from_read(equation);
++#endif
+ }
+ 
+ /*******************************************************************\
+@@ -282,6 +284,7 @@
+   }
+ }
+ 
++#ifndef CPROVER_MEMORY_MODEL_SUP_CLOCK
+ /*******************************************************************\
+ 
+ Function: memory_model_sct::from_read
+@@ -375,4 +378,5 @@
+     }
+   }
+ }
++#endif
+ 
+Index: goto-symex/memory_model.cpp
+===================================================================
+--- goto-symex/memory_model.cpp	(revision 2767)
++++ goto-symex/memory_model.cpp	(working copy)
+@@ -26,6 +26,9 @@
+ memory_model_baset::memory_model_baset(const namespacet &_ns):
+   partial_order_concurrencyt(_ns),
+   var_cnt(0)
++#ifdef CPROVER_MEMORY_MODEL_SUP_CLOCK
++  ,sup_symbols()
++#endif
+ {
+ }
+ 
+@@ -151,6 +154,11 @@
+     {
+       event_it r=*r_it;
+       
++#ifdef CPROVER_MEMORY_MODEL_SUP_CLOCK
++      // record the supremum symbol
++      sup_symbols[*r_it]=sup_clock(*r_it);
++#endif
++
+       exprt::operandst rf_some_operands;
+       rf_some_operands.reserve(a_rec.writes.size());
+ 
+@@ -191,11 +199,28 @@
+         choice_symbols[
+           std::make_pair(*r_it, *w_it)]=s;
+ 
++#ifdef CPROVER_MEMORY_MODEL_SUP_CLOCK
+         // We rely on the fact that there is at least
+         // one write event that has guard 'true'.
++        symbol_exprt sup_clock_symbol(sup_symbols[*r_it]);
+         implies_exprt read_from(s,
++            and_exprt(and_exprt((is_rfi ? true_exprt() : w->guard),
++              equal_exprt(r->ssa_lhs, write_symbol_primed(w))),
++                partial_order_concurrencyt::equal(clock(w), sup_clock_symbol)));
++
++        implies_exprt sup_clock_implication(
++          and_exprt(partial_order_concurrencyt::before_clock(clock(w), clock(r)), w->guard),
++          partial_order_concurrencyt::before_clock(clock(w), sup_clock_symbol));
++
++        equation.constraint(
++          true_exprt(), sup_clock_implication, "sup-clock", r->source);
++#else
++        // We rely on the fact that there is at least
++        // one write event that has guard 'true'.
++        implies_exprt read_from(s,
+             and_exprt((is_rfi ? true_exprt() : w->guard),
+               equal_exprt(r->ssa_lhs, write_symbol_primed(w))));
++#endif
+ 
+         equation.constraint(
+           true_exprt(), read_from, is_rfi?"rfi":"rf", r->source);
+Index: goto-symex/partial_order_concurrency.h
+===================================================================
+--- goto-symex/partial_order_concurrency.h	(revision 2767)
++++ goto-symex/partial_order_concurrency.h	(working copy)
+@@ -13,6 +13,8 @@
+ 
+ #include "symex_target_equation.h"
+ 
++//#define CPROVER_MEMORY_MODEL_SUP_CLOCK 1
++
+ class partial_order_concurrencyt:public messaget
+ {
+ public:
+@@ -66,6 +68,17 @@
+   // the partial order constraint for two events
+   exprt before(event_it e1, event_it e2);
+ 
++#ifdef CPROVER_MEMORY_MODEL_SUP_CLOCK
++  // clock symbol to find supremum of various clock values
++  symbol_exprt sup_clock(event_it event);
++
++  // the partial order constraint between clocks
++  exprt before_clock(symbol_exprt c1, symbol_exprt c2);
++
++  // two clocks are equal
++  exprt equal(symbol_exprt c1, symbol_exprt c2);
++#endif
++
+   // is it an assignment for a shared variable?
+   bool is_shared_write(event_it e) const;
+ 
+Index: goto-symex/memory_model_sc.h
+===================================================================
+--- goto-symex/memory_model_sc.h	(revision 2767)
++++ goto-symex/memory_model_sc.h	(working copy)
+@@ -23,7 +23,9 @@
+   
+ protected:
+   void program_order(symex_target_equationt &equation);
++#ifndef CPROVER_MEMORY_MODEL_SUP_CLOCK
+   void from_read(symex_target_equationt &equation);
++#endif
+   void write_serialization_internal(symex_target_equationt &equation);
+   void write_serialization_external(symex_target_equationt &equation);
+ };
+Index: goto-symex/memory_model.h
+===================================================================
+--- goto-symex/memory_model.h	(revision 2767)
++++ goto-symex/memory_model.h	(working copy)
+@@ -33,6 +33,16 @@
+     std::pair<event_it, event_it>, symbol_exprt> choice_symbolst;
+   choice_symbolst choice_symbols;
+ 
++// To implement the quadratic-size partial order encoding, we create a SAT
++// formula that finds the least upper bound (supremum) of certain clock values.
++#ifdef CPROVER_MEMORY_MODEL_SUP_CLOCK
++
++  // Maps a read event to a symbol that can take on values of a well-ordered set
++  typedef std::map<event_it, symbol_exprt> sup_symbolst;
++  sup_symbolst sup_symbols;
++
++#endif
++
+   exprt write_symbol_primed(partial_order_concurrencyt::event_it e) const;
+   void read_from(symex_target_equationt &equation);
+   
