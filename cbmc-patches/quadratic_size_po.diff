@@ -134,7 +134,7 @@ Index: goto-symex/memory_model.cpp
 +
 +        implies_exprt sup_clock_implication(
 +          partial_order_concurrencyt::before_clock(clock(w), clock(r)),
-+          or_exprt(partial_order_concurrencyt::equal(a,b),
++          or_exprt(partial_order_concurrencyt::equal(clock(w), sup_clock_symbol),
 +            partial_order_concurrencyt::before_clock(clock(w), sup_clock_symbol)));
 +
 +        equation.constraint(
@@ -157,7 +157,7 @@ Index: goto-symex/partial_order_concurrency.h
  
  #include "symex_target_equation.h"
  
-+//#define CPROVER_MEMORY_MODEL_SUP_CLOCK 1
++#define CPROVER_MEMORY_MODEL_SUP_CLOCK 1
 +
  class partial_order_concurrencyt:public messaget
  {
