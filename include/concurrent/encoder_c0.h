@@ -15,6 +15,7 @@ namespace se {
 
 /* Alex's Square */
 
+
 /*
 class Z3OrderEncoderC0 {
 private:
@@ -132,9 +133,10 @@ public:
 
 
 
+
 /* Alex's Cube */
 
-/*
+#define IMPLICIT_WS 1
 class Z3OrderEncoderC0 {
 private:
   const ReadInstrEncoder m_read_encoder;
@@ -189,32 +191,6 @@ public:
     return rf_expr;
   }
 
-  /// \internal \return WS axiom encoding
-  smt::UnsafeTerm ws_enc(const ZoneRelation<Event>& relation, Encoders& encoders) const {
-    const ZoneAtomSet& zone_atoms = relation.zone_atoms();
-
-    smt::UnsafeTerm ws_expr(smt::literal<smt::Bool>(true));
-    for (const Zone& zone : zone_atoms) {
-      const EventPtrSet write_event_ptrs = relation.find(zone,
-        WriteEventPredicate::predicate());
-
-      smt::UnsafeTerms ptrs;
-      ptrs.reserve(write_event_ptrs.size());
-
-      for (const EventPtr& write_event_ptr : write_event_ptrs) {
-        const Event& write_event = *write_event_ptr;
-        ptrs.push_back(encoders.clock(write_event).term());
-      }
-
-      if (1 < ptrs.size()) {
-        const smt::UnsafeTerm zone_ws_expr(smt::distinct(std::move(ptrs)));
-        ws_expr = ws_expr and zone_ws_expr;
-      }
-    }
-
-    return ws_expr;
-  }
-
   /// \internal \return FR axiom encoding
   smt::UnsafeTerm fr_enc(const ZoneRelation<Event>& relation, Encoders& encoders) const {
     const ZoneAtomSet& zone_atoms = relation.zone_atoms();
@@ -242,7 +218,7 @@ public:
             assert(!read_event.zone().is_bottom());
 
             const smt::UnsafeTerm xr_schedule(encoders.rf(write_event_x, read_event));
-            const smt::UnsafeTerm yx_order(encoders.clock(write_event_y).simultaneous_or_happens_before(encoders.clock(write_event_x)));
+            const smt::UnsafeTerm yx_order(encoders.clock(write_event_y).happens_before(encoders.clock(write_event_x)));
             const smt::UnsafeTerm yr_order(encoders.clock(write_event_y).simultaneous_or_happens_before(encoders.clock(read_event)));
             const smt::UnsafeTerm y_condition(event_condition(write_event_y, encoders));
 
@@ -265,10 +241,8 @@ public:
   void encode(const ZoneRelation<Event>& zone_relation, Encoders& encoders) const
   {
     encode_without_ws(zone_relation, encoders);
-    encoders.solver.unsafe_add(ws_enc(zone_relation, encoders));
   }
 };
-*/
 
 
 
@@ -290,6 +264,7 @@ public:
 
 /* Michael's Cube */
 
+/*
 class Z3OrderEncoderC0 {
 private:
   const ReadInstrEncoder m_read_encoder;
@@ -423,6 +398,7 @@ public:
     encoders.solver.unsafe_add(ws_enc(zone_relation, encoders));
   }
 };
+*/
 
 }
 

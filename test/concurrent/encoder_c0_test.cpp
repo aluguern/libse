@@ -694,6 +694,7 @@ TEST(EncoderC0Test, Z3OrderEncoderC0ForRfWithoutCondition) {
   EXPECT_EQ(smt::unsat, encoders.solver.check());
 }
 
+#ifndef IMPLICIT_WS
 TEST(EncoderC0Test, Z3OrderEncoderC0ForWsWithoutCondition) {
   const unsigned write_thread_major_id = 7;
   const unsigned write_thread_minor_id = 8;
@@ -721,6 +722,7 @@ TEST(EncoderC0Test, Z3OrderEncoderC0ForWsWithoutCondition) {
   encoders.solver.unsafe_add(encoders.clock(*major_write_event_ptr).simultaneous(encoders.clock(*minor_write_event_ptr)));
   EXPECT_EQ(smt::unsat, encoders.solver.check());
 }
+#endif
 
 TEST(EncoderC0Test, Z3OrderEncoderC0ForFrWithoutCondition) {
   const unsigned write_thread_id = 7;
