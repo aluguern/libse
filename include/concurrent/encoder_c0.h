@@ -183,7 +183,7 @@ public:
 
         wr_schedules = wr_schedules or wr_schedule;
         rf_expr = rf_expr and smt::implies(wr_schedule, wr_order and
-          write_event_condition and read_event_condition and wr_equality);
+          write_event_condition and wr_equality);
       }
 
       rf_expr = rf_expr and smt::implies(read_event_condition, wr_schedules);
