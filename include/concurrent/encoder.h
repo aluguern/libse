@@ -178,9 +178,13 @@ public:
     assert(write_event.is_write());
     assert(read_event.is_read());
 
-    const ClockSort rf_clock =
-      smt::any<ClockSort>(m_rf_prefix + create_symbol(read_event));
-    return write_event.event_id() == rf_clock;
+    return write_event.event_id() == rf_clock(read_event);
+  }
+
+  ClockSort rf_clock(const Event& read_event) {
+    assert(read_event.is_read());
+
+    return smt::any<ClockSort>(m_rf_prefix + create_symbol(read_event));
   }
 
   /// Unique clock constraint for an event
